@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { filterConsoleError } from '../../../helpers/index.js';
 
 // Mocks do banco
 jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
@@ -81,9 +82,15 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
       verifyToken.mockReturnValue({ userId: 3, username: 'com_falha', role: 'operador' });
       query.mockRejectedValueOnce(new Error('Role query failed'));
 
-      const { req, res } = createMocks({ method: 'GET' });
-      await handler(req, res);
-      expect(res._getStatusCode()).toBe(403);
+      const errSpy = filterConsoleError(['Falha ao verificar permissão de Gestão de Vendas']);
+      try {
+        const { req, res } = createMocks({ method: 'GET' });
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(403);
+        expect(errSpy).toHaveBeenCalled();
+      } finally {
+        errSpy.mockRestore();
+      }
     });
   });
 

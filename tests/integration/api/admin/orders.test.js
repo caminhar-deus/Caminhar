@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { filterConsoleError } from '../../../helpers/index.js';
 
 // Mocks do banco
 jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
@@ -79,9 +80,15 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
       verifyToken.mockReturnValue({ userId: 2, username: 'operador', role: 'operador' });
       query.mockRejectedValueOnce(new Error('DB Permission Error'));
 
-      const { req, res } = createMocks({ method: 'GET' });
-      await handler(req, res);
-      expect(res._getStatusCode()).toBe(403);
+      const errSpy = filterConsoleError(['Falha ao verificar permissão de Gestão de Vendas']);
+      try {
+        const { req, res } = createMocks({ method: 'GET' });
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(403);
+        expect(errSpy).toHaveBeenCalled();
+      } finally {
+        errSpy.mockRestore();
+      }
     });
 
     it('deve permitir acesso para operador com permissão Gestão de Vendas', async () => {

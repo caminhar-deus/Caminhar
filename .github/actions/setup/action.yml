@@ -32,9 +32,10 @@ runs:
       shell: bash
       # `--no-audit --no-fund`: o `npm audit` roda por padrão ao final do `ci`
       # e adiciona dezenas de segundos a CADA job da CI sem bloquear nada —
-      # nenhuma vulnerabilidade reprova o build aqui. A auditoria passa a ser
-      # um step separado e explícito (`Audit Dependencies` em test-base.yml),
-      # onde os 4 high viram falha visível em vez de texto de warning.
+      # nenhuma vulnerabilidade reprova o build aqui. A auditoria vive como um
+      # step separado e explícito (`Audit Dependencies` em `test-coverage.yml`,
+      # job `lint`), onde as ocorrências high ficam visíveis em vez de perdidas
+      # em meio ao log de instalação.
       #
       # Limite de duração via `timeout`, e NÃO via a chave `timeout-minutes`:
       # step de **composite action** não aceita `timeout-minutes` (o actionlint

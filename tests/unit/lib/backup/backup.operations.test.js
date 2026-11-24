@@ -1,4 +1,5 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { filterConsoleWarn } from '../../../helpers/index.js';
 
 jest.mock('child_process', () => ({ exec: jest.fn(), spawn: jest.fn() }));
 
@@ -90,10 +91,12 @@ function createAsyncDirIterator(files) {
 
 describe('Operações de Backup (lib/backup.js)', () => {
   const DATABASE_URL = 'postgresql://user:pass@host:5432/testdb';
+  let warnSpy;
 
   beforeEach(() => {
     process.env.DATABASE_URL = DATABASE_URL;
     jest.clearAllMocks();
+    warnSpy = filterConsoleWarn(['Não foi possível verificar espaço em disco']);
 
     fs.existsSync.mockReturnValue(true);
     fs.readFileSync.mockReturnValue('');
@@ -113,6 +116,10 @@ describe('Operações de Backup (lib/backup.js)', () => {
       on: jest.fn((ev, cb) => { if (ev === 'close') process.nextTick(() => cb(0)); }),
       exitCode: 0,
     });
+  });
+
+  afterEach(() => {
+    warnSpy?.mockRestore();
   });
 
   describe('createBackup', () => {

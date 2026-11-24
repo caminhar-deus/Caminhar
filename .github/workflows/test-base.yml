@@ -6,7 +6,7 @@ on:
       test-type:
         required: true
         type: string
-        description: 'Tipo de teste (load, security ou coverage)'
+        description: 'Tipo de teste (load ou security)'
       run-command:
         required: true
         type: string
@@ -25,7 +25,7 @@ on:
         required: false
         type: boolean
         default: false
-        description: 'Pular o setup do banco de teste (para suítes que não acessam o Postgres, como a de cobertura)'
+        description: 'Pular o setup do banco de teste (para suítes que não acessam o Postgres)'
       extra-steps:
         required: false
         type: string
@@ -154,17 +154,6 @@ jobs:
       # ficaram fora do bump: não emitiram a annotation.
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-      # Auditoria como step explícito, e não mais como texto de warning do
-      # `npm ci`. O `ci` instala com `--no-audit` (ver o composite `setup`), e
-      # sem este step as vulnerabilidades — hoje 4 high — só apareceriam como
-      # linhas de log que ninguém lê. `continue-on-error` mantém o gate atual:
-      # este job reporta, não reprova. Quando as high forem zeradas, troque por
-      # `continue-on-error: false` para passarem a barrar de verdade.
-      - name: Audit Dependencies
-        if: ${{ inputs.test-type == 'coverage' }}
-        shell: bash
-        run: npm audit --audit-level=high || echo "::warning::npm audit reportou vulnerabilidades high (não reprova o job)"
-        continue-on-error: true
       # Checks estáticos de segurança: SQL injection e credenciais hardcoded.
       # Ambos reprovam o job (sem `continue-on-error`) — são análise estática,
       # não tocam no banco e não podem dar falso positivo por estado de runtime,
@@ -271,22 +260,3 @@ jobs:
           path: reports/k6-summaries/
           retention-days: 30
           if-no-files-found: ignore
-      - name: Upload Coverage Output
-        if: ${{ always() && inputs.test-type == 'coverage' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-output
-          path: coverage-output.txt
-          retention-days: 7
-
-      # O relatório HTML (coverage/) é gerado neste runner e está no .gitignore:
-      # publicá-lo aqui é o que permite ao job `coverage-report` de
-      # test-coverage.yml reenviá-lo como `jest-coverage-report`.
-      - name: Upload Coverage HTML
-        if: ${{ always() && inputs.test-type == 'coverage' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-html
-          path: coverage/
-          if-no-files-found: ignore
-          retention-days: 7

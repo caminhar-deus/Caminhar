@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   // IP usado no rate limit da autenticação
   const ip = clientIP;
 
-  const { username, password } = req.body;
+  const { username, password } = typeof req.body?.username === 'string' && typeof req.body?.password === 'string' ? req.body : {};
 
   // Limite por IP. Mesma chave e janela do `proxy.js`, então os dois
   // compartilham um único bucket: o middleware rejeita antes de ler o corpo e
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     // Backstop por usuário: não depende de IP, então sobrevive tanto à
     // rotação de X-Forwarded-For quanto à ausência de IP confiável.
     // Conta só falhas, para não punir quem acerta o login.
-    if (username && await checkRateLimit(username, LOGIN_USER_LIMIT.key, LOGIN_USER_LIMIT.limit, LOGIN_USER_LIMIT.window)) {
+    if (username && await checkRateLimit(username.trim().toLowerCase(), LOGIN_USER_LIMIT.key, LOGIN_USER_LIMIT.limit, LOGIN_USER_LIMIT.window)) {
       logger.warn('Auth', `Rate limit por usuário excedido | usuário: ${username}`);
       return res.status(429).json({
         error: 'Too Many Requests',

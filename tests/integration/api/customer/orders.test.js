@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { filterConsoleError } from '../../../helpers/index.js';
 
 jest.mock('../../../../lib/auth/customer-auth.js', () => ({
   getAuthenticatedCustomer: jest.fn(),
@@ -59,10 +60,16 @@ describe('API Visitante/Cliente - Meus Pedidos (/api/customer/orders)', () => {
     getAuthenticatedCustomer.mockReturnValue({ customerId: 5 });
     getCustomerOrders.mockRejectedValueOnce(new Error('DB Connection Timeout'));
 
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
+    const errSpy = filterConsoleError(['Erro ao consultar compras do visitante']);
+    try {
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
 
-    expect(res._getStatusCode()).toBe(500);
+      expect(res._getStatusCode()).toBe(500);
+      expect(errSpy).toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 
   it('deve retornar 405 para métodos diferentes de GET', async () => {

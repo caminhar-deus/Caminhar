@@ -317,6 +317,17 @@ describe('test-coverage.yml — gatilhos, guards e configuração do gate', () =
       expect(run).toContain('set -o pipefail');
       expect(run).toContain('npx jest --ci --coverage');
     });
+
+    it('executa npm run lint:chars no job lint', () => {
+      const { run } = stepDe('lint', 'Run Character Lint');
+      expect(run).toContain('npm run lint:chars');
+    });
+
+    it('mantém Audit Dependencies ativo no job lint sem depender de test-base', () => {
+      const step = stepDe('lint', 'Audit Dependencies');
+      expect(step.run).toContain('npm audit --audit-level=high');
+      expect(step['continue-on-error']).toBe(true);
+    });
   });
 
   // P2 — um literal `true` no `cancel-in-progress` faria os runs da `main` se

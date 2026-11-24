@@ -82,6 +82,15 @@ export const useApiFetch = (url, config = {}) => {
   const [optionsKey, setOptionsKey] = useState(0);
   const lastFetchRef = useRef(0);
   const optionsRef = useRef(options);
+  const isMountedRef = useRef(true);
+  const requestSeqRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Estabiliza a referência de options: só atualiza quando o conteúdo serializado mudar
   const serializedOptions = JSON.stringify(options);
@@ -93,6 +102,9 @@ export const useApiFetch = (url, config = {}) => {
   }, [serializedOptions]);
 
   const fetchData = useCallback(async () => {
+    const seq = ++requestSeqRef.current;
+    const isCurrent = () => isMountedRef.current && seq === requestSeqRef.current;
+
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setRequestId(null);
       setError('Sem conexão com a internet');
@@ -112,6 +124,7 @@ export const useApiFetch = (url, config = {}) => {
       const method = String(request?.method || 'GET').toUpperCase();
 
       let response = await fetch(url, request);
+      if (!isCurrent()) return;
 
       // ── Retry ÚNICO para 503 com `Retry-After` parseável ──
       // O backend só manda 503 + Retry-After quando o banco está indisponível
@@ -129,7 +142,9 @@ export const useApiFetch = (url, config = {}) => {
         const retryAfterMs = parseRetryAfterMs(response.headers?.get?.('Retry-After'));
         if (retryAfterMs !== null) {
           await sleep(retryAfterMs);
+          if (!isCurrent()) return;
           response = await fetch(url, request);
+          if (!isCurrent()) return;
         }
       }
 
@@ -144,6 +159,7 @@ export const useApiFetch = (url, config = {}) => {
         } catch {
           // resposta sem corpo JSON
         }
+        if (!isCurrent()) return;
         const errorMsg = errorData?.message || errorData?.error || `Erro HTTP ${response.status}`;
         const apiError = new Error(errorMsg);
         // Preserva o `X-Request-Id` ANTES do throw: sem isto os headers da
@@ -156,6 +172,7 @@ export const useApiFetch = (url, config = {}) => {
       }
 
       let result = await response.json();
+      if (!isCurrent()) return;
 
       if (typeof transform === 'function') {
         result = transform(result);
@@ -164,6 +181,7 @@ export const useApiFetch = (url, config = {}) => {
       setData(result);
       lastFetchRef.current = Date.now();
     } catch (err) {
+      if (!isCurrent()) return;
       const errorMessage = err.message || 'Erro desconhecido ao buscar dados';
       // `error` continua STRING (contrato dos componentes públicos). O ID de
       // correlação, se o `Error` trouxer, vai para um estado próprio — é o
@@ -175,7 +193,9 @@ export const useApiFetch = (url, config = {}) => {
         onError(err);
       }
     } finally {
-      setLoading(false);
+      if (isCurrent()) {
+        setLoading(false);
+      }
     }
   }, [url, optionsKey, ...deps]);
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminPosts from '../../../../components/Admin/AdminPosts.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
@@ -11,6 +11,16 @@ jest.mock('../../../../components/Admin/AdminCrudBase', () => {
     return <div data-testid="mock-crud">Mock CRUD</div>;
   };
 });
+
+/** Renderiza `AdminPosts` drenando o fetch inicial de categorias dentro de `act`. */
+async function renderAdminPosts() {
+  const utils = render(<AdminPosts />);
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  return utils;
+}
 
 describe('Componente Front-End - AdminPosts', () => {
   let fetchMock;
@@ -31,8 +41,8 @@ describe('Componente Front-End - AdminPosts', () => {
     fetchMock?.mockRestore();
   });
 
-  it('deve renderizar e repassar as configurações para o AdminCrudBase', () => {
-    render(<AdminPosts />);
+  it('deve renderizar e repassar as configurações para o AdminCrudBase', async () => {
+    await renderAdminPosts();
     expect(screen.getByTestId('mock-crud')).toBeInTheDocument();
     expect(passedProps.title).toBe('Gerenciar Posts');
     expect(passedProps.apiEndpoint).toBe('/api/admin/posts');
@@ -43,8 +53,9 @@ describe('Componente Front-End - AdminPosts', () => {
   });
 
   it('deve fazer requisição PUT para reordenar posts e lidar com sucesso e falha', async () => {
+    await renderAdminPosts();
+
     global.fetch.mockResolvedValueOnce({ ok: true });
-    render(<AdminPosts />);
     await passedProps.onReorder([{ id: 1 }, { id: 2 }], 1, 10);
     expect(global.fetch).toHaveBeenCalledWith('/api/admin/posts', expect.objectContaining({
       method: 'PUT',
@@ -56,19 +67,19 @@ describe('Componente Front-End - AdminPosts', () => {
       .rejects.toThrow('Falha ao reordenar');
   });
 
-  it('validatePost: deve lançar erro se publicado for true mas não houver imagem', () => {
-    render(<AdminPosts />);
+  it('validatePost: deve lançar erro se publicado for true mas não houver imagem', async () => {
+    await renderAdminPosts();
     expect(() => passedProps.validate({ published: true, image_url: '' })).toThrow('Para publicar um post, é necessário vincular uma imagem de capa.');
   });
 
-  it('validatePost: não deve lançar erro em casos válidos', () => {
-    render(<AdminPosts />);
+  it('validatePost: não deve lançar erro em casos válidos', async () => {
+    await renderAdminPosts();
     expect(() => passedProps.validate({ published: true, image_url: 'http://img.com/a.jpg' })).not.toThrow();
     expect(() => passedProps.validate({ published: false, image_url: '' })).not.toThrow();
   });
 
-  it('renderCustomFormField: deve renderizar campo slug', () => {
-    render(<AdminPosts />);
+  it('renderCustomFormField: deve renderizar campo slug', async () => {
+    await renderAdminPosts();
     const fieldConfig = { name: 'slug', component: (props) => <input data-testid="slug-input" {...props} /> };
     const CustomField = passedProps.renderCustomFormField(fieldConfig, { slug: 'meu-slug' }, jest.fn(), jest.fn(), { errors: { slug: ['Erro no slug'] } });
     
@@ -77,8 +88,8 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(screen.getByTestId('slug-input')).toHaveAttribute('error', 'Erro no slug');
   });
 
-  it('renderCustomFormField: deve renderizar campo title e gerar slug no blur', () => {
-    render(<AdminPosts />);
+  it('renderCustomFormField: deve renderizar campo title e gerar slug no blur', async () => {
+    await renderAdminPosts();
     const fieldConfig = { name: 'title', label: 'Título', placeholder: 'Título' }; 
     
     const setFieldValue = jest.fn();
@@ -91,8 +102,8 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(setFieldValue).toHaveBeenCalledWith('slug', 'meu-titulo-de-sucesso');
   });
 
-  it('renderCustomFormField: não deve gerar slug no blur se o slug já existir preenchido', () => {
-    render(<AdminPosts />);
+  it('renderCustomFormField: não deve gerar slug no blur se o slug já existir preenchido', async () => {
+    await renderAdminPosts();
     const setFieldValue = jest.fn();
     const CustomField = passedProps.renderCustomFormField({ name: 'title' }, { title: 'Meu Título', slug: 'slug-existente' }, jest.fn(), setFieldValue, {});
     
@@ -102,8 +113,8 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
-  it('renderCustomFormField: não deve gerar slug no blur se o title for vazio', () => {
-    render(<AdminPosts />);
+  it('renderCustomFormField: não deve gerar slug no blur se o title for vazio', async () => {
+    await renderAdminPosts();
     const setFieldValue = jest.fn();
     const CustomField = passedProps.renderCustomFormField({ name: 'title' }, { title: '', slug: '' }, jest.fn(), setFieldValue, {});
     const { container } = render(CustomField);
@@ -111,22 +122,22 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
-  it('renderCustomFormField: deve ignorar outros campos e tratar fallbacks nulos', () => {
-    render(<AdminPosts />);
+  it('renderCustomFormField: deve ignorar outros campos e tratar fallbacks nulos', async () => {
+    await renderAdminPosts();
     expect(passedProps.renderCustomFormField({ name: 'excerpt' }, {}, jest.fn(), jest.fn(), {})).toBeNull();
     
     const SlugField = passedProps.renderCustomFormField({ name: 'slug', component: (props) => <input {...props} /> }, {}, jest.fn(), jest.fn(), {});
     expect(render(SlugField).container.querySelector('input').value).toBe('');
   });
 
-  it('renderCustomFormField: deve renderizar normalmente mesmo sem o objeto error (undefined)', () => {
-    render(<AdminPosts />);
+  it('renderCustomFormField: deve renderizar normalmente mesmo sem o objeto error (undefined)', async () => {
+    await renderAdminPosts();
     const SlugField = passedProps.renderCustomFormField({ name: 'slug', component: (props) => <input {...props} /> }, { slug: 'teste' }, jest.fn(), jest.fn() /* sem o argumento error */);
     expect(render(SlugField).container.querySelector('input').value).toBe('teste');
   });
 
-  it('deve formatar data corretamente e exibir miniatura da capa na listagem da tabela', () => {
-    render(<AdminPosts />);
+  it('deve formatar data corretamente e exibir miniatura da capa na listagem da tabela', async () => {
+    await renderAdminPosts();
     
     const titleCol = passedProps.columns.find(c => c.key === 'title');
     render(titleCol.render({ title: 'Post com imagem', image_url: 'http://img.com/a.jpg' }));
@@ -136,8 +147,8 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(dateCol.format('2023-01-01T10:00:00Z')).toMatch(/01\/01\/2023|1\/1\/2023/);
   });
 
-  it('deve renderizar a coluna title sem a imagem se image_url não existir', () => {
-    render(<AdminPosts />);
+  it('deve renderizar a coluna title sem a imagem se image_url não existir', async () => {
+    await renderAdminPosts();
     const titleCol = passedProps.columns.find(c => c.key === 'title');
     const { container } = render(titleCol.render({ title: 'Post sem imagem', image_url: null }));
     expect(screen.getByText('Post sem imagem')).toBeInTheDocument();
@@ -145,8 +156,8 @@ describe('Componente Front-End - AdminPosts', () => {
   });
 
   // ── Toggle "Posts | Categorias" (spec posts.md §3.2–§3.3) ──────────
-  it('deve iniciar na visão Posts e alternar para Categorias e voltar', () => {
-    render(<AdminPosts />);
+  it('deve iniciar na visão Posts e alternar para Categorias e voltar', async () => {
+    await renderAdminPosts();
 
     const group = screen.getByRole('group', { name: 'Visualização da aba Posts/Artigos' });
     expect(group).toBeInTheDocument();
@@ -173,7 +184,7 @@ describe('Componente Front-End - AdminPosts', () => {
   });
 
   it('deve buscar as categorias no mount em /api/admin/categories?all=1', async () => {
-    render(<AdminPosts />);
+    await renderAdminPosts();
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/admin/categories?all=1',
@@ -183,8 +194,8 @@ describe('Componente Front-End - AdminPosts', () => {
   });
 
   // ── Campo de atribuição de categorias (spec posts.md §2.2) ─────────
-  it('deve configurar o campo category_ids conforme a spec', () => {
-    render(<AdminPosts />);
+  it('deve configurar o campo category_ids conforme a spec', async () => {
+    await renderAdminPosts();
 
     const field = passedProps.fields.find((f) => f.name === 'category_ids');
     expect(field).toBeDefined();
@@ -203,7 +214,8 @@ describe('Componente Front-End - AdminPosts', () => {
     })).not.toThrow();
   });
 
-  it('validationSchema: aceita nulls do banco na edição full-row (excerpt/content/image_url)', () => {
+  it('validationSchema: aceita nulls do banco na edição full-row (excerpt/content/image_url)', async () => {
+    await renderAdminPosts();
     // createPost grava `?? null` — rows com null existem por design; o form
     // reenvia a row inteira na edição e o schema do cliente não pode rejeitá-la.
     expect(() => passedProps.validationSchema.parse({
@@ -211,8 +223,8 @@ describe('Componente Front-End - AdminPosts', () => {
     })).not.toThrow();
   });
 
-  it('mapItemToFormData: deve preencher category_ids a partir de post.categories', () => {
-    render(<AdminPosts />);
+  it('mapItemToFormData: deve preencher category_ids a partir de post.categories', async () => {
+    await renderAdminPosts();
 
     expect(passedProps.mapItemToFormData({
       id: 7,
@@ -224,8 +236,8 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(passedProps.mapItemToFormData({ id: 7 }).category_ids).toEqual([]);
   });
 
-  it('CategorySelectField: deve renderizar checkboxes e alternar a seleção', () => {
-    render(<AdminPosts />);
+  it('CategorySelectField: deve renderizar checkboxes e alternar a seleção', async () => {
+    await renderAdminPosts();
     const CategoryField = passedProps.fields.find((f) => f.name === 'category_ids').component;
     const onChange = jest.fn();
 
@@ -256,8 +268,8 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(onChange).toHaveBeenLastCalledWith({ target: { name: 'category_ids', value: [] } });
   });
 
-  it('CategorySelectField: deve exibir o estado vazio quando não há categorias', () => {
-    render(<AdminPosts />);
+  it('CategorySelectField: deve exibir o estado vazio quando não há categorias', async () => {
+    await renderAdminPosts();
     const CategoryField = passedProps.fields.find((f) => f.name === 'category_ids').component;
 
     const { container } = render(

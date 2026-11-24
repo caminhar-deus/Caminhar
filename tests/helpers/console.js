@@ -54,6 +54,24 @@ export const filterConsoleError = (suppressList = []) => {
 };
 
 /**
+ * Cria um spy para console.warn que suprime apenas warnings conhecidos,
+ * preservando e repassando os demais avisos ao console.warn original.
+ *
+ * @param {string[]} suppressList - Lista de padrões de mensagens a suprimir
+ * @returns {jest.SpyInstance}
+ */
+export const filterConsoleWarn = (suppressList = []) => {
+  const originalWarn = console.warn;
+  return jest.spyOn(console, 'warn').mockImplementation((...args) => {
+    const msg = args.join(' ');
+    if (suppressList.some(pattern => msg.includes(pattern))) {
+      return;
+    }
+    originalWarn.call(console, ...args);
+  });
+};
+
+/**
  * Cria um mock para global.fetch via atribuição direta
  * NOTA: jest.spyOn(global, 'fetch') NÃO funciona em JSDOM porque
  * fetch não é uma propriedade própria de global.

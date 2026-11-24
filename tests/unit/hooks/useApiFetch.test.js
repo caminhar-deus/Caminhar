@@ -266,4 +266,61 @@ describe('Hook - useApiFetch (requestId e retry de 503)', () => {
       expect(result.current.error).toBe('Não autenticado');
     });
   });
+
+  describe('cancelamento lógico no unmount e concorrência', () => {
+    it('não atualiza estado nem emite aviso React ao resolver após desmontagem (unmount)', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const onError = jest.fn();
+      let resolveFetch;
+      fetchMock.mockImplementationOnce(
+        () => new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+      );
+
+      try {
+        const { unmount } = renderHook(() => useApiFetch('/api/admin/dicas', { onError }));
+        unmount();
+
+        await act(async () => {
+          resolveFetch(makeResponse({ status: 200, body: { data: ['tardio'] } }));
+          await Promise.resolve();
+        });
+
+        expect(onError).not.toHaveBeenCalled();
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
+    it('ignora resposta atrasada de requisição anterior quando refetch mais novo já resolveu', async () => {
+      let resolveFirst;
+      let resolveSecond;
+      fetchMock
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+
+      const { result } = renderHook(() => useApiFetch('/api/admin/dicas'));
+
+      let refetchPromise;
+      await act(async () => {
+        refetchPromise = result.current.refetch();
+      });
+
+      await act(async () => {
+        resolveSecond(makeResponse({ status: 200, body: { data: ['atual'] } }));
+        await refetchPromise;
+      });
+
+      await waitFor(() => expect(result.current.data).toEqual({ data: ['atual'] }));
+
+      await act(async () => {
+        resolveFirst(makeResponse({ status: 200, body: { data: ['obsoleto'] } }));
+        await Promise.resolve();
+      });
+
+      expect(result.current.data).toEqual({ data: ['atual'] });
+    });
+  });
 });

@@ -2,12 +2,17 @@
 
 /**
  * Script de diagnóstico e auditoria dos logs e execuções do GitHub Actions.
- * Lê o GITHUB_TOKEN de .env.local e consulta a API REST do GitHub.
+ * Lê o GITHUB_TOKEN de .env.local e consulta a API REST do GitHub com paginação.
  */
 
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import {
+  fetchRecentWorkflowRuns,
+  summarizeEslintLog,
+  summarizeJestLog,
+} from './github-actions-helper.js';
 
 // 1. Carrega GITHUB_TOKEN de .env.local
 let token = process.env.GITHUB_TOKEN;
@@ -29,51 +34,65 @@ if (!token) {
 const REPO = 'caminhar-deus/Caminhar';
 const SEVEN_DAYS_AGO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+function formatMetaSummary(meta) {
+  const parts = [];
+  if (meta?.startedAt) parts.push(`início=${meta.startedAt}`);
+  if (meta?.gitSha) parts.push(`sha=${meta.gitSha}`);
+  if (meta?.exitCode !== null && meta?.exitCode !== undefined) parts.push(`exit=${meta.exitCode}`);
+  return parts.length > 0 ? parts.join(' | ') : 'sem metadados [log-meta]';
+}
+
+function printJestSummary(label, filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.log(`ℹ️ ${path.relative(process.cwd(), filePath)} não encontrado.`);
+    return;
+  }
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const summary = summarizeJestLog(content);
+    console.log(`📄 ${label} (${path.relative(process.cwd(), filePath)}):`);
+    console.log(`   Metadados: ${formatMetaSummary(summary.meta)}`);
+    if (summary.suitesLine) console.log(`   ${summary.suitesLine}`);
+    if (summary.testsLine) console.log(`   ${summary.testsLine}`);
+    if (summary.timeLine) console.log(`   ${summary.timeLine}`);
+    if (summary.allFilesCoverageLine) console.log(`   Cobertura: ${summary.allFilesCoverageLine}`);
+    console.log(`   Status Geral: ${summary.failed ? '❌ Falhas detectadas' : '✅ 100% Aprovado'}`);
+  } catch (e) {
+    console.log(`   Erro ao ler ${path.basename(filePath)}: ${e.message}`);
+  }
+}
+
 function diagnosticoLocal(motivo) {
   console.log(`\n======================================================`);
   console.log(`⚠️ MODO DE CONTINGÊNCIA: DIAGNÓSTICO LOCAL DE LOGS E WORKFLOWS`);
+  console.log(`GitHub Actions remoto: status: NÃO VERIFICADO (contingência local)`);
   console.log(`Motivo: ${motivo}`);
   console.log(`======================================================\n`);
 
   const logsDir = path.resolve(process.cwd(), 'logs');
   const workflowsDir = path.resolve(process.cwd(), '.github', 'workflows');
 
-  // 1. Inspeciona logs/tests-output.log
-  const testLogPath = path.join(logsDir, 'tests-output.log');
-  if (fs.existsSync(testLogPath)) {
-    try {
-      const content = fs.readFileSync(testLogPath, 'utf8');
-      const lines = content.split('\n');
-      const suitesLine = lines.find((l) => l.includes('Test Suites:'));
-      const testsLine = lines.find((l) => l.includes('Tests:'));
-      const timeLine = lines.find((l) => l.includes('Time:'));
-
-      console.log('📄 Última Execução Local de Testes (logs/tests-output.log):');
-      if (suitesLine) console.log(`   ${suitesLine.trim()}`);
-      if (testsLine) console.log(`   ${testsLine.trim()}`);
-      if (timeLine) console.log(`   ${timeLine.trim()}`);
-
-      const failed = content.includes('FAIL ') || (suitesLine && suitesLine.includes('failed'));
-      console.log(`   Status Geral: ${failed ? '❌ Falhas detectadas' : '✅ 100% Aprovado'}`);
-    } catch (e) {
-      console.log(`   Erro ao ler tests-output.log: ${e.message}`);
-    }
-  } else {
-    console.log('ℹ️ logs/tests-output.log não encontrado.');
-  }
+  // 1. Inspeciona logs/tests-output.log e logs/coverage-output.log
+  printJestSummary('Última Execução Local de Testes', path.join(logsDir, 'tests-output.log'));
+  console.log('');
+  printJestSummary('Última Execução Local de Cobertura', path.join(logsDir, 'coverage-output.log'));
 
   // 2. Inspeciona logs/eslint.log
   const eslintLogPath = path.join(logsDir, 'eslint.log');
   if (fs.existsSync(eslintLogPath)) {
     try {
       const stats = fs.statSync(eslintLogPath);
+      const content = fs.readFileSync(eslintLogPath, 'utf8');
+      const eslintSummary = summarizeEslintLog(content, stats.size);
       console.log(`\n📄 Análise Estática Local (logs/eslint.log):`);
-      if (stats.size === 0) {
+      console.log(`   Metadados: ${formatMetaSummary(eslintSummary.meta)}`);
+      if (eslintSummary.clean) {
         console.log('   ✅ 0 erros e 0 avisos (arquivo limpo)');
       } else {
-        const content = fs.readFileSync(eslintLogPath, 'utf8');
-        const problemLine = content.split('\n').find((l) => l.includes('problems') || l.includes('error'));
-        console.log(`   ${problemLine ? problemLine.trim() : `Tamanho do log: ${stats.size} bytes`}`);
+        console.log(
+          `   ⚠️ ${eslintSummary.problemLine || `Problemas detectados (tamanho: ${stats.size} bytes)`}`
+        );
       }
     } catch (e) {
       console.log(`   Erro ao ler eslint.log: ${e.message}`);
@@ -93,7 +112,7 @@ function diagnosticoLocal(motivo) {
     }
   }
 
-  console.log('\n✅ Diagnóstico local concluído com sucesso.');
+  console.log('\n✅ Diagnóstico local concluído (remoto: NÃO VERIFICADO).');
 }
 
 function requestGitHub(apiPath) {
@@ -153,24 +172,37 @@ async function main() {
   }
 
   try {
-    const runsRes = await requestGitHub(`/repos/${REPO}/actions/runs?per_page=50`);
-    if (runsRes.statusCode !== 200) {
-      diagnosticoLocal(`Erro ao consultar runs da API (HTTP ${runsRes.statusCode})`);
+    const runsResult = await fetchRecentWorkflowRuns({
+      repo: REPO,
+      sevenDaysAgo: SEVEN_DAYS_AGO,
+      requestFn: requestGitHub,
+    });
+
+    if (!runsResult.ok) {
+      diagnosticoLocal(`Erro ao consultar runs da API (HTTP ${runsResult.statusCode})`);
       return;
     }
 
-    const runsJson = JSON.parse(runsRes.data);
-    const allRuns = runsJson.workflow_runs || [];
+    const {
+      recentRuns,
+      latestRunOverall,
+      totalCount,
+      pagesFetched,
+      truncated,
+    } = runsResult;
 
-    const recentRuns = allRuns.filter(run => new Date(run.created_at) >= SEVEN_DAYS_AGO);
-
-    console.log(`Total de execuções históricas no repositório: ${runsJson.total_count}`);
+    console.log(`Total de execuções retornadas pelo filtro na API: ${totalCount}`);
+    console.log(`Páginas consultadas: ${pagesFetched}`);
     console.log(`Execuções nos últimos 7 dias: ${recentRuns.length}\n`);
+
+    if (truncated) {
+      console.log('⚠️ Aviso: limite de paginação atingido — há mais execuções nos últimos 7 dias além do teto de páginas configurado.\n');
+    }
 
     if (recentRuns.length === 0) {
       console.log('ℹ️ Nenhuma execução encontrada nos últimos 7 dias.');
-      if (allRuns.length > 0) {
-        console.log(`A última execução registrada foi em ${allRuns[0].created_at} (ID: ${allRuns[0].id}, Workflow: "${allRuns[0].name}", Conclusão: ${allRuns[0].conclusion}).`);
+      if (latestRunOverall) {
+        console.log(`A última execução registrada foi em ${latestRunOverall.created_at} (ID: ${latestRunOverall.id}, Workflow: "${latestRunOverall.name}", Conclusão: ${latestRunOverall.conclusion}).`);
       }
       return;
     }
@@ -205,7 +237,7 @@ async function main() {
     // Investigação detalhada dos runs com falha
     if (failedRuns.length > 0) {
       console.log(`======================================================`);
-      console.log(`❌ INVESTIGAÇÃO DETALHADA DAS FALHAS (${failedRuns.length} falhas):`);
+      console.log(`❌ INVESTIGAÇÃO DETALDHADA DAS FALHAS (${failedRuns.length} falhas):`);
       console.log(`======================================================\n`);
 
       for (const run of failedRuns) {

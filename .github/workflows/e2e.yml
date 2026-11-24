@@ -40,9 +40,10 @@ jobs:
     name: 🧪 E2E isolado (Cypress + Testcontainers)
     runs-on: ubuntu-latest
     # Folga para não reprovar por lentidão (baseline local: ~36 s de execução
-    # quente, minutos no runner frio com `npm ci` + build do app); teto para
-    # derrubar um runner travado em vez de queimar os 360 min do default.
-    timeout-minutes: 15
+    # quente, minutos no runner frio com `npm ci` + build do app) e teto
+    # compatível com `timeout 20m` do `npm ci` abaixo, derrubando um runner
+    # travado em vez de queimar os 360 min do default.
+    timeout-minutes: 25
 
     steps:
       - name: Checkout Repository
@@ -61,8 +62,8 @@ jobs:
           cache: 'npm'
 
       # `--no-audit --no-fund`: o audit roda por padrão ao fim do `ci` e só
-      # polui o log — a auditoria vive em `test-base.yml` (step `Audit
-      # Dependencies`). `timeout 20m`: um `npm ci` que conclui mas não encerra
+      # polui o log — a auditoria vive em `test-coverage.yml` (job `lint`, step
+      # `Audit Dependencies`). `timeout 20m`: um `npm ci` que conclui mas não encerra
       # mataria a bateria inteira (ver o mesmo comentário no composite `setup`,
       # que usa `timeout` do shell pelo mesmo motivo — step de composite não
       # aceita a chave `timeout-minutes`).

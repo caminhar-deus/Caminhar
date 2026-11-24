@@ -375,25 +375,31 @@ describe('Componente Front-End - AdminCrudBase', () => {
       items: [{ id: 1, name: 'Dica', content: 'X'.repeat(120), status: true }]
     });
 
-    render(
-      <AdminCrudBase
-        {...defaultProps}
-        exportable={true}
-        exportColumns={[{ key: 'content', header: 'Conteúdo' }]}
-      />
-    );
+    const clickSpy = jest.spyOn(window.HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    try {
+      render(
+        <AdminCrudBase
+          {...defaultProps}
+          exportable={true}
+          exportColumns={[{ key: 'content', header: 'Conteúdo' }]}
+        />
+      );
 
-    fireEvent.click(screen.getByText('Exportar CSV'));
+      fireEvent.click(screen.getByText('Exportar CSV'));
 
-    expect(exportToCSV).toHaveBeenCalledWith(
-      expect.objectContaining({
-        columns: [expect.objectContaining({ key: 'content', header: 'Conteúdo' })],
-        filename: 'teste_crud_export'
-      })
-    );
-    // A coluna da tabela NÃO pode vazar para o export quando exportColumns é dada
-    const chamada = exportToCSV.mock.calls.at(-1)[0];
-    expect(chamada.columns.some((col) => col.key === 'status')).toBe(false);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+      expect(exportToCSV).toHaveBeenCalledWith(
+        expect.objectContaining({
+          columns: [expect.objectContaining({ key: 'content', header: 'Conteúdo' })],
+          filename: 'teste_crud_export'
+        })
+      );
+      // A coluna da tabela NÃO pode vazar para o export quando exportColumns é dada
+      const chamada = exportToCSV.mock.calls.at(-1)[0];
+      expect(chamada.columns.some((col) => col.key === 'status')).toBe(false);
+    } finally {
+      clickSpy.mockRestore();
+    }
   });
 
   it('deve usar as columns da tabela no export quando exportColumns não é fornecida (retrocompatível)', () => {
@@ -402,11 +408,17 @@ describe('Componente Front-End - AdminCrudBase', () => {
       items: [{ id: 1, name: 'Item', status: true }]
     });
 
-    render(<AdminCrudBase {...defaultProps} exportable={true} />);
-    fireEvent.click(screen.getByText('Exportar CSV'));
+    const clickSpy = jest.spyOn(window.HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    try {
+      render(<AdminCrudBase {...defaultProps} exportable={true} />);
+      fireEvent.click(screen.getByText('Exportar CSV'));
 
-    const chamada = exportToCSV.mock.calls.at(-1)[0];
-    expect(chamada.columns.map((col) => col.key)).toEqual(['id', 'name', 'status']);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+      const chamada = exportToCSV.mock.calls.at(-1)[0];
+      expect(chamada.columns.map((col) => col.key)).toEqual(['id', 'name', 'status']);
+    } finally {
+      clickSpy.mockRestore();
+    }
   });
 
   it('deve expor o campo de busca com nome acessível (WCAG 4.1.2 — regra aria-input-field-name)', () => {

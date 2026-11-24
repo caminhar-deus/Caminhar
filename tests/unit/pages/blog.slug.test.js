@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { suppressConsoleError } from '../../helpers/index.js';
+import { suppressConsoleError, filterConsoleWarn } from '../../helpers/index.js';
 
 jest.mock('../../../pages/blog/Blog.module.css', () => ({
   container: 'container',
@@ -67,14 +67,20 @@ describe('pages/blog/[slug].js (SSR e componente)', () => {
       query.mockResolvedValueOnce({ rows: [fakePost] });
       getOrSetCache.mockRejectedValueOnce(new Error('Redis connection timeout'));
 
-      const result = await getServerSideProps({ params: { slug: 'post-de-teste' } });
+      const warnSpy = filterConsoleWarn(['Falha ao obter site_title do cache no SSR']);
+      try {
+        const result = await getServerSideProps({ params: { slug: 'post-de-teste' } });
 
-      expect(result).toEqual({
-        props: {
-          post: fakePost,
-          siteTitle: null,
-        },
-      });
+        expect(result).toEqual({
+          props: {
+            post: fakePost,
+            siteTitle: null,
+          },
+        });
+        expect(warnSpy).toHaveBeenCalled();
+      } finally {
+        warnSpy.mockRestore();
+      }
     });
 
     it('retorna notFound: true quando o post não existe no banco', async () => {

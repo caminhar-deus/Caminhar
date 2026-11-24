@@ -106,6 +106,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Run Character Lint
+        run: npm run lint:chars
+
       # Mesmos dois scanners herdados do `test-base.yml` (step `Security
       # Checks`) — análise estática: não tocam no banco, não precisam de build
       # e não podem dar falso positivo por estado de runtime, então cabem no
@@ -120,6 +123,15 @@ jobs:
         run: |
           npm run security:check-sql
           npm run security:check-credentials
+
+      # Auditoria movida do `test-base.yml` (onde ficava inalcançável por
+      # `test-type == 'coverage'` depois que este job deixou de chamá-lo).
+      # `continue-on-error: true` mantém a política atual de apenas avisar até
+      # as vulnerabilidades high serem zeradas.
+      - name: Audit Dependencies
+        shell: bash
+        run: npm audit --audit-level=high || echo "::warning::npm audit reportou vulnerabilidades high (não reprova o job)"
+        continue-on-error: true
 
   coverage:
     runs-on: ubuntu-latest
