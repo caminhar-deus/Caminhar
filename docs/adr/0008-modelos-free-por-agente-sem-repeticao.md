@@ -1855,7 +1855,9 @@ do `small_model`.
 com frequência e por isso o preflight é obrigatório antes de confiar em id.
 
 `hy4-flash-free`, `qwen4-max-free` e `tidepool-alpha-free` são estreantes **sem medição** e
-não foram promovidos.
+não foram promovidos. (Atualizado na noite da mesma data: `hy4` e `tidepool` foram medidos no
+papel e só o `hy4` foi promovido — ver "Bateria de latência do `explorer`"; `qwen4-max` saiu do
+catálogo antes de qualquer medição.)
 
 ### Reatribuição — só com medição de papel já existente
 
@@ -1876,6 +1878,7 @@ vão atuar. Nenhum primário repete id e a reserva não é primário de outro ag
   `deepseek` orchestrator). Trocar qualquer um desses degradaria um papel de uso diário para
   melhorar outro. **Sinal de alarme para o campo:** se o `explorer` estourar o tempo com
   frequência, a próxima bateria deve medir a latência antes do acerto — o papel tem orçamento.
+  O sinal disparou na noite da mesma data; a bateria está na subseção seguinte.
 - **Reserva preteriu o `flint`** (6/8, 265 s) pela cota frágil — três quedas em 11/11. A cadeia
   só age em erro de failover; `provider.no-route` não a aciona.
 - **Privacidade:** o `oracle` e o `small_model` saem de zero-retention (`minimax`) para o
@@ -1884,13 +1887,45 @@ vão atuar. Nenhum primário repete id e a reserva não é primário de outro ag
   títulos é pior para o papel mais crítico. O `explorer` troca `inkling` por `mimo`; os dois
   retêm e treinam, sem regressão.
 
+### Bateria de latência do `explorer` (23/11/2026, noite)
+
+O alarme do parágrafo anterior disparou no próprio dia: o `mimo` **estourou o teto de 15 min
+com zero resposta** — a segunda vez, depois do estouro de 600 s na bateria 12×5. O critério em
+aberto era só latência (no papel, todo modelo medido faz 6/6 âncoras de `withAuth`, logo
+qualidade não separa), então a bateria mediu a MESMA tarefa de papel, uma execução por célula,
+teto de 15 min, com o incumbente re-medido no mesmo dia como controle. Rodada em cópia isolada
+do repo (`/var/tmp/bench-2026-11-23`, marcador `default/bench` e MCP `ai-memory` desligado,
+ambos commitados), no HEAD `ae84c18`.
+
+| modelo | âncoras | Parte B | latência | observação |
+|---|---|---|---|---|
+| `hy4-flash-free` | 6/6 nas **2** execuções | lacunas declaradas | **63 s** e **91 s** | estreante; 0 citação inválida, 0 contaminação |
+| `tidepool-alpha-free` | 6/6 | lacunas declaradas | **281 s** | estreante; 1 execução |
+| `mimo-v2.6-flash-free` (incumbente) | — | — | **timeout 900 s, 0 chars** | 2ª vez que estoura; remedido em 325 s em 11/11 |
+
+**Decisão: o `explorer` passa ao `hy4-flash-free`.** É 6/6 nas duas execuções, declara as
+lacunas da doc na Parte B (o critério de desempate do papel) e custa 3,5–5× menos que o `mimo`
+remedido — sem repetir id de nenhum outro papel (a reserva do `orchestrator` segue
+`nemotron-3.5-super-vl-free`). Preteridos: `tidepool` (6/6, mas 281 s — 4,5× o `hy4`, sem
+vantagem em nada), `mimo` (timeout no dia; só ficaria se nada fosse mais rápido e estável),
+`flint` (528 s em 11/11) e `nemotron-3.5-lightning` (361 s em 11/11), ambos já medidos mais
+lentos no papel. O `mimo` deixa de ter papel, mas não sai do catálogo.
+
+Ressalvas registradas: (a) o `hy4` tem **duas** execuções no papel — o piso histórico é uma,
+mas a promoção acontece com 2/2; (b) a **retenção do provedor para o `hy4` é NÃO DETERMINADO**
+— o `mimo` retém e treina, então não há regressão comprovada, apenas ausência de verificação;
+(c) a config do slim vale no próximo start do host e o `npm run models:check` lê a config
+**compilada do serviço**, então até o restart ele segue mostrando o `mimo`; nesta rodada o
+`opencode debug agents --standalone` (compila do disco, sem o serviço) já mostrou
+`explorer → opencode/hy4-flash-free`.
+
 ### Distribuição vigente (23/11/2026)
 
 | Agente | PRIMÁRIO | RESERVA |
 |---|---|---|
 | `orchestrator` | `opencode/deepseek-v4.1-flash-free` | `opencode/nemotron-3.5-super-vl-free` |
 | `oracle` | `opencode/beam-free` | — |
-| `explorer` | `opencode/mimo-v2.6-flash-free` | — |
+| `explorer` | `opencode/hy4-flash-free` | — |
 | `designer` | `opencode/big-pickle` | — |
 | `fixer` | `opencode/iceman-free` | — |
 
@@ -1903,8 +1938,9 @@ primário do `orchestrator`.
   aposentadas e um bloco que não faz nada. Remover o bloco morto descreve a realidade.
 - **Filtrar o `title` do preflight.** Seria "consertar" o sintoma apagando a única checagem do
   `small_model`.
-- **Promover `hy4`/`qwen4-max`/`tidepool`.** Contra a regra central deste ADR (medir por papel
-  antes de apontar).
+- **Promover `hy4`/`qwen4-max`/`tidepool` sem medição.** Contra a regra central deste ADR
+  (medir por papel antes de apontar). Na noite da mesma data, `hy4` e `tidepool` foram medidos
+  no papel e só o `hy4` foi promovido; `qwen4-max` saiu do catálogo antes de qualquer medição.
 - **Manter os ids mortos até uma bateria nova.** Deixaria o host inteiro sem plugin, e havia
   medição de papel válida para os três substitutos.
 
@@ -1913,7 +1949,11 @@ primário do `orchestrator`.
 - `npm run models:check` só reflete a config **depois do restart do serviço** (o slim não
   recarrega a quente). Nesta rodada o serviço recarregou o plugin e o preflight fechou `EXIT=0`
   com os cinco papéis compilados; em outra máquina, reiniciar antes de confiar no resultado.
-- Os três free estreantes continuam sem medição; qualquer promoção exige bateria por papel.
+  **Observação de 23/11/2026 (noite):** `opencode debug agents --standalone` compila a config
+  do disco sem o serviço em execução e mostrou a troca do `explorer` antes do restart — é o
+  caminho para conferir a config nova sem reiniciar (o preflight não usa essa flag).
+- Os free estreantes: `hy4` (2 execuções no papel, promovido) e `tidepool` (1 execução, sem
+  promoção) foram medidos na noite de 23/11; qualquer promoção nova exige bateria por papel.
 
 ## Consequências
 
@@ -1936,7 +1976,9 @@ primário do `orchestrator`.
   de `minimax`/`inkling`/`glm`, o `oracle` e o `small_model` passaram ao `beam` (não treina,
   retém 30 dias) e o `explorer` ao `mimo` (retém e treina); a nova **reserva**
   (`nemotron-3.5-super-vl-free`) também retém e usa para treinar, mas só entra em erro de
-  failover. Detalhe na seção "23/11/2026".
+  failover. Detalhe na seção "23/11/2026". **Na noite da mesma data** o `explorer` passou ao
+  `hy4-flash-free` por latência medida; a retenção do `hy4` é **NÃO DETERMINADA** (o `mimo`
+  retinha e treinava), então não há regressão comprovada nem verificação — mesma seção.
 - **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
   assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
   quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior

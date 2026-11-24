@@ -44,6 +44,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Alterado
 
+- **`explorer` trocado para `hy4-flash-free` por bateria de latência (23/11/2026, ADR-0008 §"23/11/2026"):** o `mimo-v2.6-flash-free` **estourou o teto de 15 min com zero resposta** na mesma tarefa de papel (2ª vez; a 1ª foi remedida em 325 s na bateria 12×5). Como no papel todo modelo medido faz 6/6 âncoras de `withAuth`, a bateria mediu só latência, em cópia isolada: `hy4` fez 6/6 nas **duas** execuções com as lacunas da doc declaradas, em **63 s e 91 s**; `tidepool-alpha-free` fez 6/6 em 281 s (preterido); o `mimo` estourou de novo. `.opencode/oh-my-opencode-slim.json` (bloco `zen.explorer`) aponta para `opencode/hy4-flash-free` — vale no próximo start do host, e até lá o `npm run models:check` mostra a config antiga (lê o serviço; `opencode debug agents --standalone` já compila `hy4`). Retenção do provedor para o `hy4`: NÃO DETERMINADO (o `mimo` retinha e treinava — sem regressão comprovada).
+
 - **Visão Geral do `/admin` ampliada para 8 cartões/barras e ajustes de navegação pública (21/11/2026, commits `25081d9`, `c1dd831`, `c64424a`, `54ed1f3`):** `AdminDashboard` e `GET /api/admin/stats` passaram a incluir os cartões e barras de `Gestão de Vendas` (quebrados por pagamento e andamento) e `Produtos Internos`; na área pública, refinados ordenação/filtros e rolagem de paginação em `ProductList` e o botão Voltar em `pages/blog/[slug].js`.
 
 - **Validação local de ID tokens do Google via JWKS (`RS256`) sem novas dependências (19/11/2026, ADR-0042):**

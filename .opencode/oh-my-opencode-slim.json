@@ -321,18 +321,29 @@
       //                         medição do estreante de 21/10 — reavaliar em rodada futura;
       //                         não confundir com o gatilho de fila da observação de campo.
       //
-      // EXPLORER — 23/11/2026: `inkling-2-small-free` SAIU do catálogo. Entra o
+      // EXPLORER — 23/11/2026 (noite, bateria de latência): sai o `mimo-v2.6-flash-free`, entra o
+      // `hy4-flash-free`. Latência era o único critério em aberto: no papel, todo modelo medido
+      // faz 6/6 âncoras, então qualidade não separa. Medição de hoje, mesma tarefa
+      // (`scripts/bench/papeis`): `hy4` 6/6 nas DUAS execuções, com a Parte B declarando as
+      // lacunas da doc, em 63 s e 91 s; `tidepool-alpha-free` 6/6 em 281 s; `mimo` ESTOUROU o
+      // teto de 15 min com ZERO resposta — 2ª vez (a 1ª foi na bateria 12×5, remedida em 325 s).
+      // O hy4 é 3,5–5× mais rápido que o mimo remedido e não é primário nem reserva de outro papel.
+      // Custo aceito: estreante com duas execuções no papel e retenção do provedor NÃO
+      // DETERMINADO — o mimo retém e treina, então não há regressão comprovada, só ausência de
+      // verificação. Ver ADR-0008 §"23/11/2026".
+      //
+      // EXPLORER — 23/11/2026 (manhã): `inkling-2-small-free` SAIU do catálogo. Entrou o
       // `mimo-v2.6-flash-free`: 6/6 âncoras de `withAuth` na bateria 12×5 de 11/11, sem queda de
-      // cota — mas o 325 s é REMEDIÇÃO: a primeira execução estourou 600 s e foi repetida com
-      // teto de 15 min. Latência volátil; se o papel estourar tempo no campo, o próximo passo é
-      // medir latência antes de acerto, não trocar por palpite.
+      // cota — mas o 325 s era REMEDIÇÃO: a primeira execução estourou 600 s e foi repetida com
+      // teto de 15 min. Latência volátil; se o papel estourasse tempo no campo, o próximo passo
+      // seria medir latência antes do acerto, não trocar por palpite — foi o que esta bateria fez.
       // Preteridos por medição: `beam-free` (6/6 em 108 s, mas Parte B fica no mínimo — e ele
       // assumiu o oracle), `nemotron-3.5-super-vl` (484 s, foi para a reserva) e `flint`
       // (528 s, cota frágil). Custo aceito: ~3× o tempo do inkling (117 s), porque os modelos
       // 6/6 com Parte B detalhada estão todos em outro papel (`big-pickle` designer,
       // `iceman` fixer, `deepseek` orchestrator). O mimo retém e usa para treinar — o inkling
       // também retinha, então não há regressão de privacidade. Ver ADR-0008 §"23/11/2026".
-      "explorer":     { "model": "opencode/mimo-v2.6-flash-free" },
+      "explorer":     { "model": "opencode/hy4-flash-free" },
       // DESIGNER — 11/11/2026 (bateria 12×5): o crouton-alpha-free SAIU do catálogo — o id não
       // aparece mais em `opencode models`, e o papel estava parado desde então. Entra o
       // big-pickle: 0 erros verificáveis no gabarito atual em 53 s (o mais rápido do grupo de
