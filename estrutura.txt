@@ -596,6 +596,7 @@ tests/integration/api/admin/internal-products.test.js → lib/domain/audit.js
 tests/integration/api/admin/internal-products.test.js → lib/domain/products.js
 tests/integration/api/admin/internal-products.test.js → lib/infra/db.js
 tests/integration/api/admin/internal-products.test.js → pages/api/admin/internal-products.js
+tests/integration/api/admin/internal-products.test.js → tests/helpers/index.js
 tests/integration/api/admin/internal-products.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/musicas.test.js → lib/cache/cache.js
 tests/integration/api/admin/musicas.test.js → lib/crud/crud.js
@@ -612,6 +613,7 @@ tests/integration/api/admin/orders.test.js → lib/domain/orders.js
 tests/integration/api/admin/orders.test.js → lib/infra/db.js
 tests/integration/api/admin/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/admin/orders.test.js → pages/api/admin/orders.js
+tests/integration/api/admin/orders.test.js → tests/helpers/index.js
 tests/integration/api/admin/orders.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/posts.test.js → lib/cache/cache.js
 tests/integration/api/admin/posts.test.js → lib/crud/crud.js
@@ -658,6 +660,7 @@ tests/integration/api/auth/check.test.js → pages/api/auth/check.js
 tests/integration/api/auth/check.test.js → tests/mocks/cache.js
 tests/integration/api/auth/login.test.js → lib/auth/auth.js
 tests/integration/api/auth/login.test.js → lib/cache/cache.js
+tests/integration/api/auth/login.test.js → lib/infra/logger.js
 tests/integration/api/auth/login.test.js → pages/api/auth/login.js
 tests/integration/api/auth/logout.test.js → lib/infra/db.js
 tests/integration/api/auth/logout.test.js → pages/api/auth/logout.js
@@ -687,6 +690,7 @@ tests/integration/api/customer/orders.test.js → lib/auth/customer-auth.js
 tests/integration/api/customer/orders.test.js → lib/domain/orders.js
 tests/integration/api/customer/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/customer/orders.test.js → pages/api/customer/orders.js
+tests/integration/api/customer/orders.test.js → tests/helpers/index.js
 tests/integration/api/dicas.test.js → lib/cache/cache.js
 tests/integration/api/dicas.test.js → lib/infra/db.js
 tests/integration/api/dicas.test.js → lib/infra/logger.js
@@ -694,8 +698,9 @@ tests/integration/api/dicas.test.js → pages/api/dicas.js
 tests/integration/api/dicas.test.js → tests/mocks/db-module.js
 tests/integration/api/ip-diagnostico.test.js → lib/auth/auth.js
 tests/integration/api/ip-diagnostico.test.js → pages/api/ip-diagnostico.js
-tests/integration/api/login.test.js → lib/auth/auth.js
 tests/integration/api/login.test.js → lib/cache/cache.js
+tests/integration/api/login.test.js → lib/infra/db.js
+tests/integration/api/login.test.js → lib/infra/logger.js
 tests/integration/api/login.test.js → pages/api/auth/login.js
 tests/integration/api/musicas.flow.test.js → lib/domain/audit.js
 tests/integration/api/musicas.flow.test.js → lib/domain/musicas.js
@@ -956,6 +961,7 @@ tests/unit/lib/auth/customer-auth.test.js → lib/auth/auth.js
 tests/unit/lib/auth/customer-auth.test.js → lib/auth/customer-auth.js
 tests/unit/lib/auth/google-id-token.test.js → lib/auth/google-id-token.js
 tests/unit/lib/auth/google-id-token.test.js → lib/infra/logger.js
+tests/unit/lib/backup/backup.operations.test.js → tests/helpers/index.js
 tests/unit/lib/cache.test.js → lib/cache/cache.js
 tests/unit/lib/crud.test.js → lib/crud/crud.js
 tests/unit/lib/crud.test.js → lib/infra/db.js
@@ -1095,6 +1101,7 @@ tests/unit/scripts/schema-sources.test.js → lib/domain/shared-pagination.js
 tests/unit/scripts/seed-settings.test.js → tests/helpers/console.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/utils/adminSession.test.js → utils/adminSession.js
+tests/unit/utils/csvExport.test.js → utils/csvExport.js
 tests/unit/utils/reorder.test.js → utils/adminSession.js
 tests/unit/utils/reorder.test.js → utils/reorder.js
 tests/unit/utils/reorder.test.js → tests/helpers/index.js

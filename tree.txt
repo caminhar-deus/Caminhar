@@ -446,6 +446,7 @@
 │   │   │   └── seo
 │   │   │       ├── config.js.html
 │   │   │       └── index.html
+│   │   ├── login.js.html
 │   │   ├── pages
 │   │   │   └── api
 │   │   │       ├── admin
@@ -564,6 +565,7 @@
 │   │   └── seo
 │   │       ├── config.js.html
 │   │       └── index.html
+│   ├── login.js.html
 │   ├── pages
 │   │   └── api
 │   │       ├── admin
@@ -854,6 +856,7 @@
 ├── logs
 │   ├── coverage-output.log
 │   ├── eslint.log
+│   ├── github-actions-snapshot.json
 │   └── tests-output.log
 ├── next-sitemap.config.js
 ├── next.config.js
@@ -1110,12 +1113,14 @@
 │   │   ├── check-videos-schema.js
 │   │   ├── count-posts.js
 │   │   ├── diagnose-hero.js
+│   │   ├── github-actions-helper.js
 │   │   ├── lint-chars.js
 │   │   ├── lint-workflows.sh
 │   │   ├── list-last-posts.js
 │   │   ├── lsp-reusable-workflow.js
 │   │   ├── model-catalog.js
-│   │   └── repro-reusable-workflow.js
+│   │   ├── repro-reusable-workflow.js
+│   │   └── run-with-log.js
 │   ├── e2e-isolated.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
@@ -1505,6 +1510,7 @@
 │       │   ├── bench-isolation.test.js
 │       │   ├── bench-papeis-runner.test.js
 │       │   ├── bench-runner.test.js
+│       │   ├── check-github-actions.test.js
 │       │   ├── check-hardcoded-credentials.test.js
 │       │   ├── check-model-catalog.test.js
 │       │   ├── check-sql-injection.test.js
@@ -1533,9 +1539,11 @@
 │       ├── tests-hygiene
 │       │   ├── console-no-global-assignment.test.js
 │       │   ├── css-tokens.test.js
-│       │   └── jest-config.test.js
+│       │   ├── jest-config.test.js
+│       │   └── package-lock-sync.test.js
 │       ├── utils
 │       │   ├── adminSession.test.js
+│       │   ├── csvExport.test.js
 │       │   ├── reorder.test.js
 │       │   └── resolve-next.test.js
 │       └── videos.validation.test.js
@@ -1556,4 +1564,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1338 files
+219 directories, 1346 files

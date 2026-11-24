@@ -11,6 +11,7 @@ import {
   buildActionsSnapshot,
   buildRunsApiPath,
   evaluateActionsSnapshot,
+  extractErrorLinesFromJobLog,
   fetchRecentWorkflowRuns,
   formatLogMetaEnd,
   formatLogMetaStart,
@@ -18,6 +19,7 @@ import {
   parseLogMeta,
   summarizeEslintLog,
   summarizeJestLog,
+  summarizeRunsByWorkflow,
   summarizeWorkflowRuns,
 } from '../../../scripts/diagnostics/github-actions-helper.js';
 
@@ -348,6 +350,132 @@ describe('github-actions-helper e run-with-log', () => {
         evaluateActionsSnapshot('{json-invalido', { expectedRepo: 'caminhar-deus/Caminhar' }).valid
       ).toBe(false);
     });
+
+    it('extrai erros de alto sinal em logs do Jest e npm ci ignorando specs aprovados e npm help ci', () => {
+      const jestRawLog = [
+        '2026-11-18T20:20:34.3552493Z       ✓ em erro devolve fetchError com lista vazia (1 ms)',
+        '2026-11-18T20:20:41.8935150Z     ✓ hook useToast deve suportar o status error (4 ms)',
+        '2026-11-18T20:21:17.9672286Z       ✓ deve retornar [] para JSON inválido (fail-closed, sem lançar) (1 ms)',
+        '2026-11-18T20:22:06.0582328Z Summary of all failing tests',
+        '2026-11-18T20:22:06.0584439Z FAIL tests/unit/scripts/bench-ground-truth.test.js',
+        '2026-11-18T20:22:06.0590000Z   ● Canário de ground truth › valida fatos',
+        '2026-11-18T20:22:06.0600000Z     Expected: 10',
+        '2026-11-18T20:22:06.0610000Z     Received: 9',
+        '2026-11-18T20:22:06.0625738Z Test Suites: 1 failed, 8 skipped, 232 passed, 233 of 241 total',
+        '2026-11-18T20:22:06.0626423Z Tests:       1 failed, 96 skipped, 1940 passed, 2037 total',
+        '2026-11-18T20:22:06.5758435Z ##[error]Process completed with exit code 1.',
+        '2026-11-18T20:22:06.5760000Z ##[end-action id=__self.__run;outcome=failure;conclusion=failure;duration_ms=100]',
+      ].join('\n');
+
+      const jestErrors = extractErrorLinesFromJobLog(jestRawLog, 15);
+      expect(jestErrors.some((line) => line.includes('✓'))).toBe(false);
+      expect(jestErrors.some((line) => line.includes('##[end-action'))).toBe(false);
+      expect(jestErrors.some((line) => line.includes('FAIL tests/unit/scripts/bench-ground-truth.test.js'))).toBe(true);
+      expect(jestErrors.some((line) => line.includes('Expected: 10'))).toBe(true);
+      expect(jestErrors.some((line) => line.includes('##[error]Process completed with exit code 1.'))).toBe(true);
+
+      const npmCiRawLog = [
+        '2026-11-24T00:49:05.1000000Z npm error code EUSAGE',
+        '2026-11-24T00:49:05.1010000Z npm error',
+        '2026-11-24T00:49:05.1020000Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.',
+        '2026-11-24T00:49:05.1030000Z npm error',
+        '2026-11-24T00:49:05.1040000Z npm error Missing: foo@1.0.0 from lock file',
+        '2026-11-24T00:49:05.1050000Z npm error',
+        '2026-11-24T00:49:05.1060000Z npm error Usage: npm ci',
+        '2026-11-24T00:49:05.2354867Z npm error   --workspaces',
+        '2026-11-24T00:49:05.2355545Z npm error     Set to true to run the command in the context of **all** configured',
+        '2026-11-24T00:49:05.2360869Z npm error aliases: clean-install, ic, install-clean, isntall-clean',
+        '2026-11-24T00:49:05.2361987Z npm error Run "npm help ci" for more info',
+        '2026-11-24T00:49:05.2905240Z ##[error]Process completed with exit code 1.',
+      ].join('\n');
+
+      const npmErrors = extractErrorLinesFromJobLog(npmCiRawLog, 15);
+      expect(npmErrors.some((line) => line.includes('code EUSAGE'))).toBe(true);
+      expect(npmErrors.some((line) => line.includes('in sync'))).toBe(true);
+      expect(npmErrors.some((line) => line.includes('Missing: foo@1.0.0'))).toBe(true);
+      expect(npmErrors.some((line) => line.includes('aliases:'))).toBe(false);
+      expect(npmErrors.some((line) => line.includes('--workspaces'))).toBe(false);
+      expect(npmErrors.some((line) => line.includes('Run "npm help ci"'))).toBe(false);
+
+      const manyLines = Array.from({ length: 10 }, (_, idx) => `FAIL suite-${idx}.test.js`).join('\n');
+      const capped = extractErrorLinesFromJobLog(manyLines, 4);
+      expect(capped).toEqual([
+        'FAIL suite-0.test.js',
+        'FAIL suite-1.test.js',
+        'FAIL suite-8.test.js',
+        'FAIL suite-9.test.js',
+      ]);
+    });
+
+    it('agrega execuções por workflow ordenadas pelo último run', () => {
+      const grouped = summarizeRunsByWorkflow([
+        {
+          id: 10,
+          run_number: 100,
+          name: 'E2E Isolated (Cypress)',
+          event: 'push',
+          conclusion: 'failure',
+          status: 'completed',
+          created_at: '2026-11-23T23:51:43Z',
+          head_commit: { id: 'ae84c1870000' },
+        },
+        {
+          id: 11,
+          run_number: 101,
+          name: 'E2E Isolated (Cypress)',
+          event: 'push',
+          conclusion: 'success',
+          status: 'completed',
+          created_at: '2026-11-24T11:22:00Z',
+          head_commit: { id: '0ab2716e0000' },
+        },
+        {
+          id: 12,
+          run_number: 52,
+          name: 'Load Tests (k6)',
+          event: 'schedule',
+          conclusion: 'success',
+          status: 'completed',
+          created_at: '2026-11-24T14:55:04Z',
+          head_commit: { id: '0ab2716e0000' },
+        },
+      ]);
+
+      expect(grouped).toEqual([
+        {
+          name: 'Load Tests (k6)',
+          total: 1,
+          success: 1,
+          failure: 0,
+          other: 0,
+          latest: {
+            run_number: 52,
+            id: 12,
+            conclusion: 'success',
+            status: 'completed',
+            event: 'schedule',
+            created_at: '2026-11-24T14:55:04Z',
+            sha: '0ab2716e',
+          },
+        },
+        {
+          name: 'E2E Isolated (Cypress)',
+          total: 2,
+          success: 1,
+          failure: 1,
+          other: 0,
+          latest: {
+            run_number: 101,
+            id: 11,
+            conclusion: 'success',
+            status: 'completed',
+            event: 'push',
+            created_at: '2026-11-24T11:22:00Z',
+            sha: '0ab2716e',
+          },
+        },
+      ]);
+    });
   });
 
   describe('check-github-actions.js (CLI offline e contingência por snapshot)', () => {
@@ -394,6 +522,8 @@ describe('github-actions-helper e run-with-log', () => {
         );
 
         expect(output).toContain('FONTE: SNAPSHOT LOCAL (logs/custom-snap.json');
+        expect(output).toContain('Resumo por workflow (últimos 7 dias):');
+        expect(output).toContain('Lint & Test Coverage Gate: 1 execuções (1 OK, 0 falha(s))');
         expect(output).toContain('Run #99 (ID: 501)');
         expect(output).toContain('Nenhuma falha identificada');
 

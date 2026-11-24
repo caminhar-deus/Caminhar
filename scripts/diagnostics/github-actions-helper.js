@@ -6,7 +6,28 @@
 export const DEFAULT_ACTIONS_SNAPSHOT_REL = 'logs/github-actions-snapshot.json';
 export const DEFAULT_MAX_SNAPSHOT_AGE_HOURS = 24;
 
-const SPEC_RESULT_LINE_RE = /^\s*(?:✓|✕|×|○)\s/;
+const SPEC_RESULT_LINE_RE = /^\s*(?:✓|✔|✕|×|○)\s/;
+const GH_LOG_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s+/;
+const NOISE_SPEC_LINE_RE = /^(?:✓|✔|○)\s/;
+const NOISE_NPM_BLANK_RE = /^npm (?:ERR!|error)\s*$/i;
+const NOISE_NPM_HELP_RE = /^npm (?:ERR!|error)\s+(?:--\S|\s{2,}|aliases:|Run "npm help|Usage:|See:|For more info)/i;
+const NOISE_GH_MARKER_RE = /^##\[(?:end-action|group|endgroup|debug)\]/i;
+const CANDIDATE_ERROR_RE = /error|fail|exception|fatal|reprov|eusage|assertion|expected:|received:|^\s*●\s|^\s*(?:✕|×)\s/i;
+const HIGH_SIGNAL_ERROR_RE = new RegExp(
+  [
+    '^npm (?:ERR!|error)\\s+(?:code\\s+|`?npm ci|Invalid:|Missing:|Cannot\\b|ERESOLVE|EUSAGE|.*\\bin sync\\b)',
+    '^FAIL\\s',
+    '^\\s*●\\s',
+    '^\\s*(?:✕|×)\\s',
+    '^\\s*(?:Expected|Received):',
+    '^##\\[error\\]',
+    '^Test Suites:.*failed',
+    '^Tests:.*failed',
+    'Summary of all failing tests',
+    '(?:AssertionError|TypeError|ReferenceError|SyntaxError):',
+  ].join('|'),
+  'i'
+);
 
 /**
  * Monta o caminho da API REST de workflow runs do GitHub filtrado pela data inicial.
@@ -191,6 +212,102 @@ export function summarizeWorkflowRuns(recentRuns = []) {
   }
 
   return { runsByConclusion, failedRuns };
+}
+
+/**
+ * Extrai as linhas mais relevantes de erro de um log bruto de job do GitHub Actions,
+ * descartando specs aprovados do Jest, ajuda CLI do npm e marcadores internos.
+ * @param {string} rawLog
+ * @param {number} [limit=15]
+ * @returns {string[]}
+ */
+export function extractErrorLinesFromJobLog(rawLog, limit = 15) {
+  const maxLines = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 15;
+  if (maxLines === 0) return [];
+
+  const candidates = [];
+  const highSignal = [];
+
+  for (const rawLine of String(rawLog || '').split(/\r?\n/)) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) continue;
+
+    const body = trimmed.replace(GH_LOG_TIMESTAMP_RE, '').trim();
+    if (!body) continue;
+
+    if (
+      NOISE_NPM_BLANK_RE.test(body)
+      || NOISE_SPEC_LINE_RE.test(body)
+      || /^PASS\s/.test(body)
+      || NOISE_NPM_HELP_RE.test(body)
+      || NOISE_GH_MARKER_RE.test(body)
+    ) {
+      continue;
+    }
+
+    if (!CANDIDATE_ERROR_RE.test(body)) continue;
+
+    candidates.push(trimmed);
+    if (HIGH_SIGNAL_ERROR_RE.test(body)) {
+      highSignal.push(trimmed);
+    }
+  }
+
+  const chosen = highSignal.length > 0 ? highSignal : candidates;
+  if (chosen.length <= maxLines) {
+    return chosen;
+  }
+
+  const headCount = Math.ceil(maxLines / 2);
+  const tailCount = maxLines - headCount;
+  return [
+    ...chosen.slice(0, headCount),
+    ...(tailCount > 0 ? chosen.slice(-tailCount) : []),
+  ];
+}
+
+/**
+ * Agrega execuções recentes por workflow mantendo totais e metadados do último run.
+ * @param {Array<Object>} [recentRuns=[]]
+ * @returns {Array<{name: string, total: number, success: number, failure: number, other: number, latest: Object|null}>}
+ */
+export function summarizeRunsByWorkflow(recentRuns = []) {
+  const groups = new Map();
+
+  for (const run of Array.isArray(recentRuns) ? recentRuns : []) {
+    if (!run || typeof run !== 'object') continue;
+    const name = run.name || 'unknown';
+    let entry = groups.get(name);
+    if (!entry) {
+      entry = { name, total: 0, success: 0, failure: 0, other: 0, latest: null };
+      groups.set(name, entry);
+    }
+
+    entry.total += 1;
+    if (run.conclusion === 'success') entry.success += 1;
+    else if (run.conclusion === 'failure') entry.failure += 1;
+    else entry.other += 1;
+
+    const runCreatedAt = String(run.created_at || '');
+    const latestCreatedAt = String(entry.latest?.created_at || '');
+    if (!entry.latest || runCreatedAt > latestCreatedAt) {
+      entry.latest = {
+        run_number: run.run_number ?? null,
+        id: run.id ?? null,
+        conclusion: run.conclusion ?? null,
+        status: run.status ?? null,
+        event: run.event ?? null,
+        created_at: run.created_at ?? null,
+        sha: run.head_commit?.id ? String(run.head_commit.id).slice(0, 8) : null,
+      };
+    }
+  }
+
+  return Array.from(groups.values()).sort(
+    (a, b) =>
+      String(b.latest?.created_at || '').localeCompare(String(a.latest?.created_at || ''))
+      || a.name.localeCompare(b.name)
+  );
 }
 
 function sanitizeWorkflowRun(run) {

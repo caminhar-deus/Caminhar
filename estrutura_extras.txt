@@ -646,6 +646,7 @@ scripts/validate-schema.js → scripts/db/connection.js
 scripts/validate-schema.js → scripts/utils/load-env.js
 scripts/create-backup.js → scripts/backup.js
 scripts/create-backup.js → scripts/utils/load-env.js
+scripts/diagnostics/check-github-actions.js → scripts/diagnostics/github-actions-helper.js
 scripts/diagnostics/check-model-catalog.js → scripts/diagnostics/model-catalog.js
 scripts/diagnostics/check-musicas-schema.js → lib/infra/db.js
 scripts/diagnostics/check-videos-schema.js → lib/infra/db.js
@@ -653,6 +654,7 @@ scripts/diagnostics/count-posts.js → lib/infra/db.js
 scripts/diagnostics/count-posts.js → scripts/utils/constants.js
 scripts/diagnostics/diagnose-hero.js → lib/infra/db.js
 scripts/diagnostics/list-last-posts.js → lib/infra/db.js
+scripts/diagnostics/run-with-log.js → scripts/diagnostics/github-actions-helper.js
 scripts/generate-load-report.js → scripts/utils/constants.js
 scripts/init-backup.js → scripts/backup.js
 scripts/init-server.js → lib/auth/auth.js
@@ -810,6 +812,7 @@ tests/integration/api/admin/internal-products.test.js → lib/domain/audit.js
 tests/integration/api/admin/internal-products.test.js → lib/domain/products.js
 tests/integration/api/admin/internal-products.test.js → lib/infra/db.js
 tests/integration/api/admin/internal-products.test.js → pages/api/admin/internal-products.js
+tests/integration/api/admin/internal-products.test.js → tests/helpers/index.js
 tests/integration/api/admin/internal-products.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/musicas.test.js → lib/cache/cache.js
 tests/integration/api/admin/musicas.test.js → lib/crud/crud.js
@@ -826,6 +829,7 @@ tests/integration/api/admin/orders.test.js → lib/domain/orders.js
 tests/integration/api/admin/orders.test.js → lib/infra/db.js
 tests/integration/api/admin/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/admin/orders.test.js → pages/api/admin/orders.js
+tests/integration/api/admin/orders.test.js → tests/helpers/index.js
 tests/integration/api/admin/orders.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/posts.test.js → lib/cache/cache.js
 tests/integration/api/admin/posts.test.js → lib/crud/crud.js
@@ -872,6 +876,7 @@ tests/integration/api/auth/check.test.js → pages/api/auth/check.js
 tests/integration/api/auth/check.test.js → tests/mocks/cache.js
 tests/integration/api/auth/login.test.js → lib/auth/auth.js
 tests/integration/api/auth/login.test.js → lib/cache/cache.js
+tests/integration/api/auth/login.test.js → lib/infra/logger.js
 tests/integration/api/auth/login.test.js → pages/api/auth/login.js
 tests/integration/api/auth/logout.test.js → lib/infra/db.js
 tests/integration/api/auth/logout.test.js → pages/api/auth/logout.js
@@ -901,6 +906,7 @@ tests/integration/api/customer/orders.test.js → lib/auth/customer-auth.js
 tests/integration/api/customer/orders.test.js → lib/domain/orders.js
 tests/integration/api/customer/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/customer/orders.test.js → pages/api/customer/orders.js
+tests/integration/api/customer/orders.test.js → tests/helpers/index.js
 tests/integration/api/dicas.test.js → lib/cache/cache.js
 tests/integration/api/dicas.test.js → lib/infra/db.js
 tests/integration/api/dicas.test.js → lib/infra/logger.js
@@ -908,8 +914,9 @@ tests/integration/api/dicas.test.js → pages/api/dicas.js
 tests/integration/api/dicas.test.js → tests/mocks/db-module.js
 tests/integration/api/ip-diagnostico.test.js → lib/auth/auth.js
 tests/integration/api/ip-diagnostico.test.js → pages/api/ip-diagnostico.js
-tests/integration/api/login.test.js → lib/auth/auth.js
 tests/integration/api/login.test.js → lib/cache/cache.js
+tests/integration/api/login.test.js → lib/infra/db.js
+tests/integration/api/login.test.js → lib/infra/logger.js
 tests/integration/api/login.test.js → pages/api/auth/login.js
 tests/integration/api/musicas.flow.test.js → lib/domain/audit.js
 tests/integration/api/musicas.flow.test.js → lib/domain/musicas.js
@@ -1175,6 +1182,7 @@ tests/unit/lib/backup/backup.available.test.js → scripts/backup.js
 tests/unit/lib/backup/backup.cleanup.test.js → scripts/backup.js
 tests/unit/lib/backup/backup.logs.test.js → scripts/backup.js
 tests/unit/lib/backup/backup.operations.test.js → scripts/backup.js
+tests/unit/lib/backup/backup.operations.test.js → tests/helpers/index.js
 tests/unit/lib/cache.test.js → lib/cache/cache.js
 tests/unit/lib/crud.test.js → lib/crud/crud.js
 tests/unit/lib/crud.test.js → lib/infra/db.js
@@ -1318,6 +1326,7 @@ tests/unit/scripts/bench-isolation.test.js → scripts/bench/runner-comum.js
 tests/unit/scripts/bench-papeis-runner.test.js → tests/helpers/esperar-arquivo.js
 tests/unit/scripts/bench-runner.test.js → scripts/bench/runner-comum.js
 tests/unit/scripts/bench-runner.test.js → tests/helpers/esperar-arquivo.js
+tests/unit/scripts/check-github-actions.test.js → scripts/diagnostics/github-actions-helper.js
 tests/unit/scripts/check-hardcoded-credentials.test.js → scripts/check-hardcoded-credentials.js
 tests/unit/scripts/check-model-catalog.test.js → scripts/diagnostics/model-catalog.js
 tests/unit/scripts/check-sql-injection.test.js → scripts/check-sql-injection.js
@@ -1356,6 +1365,7 @@ tests/unit/scripts/validate-schema.test.js → scripts/validate-schema.js
 tests/unit/scripts/verify-mp-webhook.test.js → scripts/maintenance/verify-mp-webhook.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/utils/adminSession.test.js → utils/adminSession.js
+tests/unit/utils/csvExport.test.js → utils/csvExport.js
 tests/unit/utils/reorder.test.js → utils/adminSession.js
 tests/unit/utils/reorder.test.js → utils/reorder.js
 tests/unit/utils/reorder.test.js → tests/helpers/index.js

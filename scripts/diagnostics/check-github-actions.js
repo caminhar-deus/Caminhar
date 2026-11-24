@@ -13,10 +13,12 @@ import {
   DEFAULT_ACTIONS_SNAPSHOT_REL,
   buildActionsSnapshot,
   evaluateActionsSnapshot,
+  extractErrorLinesFromJobLog,
   fetchRecentWorkflowRuns,
   parseDiagnosticsCliArgs,
   summarizeEslintLog,
   summarizeJestLog,
+  summarizeRunsByWorkflow,
   summarizeWorkflowRuns,
 } from './github-actions-helper.js';
 
@@ -225,11 +227,7 @@ async function collectFailedRunDetails(failedRuns) {
         if (job.conclusion === 'failure') {
           const logsRes = await requestGitHub(`/repos/${REPO}/actions/jobs/${job.id}/logs`);
           if (logsRes.statusCode === 200 && logsRes.data) {
-            const lines = logsRes.data.split('\n');
-            tailErrors = lines
-              .filter((line) => /error|fail|exception|fatal|reprov/i.test(line))
-              .slice(-15)
-              .map((line) => line.trim());
+            tailErrors = extractErrorLinesFromJobLog(logsRes.data, 15);
           }
         }
 
@@ -284,6 +282,26 @@ function printRunsReport({
     console.log(`  ${icon} ${status}: ${count}`);
   }
   console.log('');
+
+  const workflowSummaries = summarizeRunsByWorkflow(recentRuns);
+  if (workflowSummaries.length > 0) {
+    console.log('📌 Resumo por workflow (últimos 7 dias):');
+    for (const wf of workflowSummaries) {
+      const latestConc = wf.latest?.conclusion || wf.latest?.status || 'unknown';
+      const wfIcon = latestConc === 'success' ? '✅' : latestConc === 'failure' ? '❌' : '⚠️';
+      const parts = [`${wf.success} OK`, `${wf.failure} falha(s)`];
+      if (wf.other > 0) parts.push(`${wf.other} outro(s)`);
+      const latestParts = [
+        `#${wf.latest?.run_number ?? '?'}`,
+        latestConc,
+        wf.latest?.sha || null,
+        wf.latest?.event || null,
+        wf.latest?.created_at || null,
+      ].filter(Boolean);
+      console.log(`  ${wfIcon} ${wf.name}: ${wf.total} execuções (${parts.join(', ')}) | último: ${latestParts.join(', ')}`);
+    }
+    console.log('');
+  }
 
   console.log('📋 Lista das execuções dos últimos 7 dias:');
   for (const run of recentRuns) {
