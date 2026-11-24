@@ -1884,8 +1884,10 @@ vão atuar. Nenhum primário repete id e a reserva não é primário de outro ag
 - **Privacidade:** o `oracle` e o `small_model` saem de zero-retention (`minimax`) para o
   `beam`, que **não treina e retém 30 dias** (fonte de 12/11). O único free zero-retention
   **conhecido** que sobrou é o `deepseek`, primário do orchestrator — dividir a cota dele com
-  títulos é pior para o papel mais crítico. O `explorer` troca `inkling` por `mimo`; os dois
-  retêm e treinam, sem regressão.
+  títulos é pior para o papel mais crítico. O `explorer` troca `inkling` (retém e treina) por
+  `mimo` (idem) e, na noite desta data, por `hy4`, cuja retenção é **NÃO DETERMINADA** — sem
+  regressão comprovada, mas sem verificação. Quadro vigente e decisão de aceitar a regressão
+  em "Negativas e riscos".
 
 ### Bateria de latência do `explorer` (23/11/2026, noite)
 
@@ -2065,18 +2067,31 @@ as camadas antes de resolver. A mitigação é declarar no projeto todo preset u
 
 ### Negativas e riscos
 
-- **Três dos cinco papéis enviam código a provedor que retém e treina — conferido em
-  12/11/2026.** `designer` (`big-pickle`), `explorer` (`inkling`) e `fixer` (`iceman`) estão
-  na lista de exceções da política do provedor; `orchestrator` (`deepseek`/`glm`) e `oracle`
-  (`minimax`) são zero-retention, e o `small_model` passou a `minimax` na mesma data. Ver
-  "12/11/2026". A garantia é declaração do fornecedor, não auditável neste repositório; para
-  código sensível, o risco está aceito e registrado. **Atualizado em 23/11/2026:** com a saída
-  de `minimax`/`inkling`/`glm`, o `oracle` e o `small_model` passaram ao `beam` (não treina,
-  retém 30 dias) e o `explorer` ao `mimo` (retém e treina); a nova **reserva**
-  (`nemotron-3.5-super-vl-free`) também retém e usa para treinar, mas só entra em erro de
-  failover. Detalhe na seção "23/11/2026". **Na noite da mesma data** o `explorer` passou ao
-  `hy4-flash-free` por latência medida; a retenção do `hy4` é **NÃO DETERMINADA** (o `mimo`
-  retinha e treinava), então não há regressão comprovada nem verificação — mesma seção.
+- **Privacidade: a distribuição de 23/11 piorou de propósito, e o risco fica aceito.** O
+  `minimax` (zero-retention) saiu do catálogo e o `oracle`/`small_model` foram para o `beam`,
+  que não treina mas **retém 30 dias**; o `explorer` passou por `mimo` (retém e treina) e
+  chegou ao `hy4`, de retenção **NÃO DETERMINADA**. Quadro dos seis ids em uso — fonte
+  `opencode.ai/console/models`, lida em 12/11/2026; `hy4` entrou depois e segue sem fato:
+
+  | id | papel | política declarada |
+  |---|---|---|
+  | `deepseek-v4.1-flash-free` | `orchestrator` | zero-retention, sem treinamento |
+  | `beam-free` | `oracle` e `small_model` | não treina; retém 30 dias |
+  | `hy4-flash-free` | `explorer` | **NÃO DETERMINADO** |
+  | `big-pickle` | `designer` | dados podem ser usados para melhorar o modelo |
+  | `iceman-free` | `fixer` | retido e usado para melhorar o modelo |
+  | `nemotron-3.5-super-vl-free` | reserva do `orchestrator` | retém e/ou usa para melhorar (só em failover) |
+
+  **Por que não reverter:** o único free zero-retention **conhecido** que restou é o
+  `deepseek`, primário do `orchestrator` — dividir a cota dele com títulos piora o papel mais
+  crítico. Não há substituto free zero-retention para `oracle`/`small_model` no catálogo, e
+  trocar o `oracle` por outro id de retenção conhecida não muda a classe do risco.
+  **O que o risco significa na prática:** o texto do prompt (o título da sessão é derivado
+  dele) e o código lido pelos papéis acima saem para provedor que declara retenção; segredos
+  não entram em prompt por regra (`AGENTS.md` §3/§6). A declaração do fornecedor não é
+  auditável neste repositório: reconferir a página do Console a cada troca de id — `hy4`,
+  `tidepool` e os demais estreantes estão sem verificação. O histórico da leitura de 12/11
+  está na seção "12/11/2026".
 - **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
   assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
   quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior
