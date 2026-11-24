@@ -1932,6 +1932,42 @@ mas a promoção acontece com 2/2; (b) a **retenção do provedor para o `hy4` �
 `small_model` (`opencode.jsonc`) segue `opencode/beam-free`; o `model` da sessão segue o
 primário do `orchestrator`.
 
+### `oracle` e `small_model` no mesmo id: gatilho avaliado (23/11/2026, noite)
+
+O `oracle` e o `small_model` apontam para `beam-free` desde a realocação de 23/11 (commit
+`084568e`), quando o `minimax` saiu do catálogo. A cota é **por modelo**, então o par compartilha
+o limite; o critério registrado para separar é 429 em título/revisão, e ele **não disparou**.
+(O precedente de 12/11 — o `minimax` acumulando os dois — terminou quando o id saiu do catálogo,
+não por 429.)
+
+- nos 18 logs do host (`~/.local/share/opencode/log/oh-my-opencode-slim.*.log`, de 17/11 até
+  agora) os únicos eventos de erro de provedor registrados pelo hook de retry são **dois
+  `provider.free-limit`**, ambos no `orchestrator` (`deepseek` + reserva), em 23/11 18:28Z e
+  24/11 00:30Z. Nenhum no `beam` em revisão. O segundo estourou os **dois** elos da cadeia
+  (`spent quota on every chain provider`), o que mostra onde a pressão de cota está.
+- **O lado “título” do gatilho não é observável nesses logs:** a geração de título é do host e
+  não passa pelo hook de retry (o `opencode.log` só registra `--title` de CLI). Esse lado se
+  confirma pelo sintoma visível (título não gerado/erro ao titular a sessão), não pela busca.
+- Rechecagem do lado “revisão”: `grep -h "provider.free-limit" ~/.local/share/opencode/log/oh-my-opencode-slim.*.log`.
+
+**Decisão: manter o id compartilhado até o gatilho.** O `small_model` faz ~1 chamada por sessão
+(título derivado do prompt) e o `oracle` é ocasional; não há evidência de disputa. Separar custa
+algo em qualquer direção:
+
+1. **Id livre, sem papel** — `tidepool-alpha-free`, `nemotron-3.5-lightning-free`, `flint-40b-free`
+   e `mimo-v2.6-flash-free` (liberado pelo `explorer` na noite de hoje). Resolve a cota sem
+   tocar papel crítico, mas a retenção desses ids é **NÃO DETERMINADA** (só o `mimo` tem fato:
+   retém e **treina**), então exige conferir a página de modelos do Console antes de apontar; o
+   `flint` é ainda frágil de cota (três quedas em 11/11). O `mimo` é o candidato tecnicamente
+   mais barato e o pior em privacidade — título carrega texto do prompt.
+2. **`deepseek-v4.1-flash-free`** — o único free zero-retention **conhecido** que sobrou, mas é
+   o primário do `orchestrator` e é justamente quem estourou a cota nas duas ocorrências acima:
+   dividir a cota dele com títulos piora o papel mais crítico. Rejeitado salvo se 1 não servir.
+3. **Modelo pago ou local** — sai da premissa FREE deste ADR; decisão à parte.
+
+Quando disparar, a ação é trocar **só** o `small_model` (`opencode.jsonc`, não é papel, então
+não fere a regra de não repetir id entre primários) e registrar qual id absorveu e por quê.
+
 ### Alternativas descartadas
 
 - **Zerar só os dois limites (`= 0`).** Passa no doctor, mas deixa cinco avisos de chaves
