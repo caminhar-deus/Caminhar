@@ -7,13 +7,18 @@
  * exercitada no dia em que alguém confia num id morto.
  */
 import { describe, it, expect } from '@jest/globals';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import {
   agentModels,
+  debugAgentsArgs,
+  exitCodeForReadStatus,
   expectedAgents,
   formatCatalogReadError,
   missingModels,
   parseCatalog,
   parseJsonc,
+  parseModeArgs,
   presetModels,
 } from '../../../scripts/diagnostics/model-catalog.js';
 
@@ -183,5 +188,46 @@ describe('formatCatalogReadError', () => {
         '  conferir: `opencode debug agents` e `opencode models` respondem?',
       ],
     });
+  });
+});
+
+describe('portabilidade do preflight', () => {
+  it('lê a config do disco por padrão e o serviço só quando pedido', () => {
+    expect(parseModeArgs([])).toEqual({ modo: 'standalone', erro: null });
+    expect(parseModeArgs(['--standalone'])).toEqual({ modo: 'standalone', erro: null });
+    expect(parseModeArgs(['--service'])).toEqual({ modo: 'service', erro: null });
+  });
+
+  it('rejeita flag desconhecida e as duas fontes ao mesmo tempo', () => {
+    expect(parseModeArgs(['--turbo']).erro).toContain('--turbo');
+    expect(parseModeArgs(['--standalone', '--service']).erro).toContain('OU');
+  });
+
+  it('monta `debug agents` com --standalone fora do modo serviço', () => {
+    expect(debugAgentsArgs('standalone')).toEqual(['debug', 'agents', '--standalone']);
+    expect(debugAgentsArgs('service')).toEqual(['debug', 'agents']);
+  });
+
+  it('separa "não verificado" (2) de falha real (1) no código de saída', () => {
+    expect(exitCodeForReadStatus('NAO_VERIFICADO')).toBe(2);
+    expect(exitCodeForReadStatus('ERRO')).toBe(1);
+  });
+
+  it('sai 2 com "NÃO VERIFICADO" quando o CLI opencode não está no PATH', () => {
+    const script = path.join(process.cwd(), 'scripts', 'diagnostics', 'check-model-catalog.js');
+    let erro;
+    try {
+      execFileSync(process.execPath, [script], {
+        encoding: 'utf8',
+        env: { ...process.env, PATH: '' },
+        stdio: 'pipe',
+      });
+    } catch (capturado) {
+      erro = capturado;
+    }
+
+    expect(erro?.status).toBe(2);
+    expect(erro?.stderr).toContain('status: NÃO VERIFICADO');
+    expect(erro?.stderr).toContain('spawnSync opencode ENOENT');
   });
 });

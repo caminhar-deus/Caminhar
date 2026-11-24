@@ -157,6 +157,47 @@ export function presetModels(config) {
 }
 
 /**
+ * Modo de leitura da config compilada, escolhido na linha de comando.
+ *
+ * `standalone` (padrão) sobe um servidor privado e compila a config DO DISCO — é o
+ * modo portátil: não depende do serviço em execução nem do restart, então funciona
+ * logo depois de editar o preset e fora do host (CI, outra máquina).
+ *
+ * `service` lê a config que o serviço de fundo já compilou — só faz sentido para
+ * confirmar o que o host está usando AGORA, depois do restart.
+ *
+ * @param {string[]} [argv] Argumentos depois do nome do script (`process.argv.slice(2)`).
+ * @returns {{ modo: 'standalone'|'service'|null, erro: string|null }}
+ */
+export function parseModeArgs(argv = []) {
+  const flags = argv.filter((arg) => arg.startsWith('-'));
+  const desconhecidas = flags.filter((arg) => arg !== '--standalone' && arg !== '--service');
+  if (desconhecidas.length > 0) {
+    return { modo: null, erro: `argumento(s) desconhecido(s): ${desconhecidas.join(', ')}` };
+  }
+  if (flags.includes('--standalone') && flags.includes('--service')) {
+    return { modo: null, erro: 'use --standalone OU --service, não os dois' };
+  }
+  return { modo: flags.includes('--service') ? 'service' : 'standalone', erro: null };
+}
+
+/** Argumentos de `opencode debug agents` para o modo escolhido. */
+export function debugAgentsArgs(modo = 'standalone') {
+  return modo === 'service' ? ['debug', 'agents'] : ['debug', 'agents', '--standalone'];
+}
+
+/** Código de saída de "não verificado" (CLI ausente), distinto de erro real (1). */
+export const EXIT_NAO_VERIFICADO = 2;
+
+/**
+ * Código de saída por status da leitura do catálogo: `NAO_VERIFICADO` → 2 (o
+ * ambiente não permite verificar, não é defeito do projeto) e qualquer outro → 1.
+ */
+export function exitCodeForReadStatus(status) {
+  return status === 'NAO_VERIFICADO' ? EXIT_NAO_VERIFICADO : 1;
+}
+
+/**
  * Formata a falha de leitura do catálogo vivo do OpenCode diferenciando
  * ausência do binário (`ENOENT` → `NAO_VERIFICADO`) de erros reais da CLI (`ERRO`).
  *

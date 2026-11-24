@@ -519,7 +519,7 @@ Autorização do operador: implementar o tratamento das 7 ocorrências da seçã
 | 4 | Pedido local dessincronizado sem webhook (ADR-0041) | `f46ebf4` (reconciliação ativa) | Nenhuma: já documentada no §3.5 e no §7, item 23, do Site Público e no §4.8 do Site Privado | **Resolvida** (sem ação) |
 | 5 | Falso negativo do `pontuar.js` com citação em tabela | `fccb2a4` e `c35e393` | Nenhuma: instrumento de bench, documentado no ADR-0008 e em `scripts/bench/orchestrator/LEIA-ME.md` | **Resolvida** (sem ação) |
 | 6 | Bench lia a memória das execuções anteriores | `83be1f6` (`exigirIsolamentoDeBench`, fail-closed antes do spawn) | Nenhuma: a guarda no código já bloqueia; uma regra no `AGENTS.md` duplicaria a proteção e gastaria contexto em toda sessão | **Resolvida** (sem ação) |
-| 7 | `npm run models:check` falha com `ENOENT` fora do host do OpenCode | — (limitação de ambiente, não defeito) | `AGENTS.md` §0.3, passo 6: `ENOENT` = "não verificado", nunca "aprovado"; não substituir por testes unitários. O passo também passou a citar a cadeia de reserva, validada desde `c35e393` | **Resolvida** (instrução corrigida) |
+| 7 | `npm run models:check` falha com `ENOENT` fora do host do OpenCode | `--standalone` como padrão + código de saída `2` (23/11/2026) | `AGENTS.md` §0.3, passo 6: `ENOENT` = "não verificado" (saída `2`, distinta de falha real `1`), nunca "aprovado"; não substituir por testes unitários. O preflight lê a config **do disco** (`--standalone`, padrão) e `--service` mostra o host em execução. O passo também cita a cadeia de reserva, validada desde `c35e393` | **Resolvida** (instrução e código) |
 
 ### 25.2. Status das oportunidades da seção 16
 

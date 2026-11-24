@@ -1968,6 +1968,36 @@ algo em qualquer direção:
 Quando disparar, a ação é trocar **só** o `small_model` (`opencode.jsonc`, não é papel, então
 não fere a regra de não repetir id entre primários) e registrar qual id absorveu e por quê.
 
+### Portabilidade do preflight (23/11/2026, noite)
+
+`npm run models:check` tinha duas dependências de ambiente que o tornavam pouco útil
+justamente quando importa — em outra máquina, na CI e imediatamente depois de editar o preset:
+
+1. **Serviço em execução.** A leitura de `opencode debug agents` sem flag usa a config
+   compilada do serviço de fundo, que o slim só recarrega no restart. Resultado: o preflight
+   aprovava o estado antigo — nesta data, o `explorer` já era `hy4` no disco enquanto o
+   serviço ainda servia `mimo`.
+2. **CLI ausente sem código próprio.** Sem `opencode` no PATH o script já dizia
+   `status: NÃO VERIFICADO` e o motivo (`spawnSync opencode ENOENT`), mas saía com o mesmo
+   código `1` de uma falha real: um script ou job de CI não conseguia distinguir "não deu
+   para verificar" de "há id morto".
+
+Correção:
+
+- **`--standalone` virou o padrão.** Um servidor privado compila a config **do disco**, sem
+  depender do serviço; custa ~5 s. `--service` ficou como opt-in para conferir o que o host
+  está usando depois do restart, e a saída diz qual fonte foi usada. Verificado nesta data:
+  as duas fontes compilaram os mesmos seis ids (o `title` incluso), e o `--standalone`
+  mostrou a config nova antes do restart.
+- **Códigos de saída separados:** `0` verificado; `1` falha real (id morto, plugin fora,
+  preset ilegível, argumento inválido); `2` NÃO VERIFICADO (CLI fora do PATH). O
+  `AGENTS.md` §0.3, passo 6, passou a citar o `2`.
+- Combinação de `--standalone` com `--service`, ou flag desconhecida, é erro de uso (`1`).
+
+Com isso cai a necessidade de reiniciar o serviço para conferir a config editada; o restart
+continua obrigatório para o **host** passar a usar a config nova, que é outra pergunta e é o
+que `--service` responde.
+
 ### Alternativas descartadas
 
 - **Zerar só os dois limites (`= 0`).** Passa no doctor, mas deixa cinco avisos de chaves
@@ -1982,12 +2012,11 @@ não fere a regra de não repetir id entre primários) e registrar qual id absor
 
 ### Pendências
 
-- `npm run models:check` só reflete a config **depois do restart do serviço** (o slim não
-  recarrega a quente). Nesta rodada o serviço recarregou o plugin e o preflight fechou `EXIT=0`
-  com os cinco papéis compilados; em outra máquina, reiniciar antes de confiar no resultado.
-  **Observação de 23/11/2026 (noite):** `opencode debug agents --standalone` compila a config
-  do disco sem o serviço em execução e mostrou a troca do `explorer` antes do restart — é o
-  caminho para conferir a config nova sem reiniciar (o preflight não usa essa flag).
+- `npm run models:check` compila a config **do disco** por padrão (`--standalone`) desde a
+  noite de 23/11, então confere o preset logo depois da edição, sem serviço e sem restart. O
+  slim continua sem recarregar a config a quente: o que o host **usa** só muda no restart, e
+  `--service` é a leitura que mostra essa visão. Em máquina sem o CLI `opencode` (CI,
+  Antigravity) o comando sai `2` (NÃO VERIFICADO), distinto da falha real (`1`).
 - Os free estreantes: `hy4` (2 execuções no papel, promovido) e `tidepool` (1 execução, sem
   promoção) foram medidos na noite de 23/11; qualquer promoção nova exige bateria por papel.
 

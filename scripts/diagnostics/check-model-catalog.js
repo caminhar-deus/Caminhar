@@ -8,8 +8,13 @@
  * A única proteção contra esse modo de falha é conferir o catálogo antes.
  *
  * Duas fontes, de propósito:
- * - `opencode debug agents` (config COMPILADA do serviço em execução, já sem
- *   comentários JSONC) diz o que o host vai usar como PRIMÁRIO de cada agente;
+ * - `opencode debug agents` diz o que o host compila como PRIMÁRIO de cada agente.
+ *   A leitura é feita com `--standalone` por padrão: um servidor privado compila a
+ *   config DO DISCO, sem depender do serviço de fundo. Assim o preflight continua
+ *   verdadeiro logo depois de editar o preset, em outra máquina e na CI — o serviço
+ *   de fundo só recarrega a config no restart e responderia com o estado antigo.
+ *   `--service` lê a config que o serviço já compilou, para conferir o host em
+ *   execução depois do restart;
  * - o preset `.opencode/oh-my-opencode-slim.json` é a única fonte da CADEIA DE
  *   RESERVA (`"model": [primário, reserva]`), que não aparece em `debug agents`
  *   nem em `debug config`. Antes de 15/11/2026 um id de reserva morto passava
@@ -17,6 +22,10 @@
  *   este script existe para pegar.
  *
  * O catálogo vem de `opencode models`.
+ *
+ * Códigos de saída: 0 = verificado; 1 = falha real (id morto, plugin fora,
+ * preset ilegível); 2 = NÃO VERIFICADO (CLI `opencode` ausente do PATH, ex. CI ou
+ * outro host) — não é defeito do projeto e não deve ser lido como "aprovado".
  *
  * Terceiro modo de falha (23/11/2026): plugin que NÃO carrega. Nesse caso o host
  * compila só os agentes próprios e `debug agents` não traz os papéis do preset —
@@ -28,11 +37,14 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import {
   agentModels,
+  debugAgentsArgs,
+  exitCodeForReadStatus,
   expectedAgents,
   formatCatalogReadError,
   missingModels,
   parseCatalog,
   parseJsonc,
+  parseModeArgs,
   presetModels,
 } from './model-catalog.js';
 
@@ -53,12 +65,19 @@ function readLocalPreset() {
 }
 
 function main() {
+  const { modo, erro: erroDeArgumento } = parseModeArgs(process.argv.slice(2));
+  if (erroDeArgumento) {
+    console.error(`models:check — ${erroDeArgumento}`);
+    console.error('uso: node scripts/diagnostics/check-model-catalog.js [--standalone|--service]');
+    process.exit(1);
+  }
+
   const { config, presets, presetError } = readLocalPreset();
 
   let agents;
   let catalog;
   try {
-    agents = JSON.parse(run(['debug', 'agents']));
+    agents = JSON.parse(run(debugAgentsArgs(modo)));
     catalog = parseCatalog(run(['models']));
   } catch (error) {
     // Fail-closed: sem catálogo não há como afirmar que os ids existem.
@@ -69,9 +88,9 @@ function main() {
           total: presets?.agentes?.length ?? 0,
           reservas: presets?.agentes?.filter(({ posicao }) => posicao > 0).length ?? 0,
         };
-    const { lines } = formatCatalogReadError(error, presetSummary);
+    const { status, lines } = formatCatalogReadError(error, presetSummary);
     for (const line of lines) console.error(line);
-    process.exit(1);
+    process.exit(exitCodeForReadStatus(status));
   }
 
   const models = agentModels(agents);
@@ -80,7 +99,8 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`catálogo: ${catalog.size} ids (\`opencode models\`)`);
+  const fonte = modo === 'service' ? 'config do serviço em execução' : 'config do disco (--standalone)';
+  console.log(`catálogo: ${catalog.size} ids (\`opencode models\`; agentes via ${fonte})`);
 
   // Fail-closed para o outro modo de falha: plugin que não carrega. O host compila
   // só os agentes próprios, e sem esta checagem o preflight conferiria pouca coisa
