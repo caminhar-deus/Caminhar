@@ -120,6 +120,7 @@ describe('suíte k6 — scripts que esperam 4xx por desenho não declaram http_r
     'security/ddos-search-test.js',
     'security/ip-spoofing-test.js',
     'security/login-negative-test.js',
+    'security/mercadopago-security-test.js',
     'security/rate-limit-test.js',
     'functional/recovery-test.js',
     'functional/video-validation-test.js',
@@ -243,11 +244,11 @@ describe('load-tests/helpers/profiles.js — quem declara http_req_failed', () =
 });
 
 describe('suíte k6 — inventário', () => {
-  it('tem exatamente 30 scripts (tripwire da auditoria do item AD)', () => {
+  it('tem exatamente 31 scripts (tripwire da auditoria do item AD + segurança MP)', () => {
     // Se alguém adicionar ou remover um script, a auditoria de gates do item
     // AD precisa ser refeita — e o número atualizado aqui, de propósito.
     const scripts = todosOsScripts();
 
-    expect(scripts).toHaveLength(30);
+    expect(scripts).toHaveLength(31);
   });
 });

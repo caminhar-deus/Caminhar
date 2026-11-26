@@ -222,10 +222,11 @@ const CATEGORIES = [
     name: '🔒 Security Tests',
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
     scripts: [
-      { name: 'rate-limit-test',         cmd: 'k6 run load-tests/security/rate-limit-test.js' },
-      { name: 'ip-spoofing-test',        cmd: 'k6 run load-tests/security/ip-spoofing-test.js' },
-      { name: 'ddos-search-test',        cmd: 'k6 run load-tests/security/ddos-search-test.js' },
-      { name: 'login-negative-test',     cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/security/login-negative-test.js' },
+      { name: 'rate-limit-test',          cmd: 'k6 run load-tests/security/rate-limit-test.js' },
+      { name: 'ip-spoofing-test',         cmd: 'k6 run load-tests/security/ip-spoofing-test.js' },
+      { name: 'ddos-search-test',         cmd: 'k6 run load-tests/security/ddos-search-test.js' },
+      { name: 'login-negative-test',      cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/security/login-negative-test.js' },
+      { name: 'mercadopago-security-test', cmd: 'k6 run load-tests/security/mercadopago-security-test.js' },
     ],
   },
   {

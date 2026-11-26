@@ -60,7 +60,11 @@ describe('payment-status-messages — feedback e validação de documento', () =
     expect(refunded.title).toMatch(/estornado/i);
   });
 
-  it('retorna orientações corretas para PIX e Boleto pendentes', () => {
+  it('retorna orientações corretas para PIX e Boleto pendentes e fallbacks de status/objeto ausente', () => {
+    const unknown = getPaymentFeedback(null);
+    expect(unknown.tone).toBe('info');
+    expect(unknown.title).toBe('Status desconhecido');
+
     const pix = getPaymentFeedback({ id: 14, payment_status: 'pending', payment_method: 'pix' });
     expect(pix.tone).toBe('info');
     expect(pix.description).toMatch(/QR Code/i);
@@ -68,6 +72,35 @@ describe('payment-status-messages — feedback e validação de documento', () =
     const boleto = getPaymentFeedback({ id: 15, payment_status: 'pending', payment_method: 'ticket' });
     expect(boleto.tone).toBe('info');
     expect(boleto.description).toMatch(/linha digitável/i);
+
+    const pendingCard = getPaymentFeedback({ id: 16, payment_status: 'pending', payment_method: 'credit_card' });
+    expect(pendingCard.tone).toBe('info');
+    expect(pendingCard.title).toMatch(/aguardando confirmação/i);
+
+    const authorized = getPaymentFeedback({ id: 17, payment_status: 'authorized', payment_method: 'credit_card' });
+    expect(authorized.tone).toBe('warning');
+    expect(authorized.title).toMatch(/em análise/i);
+
+    const chargedBack = getPaymentFeedback({ id: 18, payment_status: 'charged_back', payment_method: 'credit_card' });
+    expect(chargedBack.tone).toBe('warning');
+    expect(chargedBack.title).toMatch(/contestado/i);
+
+    const cancelledDefault = getPaymentFeedback({ id: 19, payment_status: 'cancelled', payment_method: 'ticket' });
+    expect(cancelledDefault.tone).toBe('error');
+    expect(cancelledDefault.description).toMatch(/cancelado e o estoque/i);
+
+    const cancelledReason = getPaymentFeedback({
+      id: 20,
+      payment_status: 'cancelled',
+      payment_method: 'ticket',
+      payment_payload: { error_reason: 'Boleto expirado pelo banco.' },
+    });
+    expect(cancelledReason.tone).toBe('error');
+    expect(cancelledReason.description).toBe('Boleto expirado pelo banco.');
+
+    const rejectedGeneric = getPaymentFeedback({ id: 21, payment_status: 'rejected', payment_method: 'credit_card' });
+    expect(rejectedGeneric.tone).toBe('error');
+    expect(rejectedGeneric.description).toMatch(/pagamento foi recusado/i);
   });
 
   it('formata e valida CPF e CNPJ aplicando dígitos verificadores (módulo 11) e rejeitando repetidos', () => {

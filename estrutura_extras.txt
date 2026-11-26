@@ -385,6 +385,8 @@ load-tests/security/ip-spoofing-test.js → load-tests/helpers/report.js
 load-tests/security/login-negative-test.js → load-tests/helpers/config.js
 load-tests/security/login-negative-test.js → load-tests/helpers/report.js
 load-tests/security/login-negative-test.js → load-tests/helpers/sleep.js
+load-tests/security/mercadopago-security-test.js → load-tests/helpers/config.js
+load-tests/security/mercadopago-security-test.js → load-tests/helpers/report.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/config.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/profiles.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/report.js

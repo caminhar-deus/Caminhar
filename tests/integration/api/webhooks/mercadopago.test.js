@@ -365,6 +365,56 @@ describe('API Webhook Mercado Pago (/api/webhooks/mercadopago)', () => {
     expect(invalidateCache).not.toHaveBeenCalled();
   });
 
+  it('fora de produção com body.data.transactions.payments múltiplo seleciona a tentativa prioritária via selectPrimaryOrderPayment', async () => {
+    process.env.NODE_ENV = 'development';
+    verifyMercadoPagoWebhookSignature.mockReturnValue(true);
+    processMercadoPagoWebhookEvent.mockResolvedValueOnce({
+      duplicate: false,
+      order: { id: 33, order_status: 'paid' },
+      stockChanged: false,
+    });
+
+    const { req, res } = signedPaymentRequest({
+      action: 'order.processed',
+      type: 'order',
+      data: {
+        id: 'ORDTST_MULTI_DEV_33',
+        external_reference: '33',
+        status: 'processed',
+        transactions: {
+          payments: [
+            {
+              id: 'PAY_FAIL_1',
+              status: 'failed',
+              status_detail: 'rejected_by_issuer',
+            },
+            {
+              id: 'PAY_OK_2',
+              status: 'processed',
+              status_detail: 'accredited',
+            },
+          ],
+        },
+      },
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(processMercadoPagoWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mpPaymentId: 'ORDTST_MULTI_DEV_33',
+        externalReference: '33',
+        paymentStatus: 'approved',
+        paymentPayload: expect.objectContaining({
+          status_detail: 'accredited',
+          mp_order_status: 'processed',
+          mp_transaction_id: 'PAY_OK_2',
+        }),
+      })
+    );
+  });
+
   it('confirma sem processar eventos que não são de pagamento', async () => {
     verifyMercadoPagoWebhookSignature.mockReturnValue(true);
     const { req, res } = signedPaymentRequest({

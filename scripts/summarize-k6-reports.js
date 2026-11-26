@@ -40,8 +40,8 @@ const ORCHESTRATOR_FILE = 'orchestrator-results';
 /** Teto de linhas da seção de scripts reprovados (o step summary tem limite). */
 const MAX_LINHAS_FALHAS = 20;
 
-/** Teto de linhas da tabela por script (a bateria tem 30 scripts). */
-const MAX_LINHAS_TABELA = 30;
+/** Teto de linhas da tabela por script (a bateria tem 31 scripts). */
+const MAX_LINHAS_TABELA = 31;
 
 /**
  * Lê o diretório de relatórios e separa o consolidação do orquestrador dos

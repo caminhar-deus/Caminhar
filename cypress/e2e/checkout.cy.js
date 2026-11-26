@@ -157,6 +157,22 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
     cy.contains('Pago').should('be.visible');
   });
 
+  function stubMercadoPagoSdk(win) {
+    win.MercadoPago = function MercadoPagoMock() {
+      return {
+        getPaymentMethods: () =>
+          Promise.resolve({
+            results: [{ id: 'master', name: 'Mastercard', payment_type_id: 'credit_card', issuer: { id: 24 } }],
+          }),
+        getInstallments: () =>
+          Promise.resolve([
+            { payer_costs: [{ installments: 1, recommended_message: '1x de R$ 45,00 sem juros' }] },
+          ]),
+        createCardToken: () => Promise.resolve({ id: 'tok_e2e_master_123' }),
+      };
+    };
+  }
+
   it('deve concluir compra via cartão de crédito com tokenização SDK e limpar dados sensíveis do cartão', () => {
     cy.intercept('GET', '/api/customer/auth', {
       statusCode: 200,
@@ -183,19 +199,7 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
     }).as('createCardOrder');
 
     cy.visit('/checkout/101', {
-      onBeforeLoad(win) {
-        win.MercadoPago = () => ({
-          getPaymentMethods: () =>
-            Promise.resolve({
-              results: [{ id: 'master', name: 'Mastercard', payment_type_id: 'credit_card', issuer: { id: 24 } }],
-            }),
-          getInstallments: () =>
-            Promise.resolve([
-              { payer_costs: [{ installments: 1, recommended_message: '1x de R$ 45,00 sem juros' }] },
-            ]),
-          createCardToken: () => Promise.resolve({ id: 'tok_e2e_master_123' }),
-        });
-      },
+      onBeforeLoad: stubMercadoPagoSdk,
     });
     cy.wait(['@getCustomerAuth', '@getCheckoutProduct']);
 
@@ -207,7 +211,10 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
     cy.get('#card-cvv').type('123');
     cy.contains('button', 'Confirmar e Pagar').click();
 
-    cy.wait('@createCardOrder').its('request.headers').should('have.property', 'x-idempotency-key');
+    cy.wait('@createCardOrder').then((interception) => {
+      expect(interception.request.headers).to.have.property('x-idempotency-key');
+      expect(interception.request.body?.paymentDetails).to.not.have.property('cardNumber');
+    });
     cy.contains('Pedido #502 confirmado e pago!').should('be.visible');
   });
 
@@ -257,7 +264,9 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
       }
     }).as('checkoutAttempt');
 
-    cy.visit('/checkout/101');
+    cy.visit('/checkout/101', {
+      onBeforeLoad: stubMercadoPagoSdk,
+    });
     cy.wait(['@getCustomerAuth', '@getCheckoutProduct']);
 
     cy.get('#payer-document').type('12345678909');
@@ -272,6 +281,10 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
     cy.contains('Pagamento recusado no Pedido #503').should('be.visible');
     cy.contains(/saldo ou limite insuficiente/i).should('be.visible');
     cy.contains('button', 'Tentar outro meio de pagamento').click();
+
+    cy.get('#card-number').should('have.value', '');
+    cy.get('#card-expiry').should('have.value', '');
+    cy.get('#card-cvv').should('have.value', '');
 
     cy.contains('[role="radio"]', 'Boleto bancário').click();
     cy.contains('button', 'Confirmar e Pagar').click();

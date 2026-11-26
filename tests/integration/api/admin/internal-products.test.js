@@ -152,6 +152,19 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
     });
+
+    it('deve retornar 500 quando getAllProducts falhar inesperadamente', async () => {
+      getAllProducts.mockRejectedValueOnce(new Error('DB read failure'));
+      const errSpy = filterConsoleError(['Erro no handler InternalProducts']);
+      try {
+        const { req, res } = createMocks({ method: 'GET' });
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(500);
+        expect(errSpy).toHaveBeenCalled();
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
   });
 
   describe('POST - Criação de produto interno', () => {
@@ -209,6 +222,40 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve normalizar stock negativo/vazio e shipping_cost vazio para zero ao criar', async () => {
+      createProduct.mockResolvedValueOnce({
+        id: 16,
+        name: 'Terço Simples',
+        price: 15,
+        image_url: 'https://exemplo.com/terco.jpg',
+        stock: 0,
+        shipping_type: 'free',
+        shipping_cost: 0,
+        modality: 'internal',
+      });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: {
+          name: 'Terço Simples',
+          price: 15,
+          image_url: 'https://exemplo.com/terco.jpg',
+          stock: -5,
+          shipping_cost: '',
+        },
+      });
+
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(201);
+      expect(createProduct).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stock: 0,
+          shipping_cost: 0,
+          modality: 'internal',
+        })
+      );
     });
   });
 
@@ -337,6 +384,22 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve retornar 500 se updateProduct falhar com erro inesperado no PUT', async () => {
+      updateProduct.mockRejectedValueOnce(new Error('DB write failure'));
+      const errSpy = filterConsoleError(['Erro no handler InternalProducts']);
+      try {
+        const { req, res } = createMocks({
+          method: 'PUT',
+          body: { id: 15, name: 'Produto Atualizado' },
+        });
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(500);
+        expect(errSpy).toHaveBeenCalled();
+      } finally {
+        errSpy.mockRestore();
+      }
     });
   });
 

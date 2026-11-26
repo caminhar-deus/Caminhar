@@ -680,9 +680,12 @@
 │   │   └── post.cy.js
 │   ├── fixtures
 │   │   └── posts.json
-│   └── support
-│       ├── commands.js
-│       └── e2e.js
+│   ├── screenshots
+│   ├── support
+│   │   ├── commands.js
+│   │   └── e2e.js
+│   └── videos
+│       └── checkout.cy.js.mp4
 ├── cypress.config.js
 ├── data
 │   └── backups
@@ -899,6 +902,7 @@
 │       ├── ddos-search-test.js
 │       ├── ip-spoofing-test.js
 │       ├── login-negative-test.js
+│       ├── mercadopago-security-test.js
 │       └── rate-limit-test.js
 ├── logs
 │   ├── coverage-output.log
@@ -1617,4 +1621,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-223 directories, 1395 files
+225 directories, 1397 files

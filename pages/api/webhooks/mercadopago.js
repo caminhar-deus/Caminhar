@@ -4,6 +4,7 @@ import { processMercadoPagoWebhookEvent } from '../../../lib/domain/orders.js';
 import {
   fetchMercadoPagoPaymentDetails,
   mapMercadoPagoStatus,
+  selectPrimaryOrderPayment,
   verifyMercadoPagoWebhookSignature,
 } from '../../../lib/payment/mercadopago.js';
 import { logger } from '../../../lib/infra/logger.js';
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
     // O status do pagamento nunca é presumido. Em produção (ou quando há token sem status explícito),
     // status, external_reference e detalhes vêm exclusivamente da API oficial do Mercado Pago.
     const isProduction = process.env.NODE_ENV === 'production';
-    const txPayment = body?.data?.transactions?.payments?.[0] || null;
+    const txPayment = selectPrimaryOrderPayment(body?.data) || null;
     const bodyStatus = body?.payment_status || body?.data?.status;
     const bodyStatusDetail = txPayment?.status_detail || body?.data?.status_detail || '';
     const bodyOrderStatus = typeof body?.data?.status === 'string' ? body.data.status : null;

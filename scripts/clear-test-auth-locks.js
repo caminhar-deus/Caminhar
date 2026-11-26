@@ -12,9 +12,11 @@
 
 import { getRedisInstance } from '../lib/infra/redis.js';
 
-// IPs utilizados pelos testes de segurança (rate-limit-test.js, ip-spoofing-test.js)
+// IPs utilizados pelos testes de segurança (rate-limit-test.js, ip-spoofing-test.js, mercadopago-security-test.js)
 const TEST_IPS = [
   '203.0.113.1',        // IP fixo usado pelo rate-limit-test.js
+  '203.0.113.32',       // IP fixo usado pelo mercadopago-security-test.js (checkout)
+  '203.0.113.33',       // IP fixo usado pelo mercadopago-security-test.js (webhook)
   '127.0.0.1',          // localhost (pode ter sido bloqueado)
   '::1',                // localhost IPv6
 ];
@@ -47,13 +49,20 @@ async function clearTestAuthLocks() {
         }
       }
 
-      // Também limpa qualquer chave de rate limit do Redis usada pelo lib/cache/cache.js
-      const cacheKeys = await redis.keys('api:auth:login:*');
-      if (cacheKeys.length > 0) {
-        for (const key of cacheKeys) {
-          await redis.del(key);
-          console.log(`  ✅ Cache key removida: ${key}`);
-          clearedCount++;
+      // Também limpa chaves de rate limit do Redis usadas pelo lib/cache/cache.js
+      const keyPatterns = [
+        'api:auth:login:*',
+        'rate_limit:api:webhooks:mercadopago:*',
+        'rate_limit:api:public:checkout:*',
+      ];
+      for (const pattern of keyPatterns) {
+        const cacheKeys = await redis.keys(pattern);
+        if (cacheKeys.length > 0) {
+          for (const key of cacheKeys) {
+            await redis.del(key);
+            console.log(`  ✅ Cache key removida: ${key}`);
+            clearedCount++;
+          }
         }
       }
 
