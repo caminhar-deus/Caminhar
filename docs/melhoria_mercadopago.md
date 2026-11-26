@@ -3,7 +3,7 @@
 
 > Este documento acumula as auditorias semanais e o Plano de Ação central da integração com o **Mercado Pago** (Modalidade B — venda interna em Produtos Religiosos, Checkout Transparente via Orders API `/v1/orders`, Webhooks HMAC-SHA256 v2, Reconciliação Ativa, Conta do Visitante associada e Gestão de Vendas no `/admin`).
 > Cada novo ciclo é incorporado no topo sem descartar o histórico relevante dos ciclos anteriores.
-> **Restrição desta execução (23/11/2026):** rotina exclusiva de auditoria, análise, diagnóstico e planejamento. **Nenhuma implementação de código, configuração, teste ou documentação normativa foi realizada.**
+> **Restrição histórica de 23/11/2026:** o Ciclo 2 nasceu como auditoria somente leitura. **Atualização em 26/11/2026 ([ADR-0044](adr/0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md)):** após confronto contra o código em `HEAD = 1d1d9adc`, revisão e execução completa do Plano de Ação, `AC-MP-01` a `AC-MP-11` foram implementados e validados no repositório (com pendências de ambiente externo registradas na Seção 12).
 
 ---
 
@@ -25,23 +25,24 @@
 | Ciclo | Data de Execução | Período Analisado | Síntese dos Resultados |
 |---|---|---|---|
 | **Ciclo 1** | 16/11/2026 (homologação complementada até 18/11/2026) | 09/11/2026 10:00 BRT a 16/11/2026 10:00 BRT (+ Sandbox 16–18/11) | 4 ocorrências críticas resolvidas (`OC-01` a `OC-04`: migração Orders API `/v1/orders`, reconciliação ativa, URL de boleto `/sandbox/`, blindagem de webhook contra status forjado) e 3 ações concluídas (`Ação 01` a `Ação 03`: homologação Sandbox Pedidos #20–#31, E2E Cypress `checkout.cy.js`, túnel HTTPS `cloudflared` + webhook real). |
-| **Ciclo 2** | 23/11/2026, 10:00 BRT | 16/11/2026 10:00 BRT a 23/11/2026 10:00 BRT (últimos 7 dias / 168 h) | 40 commits na janela + revisão integral do código e suítes (15 suítes Jest focadas MP/Vendas = 167/167 passando). Identificados **11 diagnósticos abertos** (`MP-DIAG-01` a `MP-DIAG-11`) e planejadas **11 ações** (`AC-MP-01` a `AC-MP-11`), sendo 1 P0 (Crítica/Alta), 5 P1 (Alta), 3 P2 (Média) e 2 P3 (Média-Baixa/Baixa-Média). |
+| **Ciclo 2 (Auditoria)** | 23/11/2026, 10:00 BRT | 16/11/2026 10:00 BRT a 23/11/2026 10:00 BRT (últimos 7 dias / 168 h) | 40 commits na janela + revisão integral do código e suítes (15 suítes Jest focadas MP/Vendas = 167/167 passando). Identificados **11 diagnósticos abertos** (`MP-DIAG-01` a `MP-DIAG-11`) e planejadas **11 ações** (`AC-MP-01` a `AC-MP-11`), sendo 1 P0 (Crítica/Alta), 5 P1 (Alta), 3 P2 (Média) e 2 P3 (Média-Baixa/Baixa-Média). |
+| **Fechamento Ciclo 2** | 26/11/2026 | Confronto `1d1d9adc` + Execução `AC-MP-01`–`AC-MP-11` | Confrontados `MP-DIAG-01`..`MP-DIAG-11` com as melhorias de 24/11 (`ff57a203`, `0ab2716e`, `1d1d9adc`), revisado o plano e executadas integralmente as implementações de código, testes, recalibração do bench e [ADR-0044](adr/0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md); pendentes apenas execuções que requerem Docker/servidor local/k6 e homologação final em produção HTTPS. |
 
-### Painel de Status dos Diagnósticos Ativos (Ciclo 2 — 23/11/2026)
+### Painel de Status dos Diagnósticos Ativos (Atualizado após execução em 26/11/2026)
 
 | ID | Resumo do Diagnóstico | Origem / Classificação | Prioridade | Situação Atual |
 |---|---|---|---|---|
-| `MP-DIAG-01` | `POST /api/webhooks/mercadopago` sem rate limit e sem janela de validade temporal (`ts`) na assinatura HMAC | Novo no Ciclo 2 (origem histórica `6424780`) | **P0 (Crítica/Alta)** | **Aberto** |
-| `MP-DIAG-02` | Ausência de filtro server-side de `modality` em `PUT`/`DELETE`/`reorder` de `internal-products.js` e `products.js` | Novo no Ciclo 2 (origem histórica `6424780`) | **P1 (Alta)** | **Aberto** |
-| `MP-DIAG-03` | Fallback direto de tokenização HTTP em `checkout/[id].js` sem trava estrita a `localhost`, `cardNumber` aceito no schema e estado de cartão não limpo | Novo no Ciclo 2 (origem histórica `819bcb1`) | **P1 (Alta)** | **Aberto** |
-| `MP-DIAG-04` | Webhook descarta metadados autoritativos da API (`fetchMercadoPagoPaymentDetails`) e grava campos vindos de `req.body` | Novo no Ciclo 2 (origem histórica `f46ebf4`) | **P1 (Alta)** | **Aberto** |
-| `MP-DIAG-05` | Evento de webhook em condição de corrida (`!current`) é gravado como processado e retorna HTTP 200, impedindo reenvio pelo MP | Novo no Ciclo 2 (origem histórica `6424780`) | **P1 (Alta)** | **Aberto** |
-| `MP-DIAG-06` | Lacunas na máquina de estados/estoque/idempotência (`refunded`/`charged_back`, aprovação sobre pedido cancelado, reabertura admin, cache `products:*`, duplo clique no checkout) | Novo no Ciclo 2 (origem histórica `6424780`/`819bcb1`) | **P1 (Alta)** | **Aberto** |
-| `MP-DIAG-07` | Lacunas de validação/mapeamento (`in_mediation`/`partially_refunded`, módulo 11 CPF/CNPJ, coerção de `quantity`/`installments`, `check-env.js` sem diagnóstico MP) | Novo no Ciclo 2 (origem histórica `819bcb1`/`6424780`) | **P2 (Média)** | **Aberto** |
-| `MP-DIAG-08` | Ausência de rate limit/limite de busca em `GET /api/admin/orders`, invalidação incondicional de cache no webhook, falta de cooldown na reconciliação e orçamento de performance | Novo no Ciclo 2 | **P2 (Média)** | **Aberto** |
-| `MP-DIAG-09` | Cobertura baixa em `AdminSales.js` (32,25% funções), branches descobertos em `mercadopago.js`/`checkout.js`/`customer-auth.js`, falta de threshold em `lib/payment/`, E2E parcial e sem k6 | Novo no Ciclo 2 | **P2 (Média)** | **Aberto** |
-| `MP-DIAG-10` | Dívida de arquitetura/UX (`AdminOrders`/`InternalProducts` fora de `createAdminHandler`, rótulos crus em `AdminSales.js`, modal/CSV incompletos, 33 COUNTs em `stats.js`, array `payments[0]`) | Novo no Ciclo 2 | **P3 (Média-Baixa)** | **Aberto** |
-| `MP-DIAG-11` | Lacunas no processo dos agentes (revisões parciais sem checar rotas/irmãos, Cypress sem execução local, imprecisão residual no Ciclo 1, falta de timestamp/SHA em `logs/`) | Recorrente na janela | **P3 (Baixa-Média)** | **Aberto** |
+| `MP-DIAG-01` | `POST /api/webhooks/mercadopago` sem rate limit e sem janela de validade temporal (`ts`) na assinatura HMAC | Novo no Ciclo 2 (origem histórica `6424780`) | **P0 (Crítica/Alta)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-02` | Ausência de filtro server-side de `modality` em `PUT`/`DELETE`/`reorder` de `internal-products.js` e `products.js` | Novo no Ciclo 2 (origem histórica `6424780`) | **P1 (Alta)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-03` | Fallback direto de tokenização HTTP em `checkout/[id].js` sem trava estrita a `localhost`, `cardNumber` aceito no schema e estado de cartão não limpo | Novo no Ciclo 2 (origem histórica `819bcb1`) | **P1 (Alta)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-04` | Webhook descarta metadados autoritativos da API (`fetchMercadoPagoPaymentDetails`) e grava campos vindos de `req.body` | Novo no Ciclo 2 (origem histórica `f46ebf4`) | **P1 (Alta)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-05` | Evento de webhook em condição de corrida (`!current`) é gravado como processado e retorna HTTP 200, impedindo reenvio pelo MP | Novo no Ciclo 2 (origem histórica `6424780`) | **P1 (Alta)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-06` | Lacunas na máquina de estados/estoque/idempotência (`refunded`/`charged_back`, aprovação sobre pedido cancelado, reabertura admin, cache `products:*`, duplo clique no checkout) | Novo no Ciclo 2 (origem histórica `6424780`/`819bcb1`) | **P1 (Alta)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-07` | Lacunas de validação/mapeamento (`in_mediation`/`partially_refunded`, módulo 11 CPF/CNPJ, coerção de `quantity`/`installments`, `check-env.js` sem diagnóstico MP) | Novo no Ciclo 2 (origem histórica `819bcb1`/`6424780`) | **P2 (Média)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-08` | Ausência de rate limit/limite de busca em `GET /api/admin/orders`, invalidação incondicional de cache no webhook, falta de cooldown na reconciliação e orçamento de performance | Novo no Ciclo 2 | **P2 (Média)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-09` | Cobertura baixa em `AdminSales.js`, branches descobertos, falta de threshold em `lib/payment/` e `pages/api/webhooks/`, E2E parcial e sem k6 | Novo no Ciclo 2 (parcial em `0ab2716e`/`1d1d9adc`) | **P2 (Média)** | **Parcialmente resolvido (24–26/11/2026 — falta apenas cenário k6 e execução ao vivo E2E/Docker)** |
+| `MP-DIAG-10` | Dívida de arquitetura/UX (`AdminOrders`/`InternalProducts` fora de `createAdminHandler`, rótulos crus em `AdminSales.js`, modal/CSV incompletos, 33 COUNTs em `stats.js`, array `payments[0]`) | Novo no Ciclo 2 | **P3 (Média-Baixa)** | **Resolvido (26/11/2026)** |
+| `MP-DIAG-11` | Lacunas no processo dos agentes (revisões parciais sem checar rotas/irmãos, Cypress sem execução local, imprecisão residual no Ciclo 1, falta de timestamp/SHA em `logs/`) | Recorrente na janela (parcial em `ff57a203`) | **P3 (Baixa-Média)** | **Resolvido (24–26/11/2026)** |
 
 ---
 
@@ -710,6 +711,21 @@ Qualquer rodada futura que implemente ações deste plano só deverá ser consid
 4. **Pontos que exigem investigação/decisão adicional de produto:**
    - **Estorno integrado no `/admin`:** hoje cancelar um pedido já `paid` em `AdminSales` devolve estoque interno e muda `order_status` para `'cancelled'`, mas **não** aciona cancelamento/estorno financeiro na API do Mercado Pago (`POST /v1/orders/{id}/refund`) — exige definição de regra de negócio se o estorno será manual no painel MP ou integrado.
    - **Expiração automática de pedidos `awaiting_payment` abandonados:** pedidos PIX ou boleto antigos cujo webhook `order.canceled` eventualmente nunca chegue ou falhe mantêm o estoque reservado indefinidamente até reconciliação manual/acesso à página. Avaliar política de expiração/varredura periódica quando a loja entrar em operação contínua.
+
+---
+
+## 12. Registro de Execução e Fechamento do Plano de Ação (26/11/2026)
+
+1. **Confronto prévio (`HEAD = 1d1d9adc`):** entre 23/11 e 24/11 (`ff57a203`, `0ab2716e`, `1d1d9adc`), parte de `MP-DIAG-09` (elevação de cobertura em `AdminSales.js`, `mercadopago.js`, `checkout.js` e `customer-auth.js` + thresholds iniciais em `jest.config.js`) e `MP-DIAG-11` (`run-with-log.js` com data/SHA nos logs) já havia sido implementada; os diagnósticos `MP-DIAG-01` a `MP-DIAG-08`, `MP-DIAG-10` e os itens restantes de `09`/`11` permaneciam ativos no disco.
+2. **Ações executadas em 26/11/2026 ([ADR-0044](adr/0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md)):**
+   - `AC-MP-01`, `AC-MP-04`, `AC-MP-05`: rate limit + janela `ts` `±900s` + `fetchMercadoPagoPaymentDetails` autoritativo no webhook + localização prévia de pedido antes de `event_key` com retorno `HTTP 503` em corrida e invalidação seletiva de `products:*`.
+   - `AC-MP-02`: `{ expectedModality }` em `lib/domain/products.js` + isolamento estrito `'external'`/`'internal'` em `GET`, `POST`, `PUT`, `DELETE` e `reorder` de `/api/products` e `/api/admin/internal-products`.
+   - `AC-MP-03`: trava de fallback `/v1/card_tokens` para `NODE_ENV !== 'production'` em `localhost`/`127.0.0.1`, limpeza automática dos campos do cartão e rejeição `400` de `cardNumber` bruto em `pages/api/checkout.js`.
+   - `AC-MP-06`: idempotência via `X-Idempotency-Key` + `getOrSetCache`, proteção de `refunded`/`charged_back`, recuperação/alerta de aprovação tardia após cancelamento, trava `ORDER_CANCELLED_CANNOT_REOPEN` (`409`) e cache `products:*` no cancelamento admin.
+   - `AC-MP-07`: módulo 11 em `isValidCpfCnpjDigits`, `in_mediation`/`partially_refunded`, validação estrita de `quantity`/`installments`/`MIN_PAYMENT_METHOD_AMOUNTS` e `validateMercadoPagoEnv` em `scripts/check-env.js`.
+   - `AC-MP-08`: rate limit (`60 req/min`) e `search ≤ 200` em `GET /api/admin/orders`, cooldown `15s` + single-flight em `lib/payment/reconcile-orders.js` (com bypass `force=1`/`sync=1`), e `/api/customer/orders` + `/api/admin/orders` no orçamento 5s de `usePerformanceMetrics.js`.
+   - `AC-MP-09` (remanescente) & `AC-MP-10` & `AC-MP-11`: migração de `admin/orders.js` e `admin/internal-products.js` para `createAdminHandler`, UX pt-BR/filtros/badges/modal/CSV em `AdminSales.js`, queries `COUNT(*) FILTER` em `stats.js`, `selectPrimaryOrderPayment` em `mercadopago.js`, threshold de cobertura `pages/api/webhooks/` em `jest.config.js`, expansão E2E em `cypress/e2e/checkout.cy.js`, recalibração de `scripts/bench/orchestrator/{gabarito,rubrica}.md`, atualização de `AGENTS.md`, `ARQUITETURA_*`, `CHANGELOG.md` e criação do `ADR-0044`.
+3. **Pendências de ambiente externo:** execução das suítes `*.db.test.js` contra Docker/CI (`test-db-coverage.yml`), criação/execução de cenário de carga/segurança k6 dedicado em `load-tests/`, execução ao vivo de `cypress/e2e/checkout.cy.js` com servidor Next.js em execução, habilitação comercial opcional de `debit_card` direto e homologação final em produção HTTPS.
 
 ---
 ---

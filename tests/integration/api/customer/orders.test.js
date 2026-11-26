@@ -107,8 +107,23 @@ describe('API Visitante/Cliente - Meus Pedidos (/api/customer/orders)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     expect(getCustomerOrderById).toHaveBeenCalledWith(20, 1);
-    expect(reconcilePendingOrders).toHaveBeenCalledWith([pendingOrder], { maxOrders: 1 });
+    expect(reconcilePendingOrders).toHaveBeenCalledWith([pendingOrder], { maxOrders: 1, force: false });
     expect(JSON.parse(res._getData())).toEqual({ order: approvedOrder });
+
+    reconcilePendingOrders.mockClear();
+    getCustomerOrderById.mockResolvedValueOnce(pendingOrder);
+    reconcilePendingOrders.mockResolvedValueOnce({
+      orders: [approvedOrder],
+      syncedCount: 1,
+    });
+    const { req: reqForce, res: resForce } = createMocks({
+      method: 'GET',
+      query: { orderId: '20', force: '1' },
+    });
+    await handler(reqForce, resForce);
+
+    expect(resForce._getStatusCode()).toBe(200);
+    expect(reconcilePendingOrders).toHaveBeenCalledWith([pendingOrder], { maxOrders: 1, force: true });
 
     reconcilePendingOrders.mockClear();
     getCustomerOrderById.mockResolvedValueOnce(pendingOrder);

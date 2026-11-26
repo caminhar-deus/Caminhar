@@ -114,9 +114,13 @@ async function handleAdminGet(req, res) {
     // `req.query.search` pode vir como array em querystrings duplicadas.
     const search = typeof req.query.search === 'string' ? req.query.search : '';
     const modality = typeof req.query.modality === 'string' ? req.query.modality : '';
-    const result = modality
-      ? await getAllProducts(page, limit, search, modality)
-      : await getAllProducts(page, limit, search);
+    if (modality && modality !== 'external') {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Modalidade inválida para Gestão de Produtos.',
+      });
+    }
+    const result = await getAllProducts(page, limit, search, 'external');
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === 'INVALID_PAGINATION_PARAMS') {
@@ -212,7 +216,10 @@ async function handlePost(req, res) {
   }
 
   try {
-    const newProduct = await createProduct(validation.data);
+    const newProduct = await createProduct({
+      ...validation.data,
+      modality: 'external',
+    });
 
     await invalidateCache('products:*');
     await logActivity(req.user.username, 'CRIAR PRODUTO', 'PRODUCT', newProduct.id, `Criou o produto: ${validation.data.name}`, ip);
@@ -262,7 +269,11 @@ async function handlePut(req, res) {
 
     const { items } = reorderValidation.data;
     for (const item of items) {
-      await updateRecords('products', { position: item.position }, { id: item.id });
+      await updateRecords(
+        'products',
+        { position: item.position },
+        { id: item.id, modality: 'external' }
+      );
     }
 
     await invalidateCache('products:*');
@@ -295,7 +306,9 @@ async function handlePut(req, res) {
   }
 
   try {
-    const updatedProduct = await updateProduct(updateId, validation.data);
+    const updatedProduct = await updateProduct(updateId, validation.data, {
+      expectedModality: 'external',
+    });
 
     if (!updatedProduct) {
       return res.status(404).json({ error: 'Not Found', message: 'Produto não encontrado' });
@@ -331,7 +344,9 @@ async function handleDelete(req, res) {
   }
 
   try {
-    const deletedProduct = await deleteProduct(deleteId);
+    const deletedProduct = await deleteProduct(deleteId, {
+      expectedModality: 'external',
+    });
 
     if (!deletedProduct) {
       return res.status(404).json({ error: 'Not Found', message: 'Produto não encontrado' });

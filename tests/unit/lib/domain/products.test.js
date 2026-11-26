@@ -156,14 +156,27 @@ describe('Domínio - Products (lib/domain/products.js)', () => {
     it('deve atualizar apenas os campos informados e adicionar updated_at', async () => {
       updateRecords.mockResolvedValueOnce([{ id: 1, name: 'Editado' }]);
 
-      const result = await updateProduct(1, { name: 'Editado', price: 20 });
+      const [updatedWithoutOpt] = [await updateProduct(1, { name: 'Editado', price: 20 })];
 
       expect(updateRecords).toHaveBeenCalledWith(
         'products',
         { name: 'Editado', price: 20, updated_at: 'CURRENT_TIMESTAMP' },
         { id: 1 },
       );
-      expect(result).toEqual({ id: 1, name: 'Editado' });
+      expect(updatedWithoutOpt).toEqual({ id: 1, name: 'Editado' });
+    });
+
+    it('deve restringir WHERE por modality quando expectedModality for informado', async () => {
+      updateRecords.mockResolvedValueOnce([{ id: 10, name: 'Interno', modality: 'internal' }]);
+
+      const result = await updateProduct(10, { name: 'Interno' }, { expectedModality: 'internal' });
+
+      expect(updateRecords).toHaveBeenCalledWith(
+        'products',
+        { name: 'Interno', updated_at: 'CURRENT_TIMESTAMP' },
+        { id: 10, modality: 'internal' },
+      );
+      expect(result).toEqual({ id: 10, name: 'Interno', modality: 'internal' });
     });
 
     it('deve lançar erro quando nenhum campo for informado', async () => {
@@ -173,13 +186,18 @@ describe('Domínio - Products (lib/domain/products.js)', () => {
   });
 
   describe('deleteProduct', () => {
-    it('deve remover o produto pelo id', async () => {
+    it('deve remover o produto pelo id e respeitar expectedModality quando informado', async () => {
       deleteRecords.mockResolvedValueOnce([{ id: 7 }]);
 
       const result = await deleteProduct(7);
 
       expect(deleteRecords).toHaveBeenCalledWith('products', { id: 7 });
       expect(result).toEqual({ id: 7 });
+
+      deleteRecords.mockResolvedValueOnce([]);
+      const scopedResult = await deleteProduct(8, { expectedModality: 'external' });
+      expect(deleteRecords).toHaveBeenCalledWith('products', { id: 8, modality: 'external' });
+      expect(scopedResult).toBeUndefined();
     });
   });
 

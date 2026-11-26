@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { query } from '../../lib/infra/db.js';
-import { checkRateLimit, invalidateCache } from '../../lib/cache/cache.js';
+import { checkRateLimit, getOrSetCache, invalidateCache } from '../../lib/cache/cache.js';
 import { getClientIP } from '../../lib/api/helpers.js';
 import { getAuthenticatedCustomer } from '../../lib/auth/customer-auth.js';
 import { getCustomerById, updateCustomerProfile } from '../../lib/domain/customers.js';
@@ -11,7 +11,10 @@ import {
   calculateShippingCost,
 } from '../../lib/domain/orders.js';
 import { createMercadoPagoPayment } from '../../lib/payment/mercadopago.js';
-import { isValidCpfCnpjDigits } from '../../lib/payment/payment-status-messages.js';
+import {
+  isValidCpfCnpjDigits,
+  MIN_PAYMENT_METHOD_AMOUNTS,
+} from '../../lib/payment/payment-status-messages.js';
 import { logger } from '../../lib/infra/logger.js';
 
 const deliveryAddressSchema = z.object({
@@ -24,13 +27,39 @@ const deliveryAddressSchema = z.object({
   state: z.string().trim().min(2, 'Informe a UF (2 letras)').max(2, 'Informe apenas a sigla da UF'),
 });
 
+const strictQuantitySchema = z
+  .union([z.number(), z.string()])
+  .optional()
+  .transform((v, ctx) => {
+    if (v === undefined) return 1;
+    let parsed;
+    if (typeof v === 'number') {
+      parsed = v;
+    } else {
+      const trimmed = String(v).trim();
+      if (!/^\d+$/.test(trimmed)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Quantidade deve ser um número inteiro entre 1 e 99.',
+        });
+        return z.NEVER;
+      }
+      parsed = Number(trimmed);
+    }
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 99) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Quantidade deve ser um número inteiro entre 1 e 99.',
+      });
+      return z.NEVER;
+    }
+    return parsed;
+  });
+
 const checkoutPostSchema = z
   .object({
     productId: z.union([z.number(), z.string()]).transform((v) => parseInt(v, 10)),
-    quantity: z
-      .union([z.number(), z.string()])
-      .optional()
-      .transform((v) => Math.max(1, parseInt(v, 10) || 1)),
+    quantity: strictQuantitySchema,
     deliveryAddress: deliveryAddressSchema,
     paymentMethod: z.enum(['pix', 'debit_card', 'credit_card', 'ticket']),
     paymentDetails: z
@@ -71,6 +100,14 @@ const checkoutPostSchema = z
     const requiresTokenizedCard =
       Boolean(process.env.MP_ACCESS_TOKEN) || process.env.NODE_ENV === 'production';
     if (isCard && requiresTokenizedCard) {
+      if (details.cardNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['paymentDetails', 'cardNumber'],
+          message:
+            'Número de cartão bruto não é aceito; envie apenas o token seguro gerado pelo Mercado Pago.',
+        });
+      }
       if (!details.token) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -83,6 +120,33 @@ const checkoutPostSchema = z
           code: z.ZodIssueCode.custom,
           path: ['paymentDetails', 'paymentMethodId'],
           message: 'Bandeira/meio de pagamento do cartão não identificado.',
+        });
+      }
+    }
+
+    if (
+      isCard &&
+      details.installments !== undefined &&
+      details.installments !== ''
+    ) {
+      const rawInst = details.installments;
+      const instNum =
+        typeof rawInst === 'number'
+          ? rawInst
+          : /^\d+$/.test(String(rawInst).trim())
+            ? Number(String(rawInst).trim())
+            : NaN;
+      if (!Number.isInteger(instNum) || instNum < 1 || instNum > 12) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['paymentDetails', 'installments'],
+          message: 'Número de parcelas inválido (deve ser inteiro entre 1 e 12).',
+        });
+      } else if (data.paymentMethod === 'debit_card' && instNum !== 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['paymentDetails', 'installments'],
+          message: 'Pagamento no débito aceita apenas 1 parcela à vista.',
         });
       }
     }
@@ -175,32 +239,18 @@ export default async function handler(req, res) {
     }
 
     const { productId, quantity, deliveryAddress, paymentMethod, paymentDetails } = validation.data;
-
-    let order;
-    try {
-      order = await createInternalOrder({
-        customerId: customer.id,
-        productId,
-        quantity,
-        deliveryAddress,
-        paymentMethod,
+    const rawIdempotencyKey = String(
+      req.headers?.['x-idempotency-key'] || req.body?.idempotencyKey || ''
+    ).trim();
+    if (rawIdempotencyKey && !/^[A-Za-z0-9._:-]{8,128}$/.test(rawIdempotencyKey)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Chave de idempotência inválida.',
       });
-    } catch (err) {
-      if (err.message === 'PRODUCT_NOT_FOUND' || err.message === 'PRODUCT_NOT_INTERNAL') {
-        return res.status(404).json({
-          error: 'Not Found',
-          message: 'Este produto não está disponível para venda direta no site.',
-        });
-      }
-      if (err.message === 'INSUFFICIENT_STOCK') {
-        return res.status(409).json({
-          error: 'Conflict',
-          message: 'Quantidade solicitada indisponível em estoque.',
-        });
-      }
-      throw err;
     }
 
+    const requiresTokenizedCard =
+      Boolean(process.env.MP_ACCESS_TOKEN) || process.env.NODE_ENV === 'production';
     const normalizeAddressText = (value) => String(value ?? '').trim().toLowerCase();
     const normalizeAddressCep = (value) => String(value ?? '').replace(/\D/g, '');
     const areAddressesEqual = (saved, incoming) => {
@@ -216,57 +266,134 @@ export default async function handler(req, res) {
       );
     };
 
-    // Atualiza o endereço padrão apenas quando mudou e em paralelo à chamada ao gateway
-    // para evitar queries extras no caminho crítico do checkout.
-    const addressUpdatePromise = areAddressesEqual(customer.default_address, deliveryAddress)
-      ? Promise.resolve()
-      : updateCustomerProfile(customer.id, { defaultAddress: deliveryAddress }).catch(() => {});
+    const requestFingerprint = `${productId}:${quantity}:${paymentMethod}`;
 
-    const safePaymentDetails = {
-      ...(paymentDetails || {}),
-      cardNumber: paymentDetails?.token ? undefined : paymentDetails?.cardNumber,
-      address: deliveryAddress,
+    const executeCheckoutAttempt = async () => {
+      let order;
+      try {
+        order = await createInternalOrder({
+          customerId: customer.id,
+          productId,
+          quantity,
+          deliveryAddress,
+          paymentMethod,
+        });
+      } catch (err) {
+        if (err.message === 'PRODUCT_NOT_FOUND' || err.message === 'PRODUCT_NOT_INTERNAL') {
+          const httpErr = new Error(err.message);
+          httpErr.httpStatus = 404;
+          httpErr.httpBody = {
+            error: 'Not Found',
+            message: 'Este produto não está disponível para venda direta no site.',
+          };
+          throw httpErr;
+        }
+        if (err.message === 'INSUFFICIENT_STOCK') {
+          const httpErr = new Error(err.message);
+          httpErr.httpStatus = 409;
+          httpErr.httpBody = {
+            error: 'Conflict',
+            message: 'Quantidade solicitada indisponível em estoque.',
+          };
+          throw httpErr;
+        }
+        if (err.message === 'BELOW_MIN_PAYMENT_AMOUNT') {
+          const minRequired =
+            err.minAmount || MIN_PAYMENT_METHOD_AMOUNTS[paymentMethod] || 0.01;
+          const formattedMin = new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+          }).format(minRequired);
+          const httpErr = new Error(err.message);
+          httpErr.httpStatus = 400;
+          httpErr.httpBody = {
+            error: 'Bad Request',
+            message: `Valor total do pedido abaixo do mínimo permitido (${formattedMin}) para esta forma de pagamento.`,
+          };
+          throw httpErr;
+        }
+        throw err;
+      }
+
+      // Atualiza o endereço padrão apenas quando mudou e em paralelo à chamada ao gateway
+      // para evitar queries extras no caminho crítico do checkout.
+      const addressUpdatePromise = areAddressesEqual(customer.default_address, deliveryAddress)
+        ? Promise.resolve()
+        : updateCustomerProfile(customer.id, { defaultAddress: deliveryAddress }).catch(() => {});
+
+      const safePaymentDetails = {
+        ...(paymentDetails || {}),
+        cardNumber:
+          requiresTokenizedCard || paymentDetails?.token
+            ? undefined
+            : paymentDetails?.cardNumber,
+        address: deliveryAddress,
+      };
+
+      try {
+        const [mpResult] = await Promise.all([
+          createMercadoPagoPayment({
+            order,
+            customer,
+            paymentMethod,
+            paymentDetails: safePaymentDetails,
+          }),
+          addressUpdatePromise,
+        ]);
+
+        const [attachedOrder] = await Promise.all([
+          attachOrderPaymentInfo(order.id, mpResult),
+          invalidateCache('products:*').catch(() => {}),
+        ]);
+        return { order: attachedOrder, fingerprint: requestFingerprint };
+      } catch (mpError) {
+        logger.error('Checkout', `Falha no Mercado Pago para o pedido #${order.id}:`, mpError);
+        await Promise.all([
+          addressUpdatePromise,
+          cancelFailedCheckoutOrder(
+            order.id,
+            mpError?.userMessage || mpError?.message || 'Falha ao iniciar pagamento no Mercado Pago'
+          ).catch(() => {}),
+          invalidateCache('products:*').catch(() => {}),
+        ]);
+
+        const status =
+          mpError?.statusCode === 400 || mpError?.statusCode === 422 ? 422 : 502;
+        const httpErr = new Error(mpError?.message || 'MP_GATEWAY_ERROR');
+        httpErr.httpStatus = status;
+        httpErr.httpBody = {
+          error: 'Payment Gateway Error',
+          message:
+            mpError?.userMessage ||
+            'Não foi possível processar o pagamento junto ao Mercado Pago. Nenhum valor foi cobrado e o estoque foi preservado.',
+        };
+        throw httpErr;
+      }
     };
 
-    let finalOrder;
+    let checkoutOutcome;
     try {
-      const [mpResult] = await Promise.all([
-        createMercadoPagoPayment({
-          order,
-          customer,
-          paymentMethod,
-          paymentDetails: safePaymentDetails,
-        }),
-        addressUpdatePromise,
-      ]);
+      if (rawIdempotencyKey) {
+        const idemCacheKey = `checkout:idem:${customer.id}:${rawIdempotencyKey}`;
+        checkoutOutcome = await getOrSetCache(idemCacheKey, executeCheckoutAttempt, 300);
+      } else {
+        checkoutOutcome = await executeCheckoutAttempt();
+      }
+    } catch (attemptErr) {
+      if (attemptErr?.httpStatus && attemptErr?.httpBody) {
+        return res.status(attemptErr.httpStatus).json(attemptErr.httpBody);
+      }
+      throw attemptErr;
+    }
 
-      const [attachedOrder] = await Promise.all([
-        attachOrderPaymentInfo(order.id, mpResult),
-        invalidateCache('products:*').catch(() => {}),
-      ]);
-      finalOrder = attachedOrder;
-    } catch (mpError) {
-      logger.error('Checkout', `Falha no Mercado Pago para o pedido #${order.id}:`, mpError);
-      await Promise.all([
-        addressUpdatePromise,
-        cancelFailedCheckoutOrder(
-          order.id,
-          mpError?.userMessage || mpError?.message || 'Falha ao iniciar pagamento no Mercado Pago'
-        ).catch(() => {}),
-        invalidateCache('products:*').catch(() => {}),
-      ]);
-
-      const status =
-        mpError?.statusCode === 400 || mpError?.statusCode === 422 ? 422 : 502;
-      return res.status(status).json({
-        error: 'Payment Gateway Error',
-        message:
-          mpError?.userMessage ||
-          'Não foi possível processar o pagamento junto ao Mercado Pago. Nenhum valor foi cobrado e o estoque foi preservado.',
+    if (rawIdempotencyKey && checkoutOutcome?.fingerprint && checkoutOutcome.fingerprint !== requestFingerprint) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Chave de idempotência já utilizada para outra tentativa de compra.',
       });
     }
 
-    return res.status(201).json({ order: finalOrder });
+    return res.status(201).json({ order: checkoutOutcome.order });
   } catch (error) {
     logger.error('Checkout', 'Erro ao processar checkout interno:', error);
     return res.status(500).json({

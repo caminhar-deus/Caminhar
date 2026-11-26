@@ -106,6 +106,16 @@ describe('Hook - usePerformanceMetrics (resource observer thresholds)', () => {
         startTime: 31_000,
       },
       {
+        name: 'http://localhost:3000/api/customer/orders?orderId=20',
+        duration: 2800,
+        startTime: 31_500,
+      },
+      {
+        name: 'http://localhost:3000/api/admin/orders?sync=1',
+        duration: 3200,
+        startTime: 31_800,
+      },
+      {
         name: 'http://localhost:3000/api/upload-image',
         duration: 3100,
         startTime: 32_000,

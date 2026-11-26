@@ -776,6 +776,7 @@
 │   │   ├── 0041-active-payment-reconciliation-and-webhook-fallback.md
 │   │   ├── 0042-google-id-token-local-jwks-verification.md
 │   │   ├── 0043-admin-inactivity-timeout-and-unified-401-session-guard.md
+│   │   ├── 0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -1561,6 +1562,7 @@
 │       │   ├── bench-isolation.test.js
 │       │   ├── bench-papeis-runner.test.js
 │       │   ├── bench-runner.test.js
+│       │   ├── check-env.test.js
 │       │   ├── check-github-actions.test.js
 │       │   ├── check-hardcoded-credentials.test.js
 │       │   ├── check-model-catalog.test.js
@@ -1615,4 +1617,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-223 directories, 1393 files
+223 directories, 1395 files

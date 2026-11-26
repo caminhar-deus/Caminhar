@@ -219,6 +219,110 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
     });
     expect(checkoutPostPayload.paymentDetails.token).toBe('mp_fallback_token_abc123');
     expect(checkoutPostPayload.paymentDetails.paymentMethodId).toBe('master');
+    const postCall = fetchMock.mock.calls.find(([url, opts]) => String(url).endsWith('/api/checkout') && opts?.method === 'POST');
+    expect(postCall[1].headers['X-Idempotency-Key']).toMatch(/^chk_/);
+  });
+
+  it('bloqueia fallback direto /v1/card_tokens quando NODE_ENV=production e limpa dados do cartão ao trocar meio de pagamento', async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    process.env.NEXT_PUBLIC_MP_PUBLIC_KEY = 'APP_USR-prod-key';
+
+    const mockCreateCardToken = jest
+      .fn()
+      .mockRejectedValue('MercadoPago.js - SSL certificate is required');
+    window.MercadoPago = jest.fn().mockImplementation(() => ({
+      getPaymentMethods: jest.fn().mockResolvedValue({
+        results: [{ id: 'visa', name: 'Visa', payment_type_id: 'credit_card', issuer: { id: 1 } }],
+      }),
+      getInstallments: jest.fn().mockResolvedValue([]),
+      createCardToken: mockCreateCardToken,
+    }));
+
+    fetchMock.mockImplementation(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/customer/auth')) {
+        return {
+          ok: true,
+          json: async () => ({
+            authenticated: true,
+            customer: {
+              id: 10,
+              name: 'Ana Silva',
+              email: 'ana@exemplo.com',
+              default_address: {
+                cep: '01001000',
+                street: 'Praça da Sé',
+                number: '100',
+                neighborhood: 'Sé',
+                city: 'São Paulo',
+                state: 'SP',
+              },
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/checkout?productId=5')) {
+        return {
+          ok: true,
+          json: async () => ({
+            product: {
+              id: 5,
+              name: 'Terço de Madeira',
+              price: 49.9,
+              stock: 10,
+              shipping_type: 'free',
+              shipping_cost: 0,
+              formatted_price: 'R$ 49,90',
+            },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    try {
+      render(<CheckoutPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Terço de Madeira')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('radio', { name: /Cartão de crédito/i }));
+      fireEvent.change(screen.getByLabelText(/CPF ou CNPJ do titular/i), {
+        target: { value: '19119119100' },
+      });
+      fireEvent.change(screen.getByLabelText(/Nome impresso no cartão/i), {
+        target: { value: 'APRO' },
+      });
+      fireEvent.change(screen.getByLabelText(/Número do cartão/i), {
+        target: { value: '5031433225206379' },
+      });
+      fireEvent.change(screen.getByLabelText(/Validade \(MM\/AA\)/i), {
+        target: { value: '1130' },
+      });
+      fireEvent.change(screen.getByLabelText(/CVV/i), {
+        target: { value: '123' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Confirmar e Pagar' }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(/SSL|HTTPS/i);
+      });
+      expect(
+        fetchMock.mock.calls.some(([url]) => String(url).includes('/v1/card_tokens'))
+      ).toBe(false);
+
+      // Troca para PIX e volta para cartão -> número, validade e CVV foram limpos
+      fireEvent.click(screen.getByRole('radio', { name: /PIX/i }));
+      fireEvent.click(screen.getByRole('radio', { name: /Cartão de crédito/i }));
+      expect(screen.getByLabelText(/Número do cartão/i)).toHaveValue('');
+      expect(screen.getByLabelText(/Validade \(MM\/AA\)/i)).toHaveValue('');
+      expect(screen.getByLabelText(/CVV/i)).toHaveValue('');
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+    }
   });
 
   it('bloqueia pagamento com cartão quando valor total do pedido é inferior ao mínimo de R$ 0,50 (ex.: R$ 0,01)', async () => {
@@ -405,6 +509,7 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
     await waitFor(() => {
       expect(screen.getByText('Pedido #20 confirmado e pago!')).toBeInTheDocument();
     });
+    expect(fetchMock).toHaveBeenCalledWith('/api/customer/orders?orderId=20&force=1');
     expect(
       screen.queryByRole('button', { name: /Verificar pagamento agora/i })
     ).not.toBeInTheDocument();

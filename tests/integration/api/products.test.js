@@ -146,7 +146,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
   });
 
   describe('GET - Admin (autenticado)', () => {
-    it('deve listar todos os produtos (incluindo rascunhos) se for um administrador logado', async () => {
+    it('deve listar todos os produtos externos (incluindo rascunhos) se for um administrador logado', async () => {
       const adminUser = userFactory({ role: 'admin' });
       getAuthToken.mockReturnValue('admin-token');
       verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
@@ -159,10 +159,10 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getAllProducts).toHaveBeenCalledWith(1, 10, '');
+      expect(getAllProducts).toHaveBeenCalledWith(1, 10, '', 'external');
     });
 
-    it('deve repassar o termo de busca do painel para o domínio', async () => {
+    it('deve repassar o termo de busca do painel para o domínio com modality=external', async () => {
       const adminUser = userFactory({ role: 'admin' });
       getAuthToken.mockReturnValue('admin-token');
       verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
@@ -175,7 +175,19 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getAllProducts).toHaveBeenCalledWith(1, 10, 'Bíblia');
+      expect(getAllProducts).toHaveBeenCalledWith(1, 10, 'Bíblia', 'external');
+    });
+
+    it('deve rejeitar GET admin que solicite modality=internal com HTTP 400', async () => {
+      const adminUser = userFactory({ role: 'admin' });
+      getAuthToken.mockReturnValue('admin-token');
+      verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
+
+      const { req, res } = createMocks({ method: 'GET', query: { modality: 'internal' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(getAllProducts).not.toHaveBeenCalled();
     });
 
     it('deve repassar modality=external quando filtrado pela aba Gestão de Produtos', async () => {
@@ -348,7 +360,11 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(updateProduct).toHaveBeenCalledWith(1, expect.objectContaining({ name: 'Meia' }));
+      expect(updateProduct).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ name: 'Meia' }),
+        { expectedModality: 'external' },
+      );
       expect(invalidateCache).toHaveBeenCalledWith('products:*');
     });
 
@@ -398,10 +414,20 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(res._getStatusCode()).toBe(200);
       expect(res._getJSONData()).toEqual({ success: true, message: 'Ordem atualizada' });
 
-      // Uma chamada por item, com a posição recebida (1-based)
+      // Uma chamada por item, com a posição recebida (1-based) e isolamento de modalidade external
       expect(updateRecords).toHaveBeenCalledTimes(2);
-      expect(updateRecords).toHaveBeenNthCalledWith(1, 'products', { position: 1 }, { id: 5 });
-      expect(updateRecords).toHaveBeenNthCalledWith(2, 'products', { position: 2 }, { id: 6 });
+      expect(updateRecords).toHaveBeenNthCalledWith(
+        1,
+        'products',
+        { position: 1 },
+        { id: 5, modality: 'external' },
+      );
+      expect(updateRecords).toHaveBeenNthCalledWith(
+        2,
+        'products',
+        { position: 2 },
+        { id: 6, modality: 'external' },
+      );
 
       expect(invalidateCache).toHaveBeenCalledWith('products:*');
 
@@ -462,7 +488,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(deleteProduct).toHaveBeenCalledWith(1);
+      expect(deleteProduct).toHaveBeenCalledWith(1, { expectedModality: 'external' });
       expect(logActivity).toHaveBeenCalledWith('admin', 'EXCLUIR PRODUTO', 'PRODUCT', 1, expect.any(String), expect.any(String));
     });
 

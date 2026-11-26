@@ -1,10 +1,49 @@
 #!/usr/bin/env node
-import nextEnv from '@next/env';
-const { loadEnvConfig } = nextEnv;
 
-// Carrega as variáveis de ambiente do projeto (mesma lógica do Next.js)
-const projectDir = process.cwd();
-loadEnvConfig(projectDir);
+export function validateMercadoPagoEnv(env = process.env) {
+  const warnings = [];
+  const mpAccessToken = String(env.MP_ACCESS_TOKEN || '').trim();
+  const mpPublicKey = String(env.NEXT_PUBLIC_MP_PUBLIC_KEY || '').trim();
+  const mpWebhookSecret = String(env.MP_WEBHOOK_SECRET || '').trim();
+  const isProduction = env.NODE_ENV === 'production';
+
+  if (mpAccessToken && !mpPublicKey) {
+    warnings.push(
+      'MP_ACCESS_TOKEN está definida sem NEXT_PUBLIC_MP_PUBLIC_KEY; pagamentos com cartão exigem tokenização no navegador e serão recusados pela validação.'
+    );
+  } else if (!mpAccessToken && mpPublicKey) {
+    warnings.push(
+      'NEXT_PUBLIC_MP_PUBLIC_KEY está definida sem MP_ACCESS_TOKEN; a tokenização no navegador pode enviar tokens para um backend em modo sandbox local.'
+    );
+  }
+
+  if (mpAccessToken && mpPublicKey) {
+    const tokenIsTest = mpAccessToken.startsWith('TEST-');
+    const pubIsTest = mpPublicKey.startsWith('TEST-');
+    const tokenIsAppUsr = mpAccessToken.startsWith('APP_USR-');
+    const pubIsAppUsr = mpPublicKey.startsWith('APP_USR-');
+    if ((tokenIsTest && pubIsAppUsr) || (tokenIsAppUsr && pubIsTest)) {
+      warnings.push(
+        'MP_ACCESS_TOKEN e NEXT_PUBLIC_MP_PUBLIC_KEY possuem prefixos incompatíveis (TEST- vs APP_USR-); pagamentos com cartão podem falhar na API do Mercado Pago.'
+      );
+    }
+  }
+
+  if (isProduction) {
+    const missingProd = [
+      !mpAccessToken ? 'MP_ACCESS_TOKEN' : null,
+      !mpPublicKey ? 'NEXT_PUBLIC_MP_PUBLIC_KEY' : null,
+      !mpWebhookSecret ? 'MP_WEBHOOK_SECRET' : null,
+    ].filter(Boolean);
+    if (missingProd.length > 0) {
+      warnings.push(
+        `Ambiente de produção com credenciais do Mercado Pago ausentes (${missingProd.join(', ')}); checkout e webhooks falharão com 503/401.`
+      );
+    }
+  }
+
+  return warnings;
+}
 
 const REQUIRED_VARS = [
   'DATABASE_URL', // Necessário para conexão com PostgreSQL
@@ -57,6 +96,10 @@ function checkEnv() {
     );
   }
 
+  for (const mpWarning of validateMercadoPagoEnv(process.env)) {
+    console.warn('\x1b[33m%s\x1b[0m', `⚠️  Aviso: ${mpWarning}`);
+  }
+
   console.log('\x1b[32m%s\x1b[0m', '✅ Ambiente validado com sucesso.\n');
 }
 
@@ -90,11 +133,24 @@ async function checkDatabaseConnection() {
   }
 }
 
-try {
-  checkEnv();
-  await checkDatabaseConnection();
-  process.exit(0);
-} catch (error) {
-  console.error('❌ Erro:', error.message);
-  process.exit(1);
+const isDirectExecution =
+  Boolean(process.argv[1]) && process.argv[1].endsWith('check-env.js');
+
+async function main() {
+  // Carrega as variáveis de ambiente do projeto (mesma lógica do Next.js)
+  const nextEnv = await import('@next/env');
+  const loadEnvConfig = nextEnv.default?.loadEnvConfig || nextEnv.loadEnvConfig;
+  loadEnvConfig(process.cwd());
+  try {
+    checkEnv();
+    await checkDatabaseConnection();
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Erro:', error.message);
+    process.exit(1);
+  }
+}
+
+if (isDirectExecution) {
+  main();
 }

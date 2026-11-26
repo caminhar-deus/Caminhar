@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
 import {
+  MIN_PAYMENT_METHOD_AMOUNTS,
   getPaymentFeedback,
   formatCpfCnpj,
   isValidCpfCnpjDigits,
@@ -16,12 +17,12 @@ function getMpPublicKey() {
   return process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
 }
 
-const MIN_PAYMENT_METHOD_AMOUNTS = {
-  pix: 0.01,
-  credit_card: 0.5,
-  debit_card: 0.5,
-  ticket: 4.0,
-};
+function generateCheckoutIdempotencyKey() {
+  if (typeof globalThis?.crypto?.randomUUID === 'function') {
+    return `chk_${globalThis.crypto.randomUUID()}`;
+  }
+  return `chk_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
 
 let mpSdkLoaderPromise = null;
 let mpSdkInstance = null;
@@ -139,10 +140,18 @@ async function tokenizeCardWithMercadoPago(mp, publicKey, cardPayload) {
     return await mp.createCardToken(cardPayload);
   } catch (sdkErr) {
     const rawMsg = typeof sdkErr === 'string' ? sdkErr : String(sdkErr?.message || '');
-    const isHttpProtocol =
-      typeof window !== 'undefined' && window.location?.protocol === 'http:';
+    const isNonProduction = process.env.NODE_ENV !== 'production';
+    const isLocalHttpOrigin =
+      typeof window !== 'undefined' &&
+      window.location?.protocol === 'http:' &&
+      (window.location?.hostname === 'localhost' || window.location?.hostname === '127.0.0.1');
 
-    if (rawMsg.includes('SSL certificate is required') && isHttpProtocol && publicKey) {
+    if (
+      rawMsg.includes('SSL certificate is required') &&
+      isNonProduction &&
+      isLocalHttpOrigin &&
+      publicKey
+    ) {
       const tokenUrl = `https://api.mercadopago.com/v1/card_tokens?public_key=${encodeURIComponent(publicKey)}`;
       const tokenRes = await fetch(tokenUrl, {
         method: 'POST',
@@ -257,6 +266,18 @@ export default function CheckoutPage() {
   const [completedOrder, setCompletedOrder] = useState(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [statusCheckMessage, setStatusCheckMessage] = useState('');
+  const checkoutAttemptKeyRef = useRef('');
+
+  useEffect(() => {
+    checkoutAttemptKeyRef.current = generateCheckoutIdempotencyKey();
+  }, [id, quantity, paymentMethod]);
+
+  const clearSensitiveCardFields = useCallback(() => {
+    setCardNumber('');
+    setCardExpiry('');
+    setCardSecurityCode('');
+    setDetectedCardMethod(null);
+  }, []);
 
   const verifyOrderStatus = useCallback(
     async ({ silent = false } = {}) => {
@@ -266,8 +287,9 @@ export default function CheckoutPage() {
         setStatusCheckMessage('');
       }
       try {
+        const forceSuffix = silent ? '' : '&force=1';
         const res = await fetch(
-          `/api/customer/orders?orderId=${encodeURIComponent(completedOrder.id)}`
+          `/api/customer/orders?orderId=${encodeURIComponent(completedOrder.id)}${forceSuffix}`
         );
         if (!res.ok) {
           if (!silent) {
@@ -600,9 +622,16 @@ export default function CheckoutPage() {
         }
       }
 
+      const idempotencyKey =
+        checkoutAttemptKeyRef.current || generateCheckoutIdempotencyKey();
+      checkoutAttemptKeyRef.current = idempotencyKey;
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': idempotencyKey,
+        },
         body: JSON.stringify({
           productId: product.id,
           quantity,
@@ -622,12 +651,16 @@ export default function CheckoutPage() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (response.status >= 400 && response.status < 500) {
+          checkoutAttemptKeyRef.current = generateCheckoutIdempotencyKey();
+        }
         setError(data.message || 'Não foi possível concluir o pedido. Verifique os campos informados.');
         setSubmitting(false);
         return;
       }
 
-      setCardSecurityCode('');
+      clearSensitiveCardFields();
+      checkoutAttemptKeyRef.current = generateCheckoutIdempotencyKey();
       setStatusCheckMessage('');
       setCompletedOrder(data.order);
     } catch (submitError) {
@@ -811,6 +844,8 @@ export default function CheckoutPage() {
                     variant="primary"
                     size="md"
                     onClick={() => {
+                      clearSensitiveCardFields();
+                      checkoutAttemptKeyRef.current = generateCheckoutIdempotencyKey();
                       setCompletedOrder(null);
                       setStatusCheckMessage('');
                       setError('');
@@ -980,6 +1015,9 @@ export default function CheckoutPage() {
                         paymentMethod === pm.id ? styles.paymentMethodOptionActive : styles.paymentMethodOption
                       }
                       onClick={() => {
+                        if (pm.id !== paymentMethod) {
+                          clearSensitiveCardFields();
+                        }
                         setPaymentMethod(pm.id);
                         setError('');
                       }}

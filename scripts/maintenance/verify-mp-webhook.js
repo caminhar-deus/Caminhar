@@ -223,6 +223,7 @@ export async function runWebhookHomologation(options = {}, { fetchImpl = global.
     requestIdHeader: signed.requestIdHeader,
     dataId: mpOrderId,
     secret,
+    ...(options.ts !== undefined ? { nowSeconds: Number(signed.ts) } : {}),
   });
 
   const baseUrl = String(options.url || 'http://localhost:3000/api/webhooks/mercadopago').replace(

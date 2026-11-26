@@ -570,10 +570,15 @@ describe('Componente Front-End - AdminSales', () => {
         expect(screen.getByText('C1')).toBeInTheDocument();
         expect(screen.getByText('Pendente')).toBeInTheDocument();
         expect(screen.getAllByText('Em análise').length).toBeGreaterThanOrEqual(2);
-        expect(screen.getByText('Autorizado')).toBeInTheDocument();
-        expect(screen.getByText('Contestado')).toBeInTheDocument();
-        expect(screen.getAllByText('Recusado/Canc.').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText('Autorizado').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText('Contestado').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText('Recusado').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText('Cancelado').length).toBeGreaterThanOrEqual(2);
         expect(screen.getAllByText('Reembolsado').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText('PIX').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Cartão de crédito').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Cartão de débito').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Boleto bancário').length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('status_custom')).toBeInTheDocument();
         expect(screen.getByText('TRK3')).toBeInTheDocument();
       });
@@ -682,6 +687,7 @@ describe('Componente Front-End - AdminSales', () => {
       // Abre e fecha pelo botão Cancelar
       fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
       expect(screen.getByText(/Gerenciar Pedido #55/i)).toBeInTheDocument();
+      expect(screen.getByText(/PIX — Aprovado/i)).toBeInTheDocument();
       expect(screen.getByText(/Aguardando geração/i)).toBeInTheDocument();
       expect(screen.getByText(/Rua da Paz, 123 — Centro, São Paulo\/SP — CEP 01001-000/i)).toBeInTheDocument();
 
@@ -885,5 +891,47 @@ describe('Componente Front-End - AdminSales', () => {
         expect(reorderCall).toBeDefined();
       });
     }
+  });
+
+  it('exibe metadados do MP, alerta de estorno manual e desabilita reabertura no modal de pedido cancelado', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: 77,
+            customer_name: 'Carlos Cancelled',
+            customer_email: 'carlos@exemplo.com',
+            product_name: 'Terço Raro',
+            quantity: 1,
+            formatted_total_amount: 'R$ 50,00',
+            formatted_shipping_cost: 'R$ 0,00',
+            mp_payment_id: 'ORD_77',
+            payment_method: 'credit_card',
+            payment_status: 'approved',
+            order_status: 'cancelled',
+            tracking_code: '',
+            created_at: '2026-11-26T00:00:00Z',
+            payment_payload: {
+              mp_transaction_id: 'PAY_77',
+              status_detail: 'accredited',
+              needs_manual_refund: true,
+            },
+          },
+        ],
+        pagination: { totalPages: 1, total: 1 },
+      }),
+    });
+
+    render(<AdminSales />);
+    await waitFor(() => {
+      expect(screen.getByText('Carlos Cancelled')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
+    expect(screen.getByText('PAY_77')).toBeInTheDocument();
+    expect(screen.getByText('accredited')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/estorno manual necessário/i);
+    expect(screen.getByLabelText('Situação Logística do Pedido')).toBeDisabled();
   });
 });

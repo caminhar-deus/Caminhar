@@ -70,12 +70,16 @@ describe('payment-status-messages — feedback e validação de documento', () =
     expect(boleto.description).toMatch(/linha digitável/i);
   });
 
-  it('formata e valida CPF e CNPJ rejeitando sequências repetidas', () => {
+  it('formata e valida CPF e CNPJ aplicando dígitos verificadores (módulo 11) e rejeitando repetidos', () => {
     expect(formatCpfCnpj('19119119100')).toBe('191.191.191-00');
     expect(formatCpfCnpj('12345678000195')).toBe('12.345.678/0001-95');
     expect(isValidCpfCnpjDigits('191.191.191-00')).toBe(true);
+    expect(isValidCpfCnpjDigits('12345678909')).toBe(true);
     expect(isValidCpfCnpjDigits('12345678000195')).toBe(true);
+    expect(isValidCpfCnpjDigits('11.222.333/0001-81')).toBe(true);
     expect(isValidCpfCnpjDigits('11111111111')).toBe(false);
+    expect(isValidCpfCnpjDigits('12345678900')).toBe(false);
+    expect(isValidCpfCnpjDigits('12345678000100')).toBe(false);
     expect(isValidCpfCnpjDigits('12345')).toBe(false);
   });
 

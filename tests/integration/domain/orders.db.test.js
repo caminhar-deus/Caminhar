@@ -431,7 +431,7 @@ describeIf('Pedidos e Webhooks (orders) — Integração com PostgreSQL Real', (
       mpPaymentId: mpId,
       paymentStatus: 'approved',
     });
-    expect(duplicateProcess).toEqual({ duplicate: true, order: null });
+    expect(duplicateProcess).toEqual({ duplicate: true, order: null, stockChanged: false });
 
     // Tentativa de rebaixar pedido já 'approved' para 'pending' via reconciliação ativa é bloqueada
     const afterTransientSync = await syncOrderPaymentStatus(order.id, {
@@ -443,5 +443,69 @@ describeIf('Pedidos e Webhooks (orders) — Integração com PostgreSQL Real', (
     expect(afterTransientSync.order_status).toBe('paid');
     expect(afterTransientSync.payment_payload.sync_checked).toBe(true);
     expect(afterTransientSync.payment_payload.status_detail).toBe('accredited');
+  });
+
+  it('preserva event_key em corrida de webhook, protege refunded contra downgrade e bloqueia reabertura de pedido cancelado', async () => {
+    const customer = await insertTestCustomer();
+    const product = await insertTestProduct({ stock: 5 });
+    const order = await createInternalOrder({
+      customerId: customer.id,
+      productId: product.id,
+      quantity: 2,
+      deliveryAddress: { cep: '01001-000' },
+      paymentMethod: 'pix',
+    });
+
+    const raceEventKey = `evt-race-${Date.now()}`;
+    const raceMpId = `ORD-RACE-${Date.now()}`;
+
+    // Webhook chega antes de mp_payment_id/externalReference existir -> não queima event_key
+    const raceRes = await processMercadoPagoWebhookEvent({
+      eventId: raceEventKey,
+      eventType: 'order.processed',
+      mpPaymentId: raceMpId,
+      paymentStatus: 'approved',
+    });
+    expect(raceRes).toEqual({
+      duplicate: false,
+      order: null,
+      orderNotFound: true,
+      stockChanged: false,
+    });
+
+    // Retry com o mesmo eventKey após attach/externalReference é processado normalmente
+    const retryRes = await processMercadoPagoWebhookEvent({
+      eventId: raceEventKey,
+      eventType: 'order.processed',
+      mpPaymentId: raceMpId,
+      externalReference: String(order.id),
+      paymentStatus: 'approved',
+    });
+    expect(retryRes.duplicate).toBe(false);
+    expect(retryRes.order.order_status).toBe('paid');
+
+    // Estorno seguido de webhook atrasado 'approved' não faz downgrade e bloqueia reabertura manual
+    const refunded = await processMercadoPagoWebhookEvent({
+      eventId: `evt-refund-${Date.now()}`,
+      eventType: 'order.refunded',
+      mpPaymentId: raceMpId,
+      paymentStatus: 'refunded',
+    });
+    expect(refunded.order.payment_status).toBe('refunded');
+    expect(refunded.order.order_status).toBe('cancelled');
+    expect(refunded.order.stock_restored).toBe(true);
+
+    const lateApprovedAfterRefund = await processMercadoPagoWebhookEvent({
+      eventId: `evt-late-refund-${Date.now()}`,
+      eventType: 'order.processed',
+      mpPaymentId: raceMpId,
+      paymentStatus: 'approved',
+    });
+    expect(lateApprovedAfterRefund.order.payment_status).toBe('refunded');
+    expect(lateApprovedAfterRefund.order.order_status).toBe('cancelled');
+
+    await expect(updateAdminOrder(order.id, { orderStatus: 'paid' })).rejects.toThrow(
+      'ORDER_CANCELLED_CANNOT_REOPEN'
+    );
   });
 });

@@ -3,7 +3,6 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import {
   createMercadoPagoPayment,
   fetchMercadoPagoPaymentDetails,
-  fetchMercadoPagoPaymentStatus,
   mapMercadoPagoStatus,
   verifyMercadoPagoWebhookSignature,
 } from '../../../../lib/payment/mercadopago.js';
@@ -373,7 +372,7 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
     ).rejects.toThrow('MP_API_ERROR: 400 Invalid payment data');
   });
 
-  describe('fetchMercadoPagoPaymentStatus()', () => {
+  describe('fetchMercadoPagoPaymentDetails()', () => {
     it('retorna o status real do pagamento consultado na API legada e normaliza Orders API (/v1/orders)', async () => {
       process.env.MP_ACCESS_TOKEN = 'test-token-mp';
       const mockFetch = jest
@@ -400,7 +399,10 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
         });
       global.fetch = mockFetch;
 
-      await expect(fetchMercadoPagoPaymentStatus('1/2')).resolves.toBe('approved');
+      await expect(fetchMercadoPagoPaymentDetails('1/2')).resolves.toMatchObject({
+        paymentStatus: 'approved',
+        mpOrderStatus: 'approved',
+      });
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
         'https://api.mercadopago.com/v1/payments/1%2F2',
@@ -411,8 +413,11 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
       );
 
       await expect(
-        fetchMercadoPagoPaymentStatus('ORDTST01', { eventType: 'order' })
-      ).resolves.toBe('approved');
+        fetchMercadoPagoPaymentDetails('ORDTST01', { eventType: 'order' })
+      ).resolves.toMatchObject({
+        paymentStatus: 'approved',
+        statusDetail: 'accredited',
+      });
       expect(mockFetch).toHaveBeenNthCalledWith(
         2,
         'https://api.mercadopago.com/v1/orders/ORDTST01',
@@ -421,39 +426,70 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
         })
       );
 
-      await expect(fetchMercadoPagoPaymentStatus('ORDTST02')).resolves.toBe('in_process');
+      await expect(fetchMercadoPagoPaymentDetails('ORDTST02')).resolves.toMatchObject({
+        paymentStatus: 'in_process',
+        statusDetail: 'in_process',
+      });
+    });
+
+    it('prioriza tentativa aprovada/processada em transactions.payments quando há múltiplas tentativas', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'ORDTST_MULTI',
+          external_reference: '44',
+          status: 'processed',
+          transactions: {
+            payments: [
+              { id: 'PAY_FAIL', status: 'failed', status_detail: 'insufficient_amount' },
+              { id: 'PAY_OK', status: 'processed', status_detail: 'accredited' },
+            ],
+          },
+        }),
+      });
+
+      await expect(fetchMercadoPagoPaymentDetails('ORDTST_MULTI')).resolves.toEqual({
+        paymentStatus: 'approved',
+        rawStatus: 'processed',
+        mpOrderStatus: 'processed',
+        statusDetail: 'accredited',
+        externalReference: '44',
+        transactionId: 'PAY_OK',
+      });
     });
 
     it('lança MP_NOT_CONFIGURED sem token', async () => {
       delete process.env.MP_ACCESS_TOKEN;
-      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_NOT_CONFIGURED');
+      await expect(fetchMercadoPagoPaymentDetails('1')).rejects.toThrow('MP_NOT_CONFIGURED');
     });
 
     it('lança MP_API_ERROR quando a API responde com erro HTTP', async () => {
       process.env.MP_ACCESS_TOKEN = 'test-token-mp';
       global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
-      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_API_ERROR');
+      await expect(fetchMercadoPagoPaymentDetails('1')).rejects.toThrow('MP_API_ERROR');
     });
 
     it('lança MP_API_ERROR em falha de rede ou timeout', async () => {
       process.env.MP_ACCESS_TOKEN = 'test-token-mp';
       global.fetch = jest.fn().mockRejectedValue(new Error('network down'));
-      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_API_ERROR');
+      await expect(fetchMercadoPagoPaymentDetails('1')).rejects.toThrow('MP_API_ERROR');
     });
 
     it('lança MP_INVALID_RESPONSE quando a resposta não traz status', async () => {
       process.env.MP_ACCESS_TOKEN = 'test-token-mp';
       global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 1 }) });
-      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_INVALID_RESPONSE');
+      await expect(fetchMercadoPagoPaymentDetails('1')).rejects.toThrow('MP_INVALID_RESPONSE');
     });
   });
 
   describe('verifyMercadoPagoWebhookSignature()', () => {
-    it('deve validar assinatura HMAC-SHA256 legítima e rejeitar assinatura adulterada', () => {
+    it('deve validar assinatura HMAC-SHA256 legítima dentro da janela temporal e rejeitar adulterada ou expirada', () => {
       const secret = 'test-webhook-secret-key';
       const dataId = '998877';
       const requestIdHeader = 'req-abc-123';
-      const ts = '1700000000';
+      const now = Math.floor(Date.now() / 1000);
+      const ts = String(now);
       const manifest = `id:${dataId};request-id:${requestIdHeader};ts:${ts};`;
       const validHash = createHmac('sha256', secret).update(manifest).digest('hex');
 
@@ -463,8 +499,60 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
           requestIdHeader,
           dataId,
           secret,
+          nowSeconds: now,
         })
       ).toBe(true);
+
+      // Aceita ts em milissegundos dentro da janela
+      const tsMs = String(now * 1000);
+      const hashMs = createHmac('sha256', secret)
+        .update(`id:${dataId};request-id:${requestIdHeader};ts:${tsMs};`)
+        .digest('hex');
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: `ts=${tsMs},v1=${hashMs}`,
+          requestIdHeader,
+          dataId,
+          secret,
+          nowSeconds: now,
+        })
+      ).toBe(true);
+
+      // Rejeita ts expirado (> 15 min) e ts no futuro distante
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: `ts=${ts},v1=${validHash}`,
+          requestIdHeader,
+          dataId,
+          secret,
+          nowSeconds: now + 1200,
+        })
+      ).toBe(false);
+
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: `ts=${ts},v1=${validHash}`,
+          requestIdHeader,
+          dataId,
+          secret,
+          nowSeconds: now - 1200,
+        })
+      ).toBe(false);
+
+      // Rejeita ts não numérico mesmo com HMAC assinado
+      const badTs = 'not-a-number';
+      const badTsHash = createHmac('sha256', secret)
+        .update(`id:${dataId};request-id:${requestIdHeader};ts:${badTs};`)
+        .digest('hex');
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: `ts=${badTs},v1=${badTsHash}`,
+          requestIdHeader,
+          dataId,
+          secret,
+          nowSeconds: now,
+        })
+      ).toBe(false);
 
       expect(
         verifyMercadoPagoWebhookSignature({
@@ -472,6 +560,7 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
           requestIdHeader,
           dataId,
           secret,
+          nowSeconds: now,
         })
       ).toBe(false);
     });
@@ -508,7 +597,7 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
 
     it('deve normalizar dataId alfanumérico para minúsculas na verificação v2 e mapear erro payment_method_not_allowed_for_collector', async () => {
       const secret = 'mp-secret';
-      const ts = '1700000100';
+      const ts = String(Math.floor(Date.now() / 1000));
       const reqId = 'req-alpha';
       const dataId = 'ORDTST01ABC';
       const manifest = `id:${dataId.toLowerCase()};request-id:${reqId};ts:${ts};`;
@@ -620,9 +709,11 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
     });
 
     it('cobre todos os status de mapMercadoPagoStatus, CNPJ, endereço incompleto, collector_id, erro 401/500/invalid_transaction_amount/rede e assinatura hex inválida', async () => {
-      // mapMercadoPagoStatus completo
+      // mapMercadoPagoStatus completo (incluindo status diretos partially_refunded e in_mediation)
       expect(mapMercadoPagoStatus('processed', 'partially_refunded')).toBe('refunded');
       expect(mapMercadoPagoStatus('processed', 'in_mediation')).toBe('charged_back');
+      expect(mapMercadoPagoStatus('partially_refunded')).toBe('refunded');
+      expect(mapMercadoPagoStatus('in_mediation')).toBe('charged_back');
       expect(mapMercadoPagoStatus('action_required', 'waiting_capture')).toBe('authorized');
       expect(mapMercadoPagoStatus('action_required', 'waiting_retry')).toBe('in_process');
       expect(mapMercadoPagoStatus('created')).toBe('pending');
@@ -634,9 +725,10 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
 
       // verifyMercadoPagoWebhookSignature com tamanho diferente e hex inválido
       const secret = 'mp-secret';
+      const currentTs = String(Math.floor(Date.now() / 1000));
       expect(
         verifyMercadoPagoWebhookSignature({
-          signatureHeader: 'ts=1700000100,v1=abcd',
+          signatureHeader: `ts=${currentTs},v1=abcd`,
           requestIdHeader: 'req-1',
           dataId: '10',
           secret,
@@ -644,7 +736,7 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
       ).toBe(false);
       expect(
         verifyMercadoPagoWebhookSignature({
-          signatureHeader: 'ts=1700000100,v1=zzzz',
+          signatureHeader: `ts=${currentTs},v1=zzzz`,
           requestIdHeader: 'req-1',
           dataId: '10',
           secret,

@@ -82,6 +82,12 @@ export default {
       lines: 90,
       statements: 90
     },
+    'pages/api/webhooks/': {
+      branches: 80,
+      functions: 95,
+      lines: 90,
+      statements: 90
+    },
     'components/Admin/': {
       branches: 82,
       functions: 85,

@@ -12,6 +12,7 @@ jest.mock('../../../../lib/domain/audit.js', () => ({
 
 jest.mock('../../../../lib/cache/cache.js', () => ({
   checkRateLimit: jest.fn().mockResolvedValue(false),
+  invalidateCache: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('../../../../lib/domain/orders.js', () => ({
@@ -24,14 +25,29 @@ jest.mock('../../../../lib/payment/reconcile-orders.js', () => ({
 }));
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../../lib/auth/auth.js', () => {
+  const mockAuth = {
+    getAuthToken: jest.fn(),
+    verifyToken: jest.fn(),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockAuth.getAuthToken(req);
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Não autenticado' });
+      }
+      const user = mockAuth.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Token inválido ou expirado' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockAuth;
+});
 
 import handler from '../../../../pages/api/admin/orders.js';
 import { query } from '../../../../lib/infra/db.js';
-import { checkRateLimit } from '../../../../lib/cache/cache.js';
+import { checkRateLimit, invalidateCache } from '../../../../lib/cache/cache.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 import { getAdminOrders, updateAdminOrder } from '../../../../lib/domain/orders.js';
 import { reconcilePendingOrders } from '../../../../lib/payment/reconcile-orders.js';
@@ -80,7 +96,7 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
       verifyToken.mockReturnValue({ userId: 2, username: 'operador', role: 'operador' });
       query.mockRejectedValueOnce(new Error('DB Permission Error'));
 
-      const errSpy = filterConsoleError(['Falha ao verificar permissão de Gestão de Vendas']);
+      const errSpy = filterConsoleError(['Falha ao verificar permissões no handler Order']);
       try {
         const { req, res } = createMocks({ method: 'GET' });
         await handler(req, res);
@@ -118,6 +134,15 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
       await handler(req, res);
       expect(res._getStatusCode()).toBe(429);
     });
+
+    it('deve retornar 429 quando limite de taxa for atingido na listagem (GET)', async () => {
+      checkRateLimit.mockResolvedValueOnce(true);
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(429);
+      expect(getAdminOrders).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET - Listagem de pedidos', () => {
@@ -142,7 +167,7 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
           page: '1',
           limit: '10',
           search: 'Bíblia',
-          paymentStatus: 'paid',
+          paymentStatus: 'approved',
           orderStatus: 'preparing',
           paymentMethod: 'pix',
         },
@@ -159,11 +184,22 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
           page: 1,
           limit: 10,
           search: 'Bíblia',
-          paymentStatus: 'paid',
+          paymentStatus: 'approved',
           orderStatus: 'preparing',
           paymentMethod: 'pix',
         })
       );
+    });
+
+    it('deve retornar 400 se search ultrapassar 200 caracteres', async () => {
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { search: 'a'.repeat(201) },
+      });
+
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(400);
+      expect(getAdminOrders).not.toHaveBeenCalled();
     });
 
     it('deve retornar 400 se os parâmetros de paginação forem inválidos', async () => {
@@ -206,6 +242,7 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
+      expect(reconcilePendingOrders).toHaveBeenCalledWith([pendingOrder], { force: true });
       const data = JSON.parse(res._getData());
       expect(data.syncedCount).toBe(1);
       expect(data.data[0].payment_status).toBe('approved');
@@ -294,6 +331,30 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve retornar 409 se tentar reabrir pedido cancelado e invalidar products:* ao cancelar pedido', async () => {
+      updateAdminOrder.mockRejectedValueOnce(new Error('ORDER_CANCELLED_CANNOT_REOPEN'));
+      const { req: reqReopen, res: resReopen } = createMocks({
+        method: 'PUT',
+        body: { id: 10, order_status: 'paid' },
+      });
+      await handler(reqReopen, resReopen);
+      expect(resReopen._getStatusCode()).toBe(409);
+
+      updateAdminOrder.mockResolvedValueOnce({
+        id: 11,
+        order_status: 'cancelled',
+        stock_restored: true,
+        tracking_code: null,
+      });
+      const { req: reqCancel, res: resCancel } = createMocks({
+        method: 'PUT',
+        body: { id: 11, order_status: 'cancelled' },
+      });
+      await handler(reqCancel, resCancel);
+      expect(resCancel._getStatusCode()).toBe(200);
+      expect(invalidateCache).toHaveBeenCalledWith('products:*');
     });
   });
 

@@ -213,4 +213,95 @@ describe('reconcilePendingOrders() — lib/payment/reconcile-orders.js', () => {
     expect(result.syncedCount).toBe(1);
     expect(result.orders[1].payment_status).toBe('approved');
   });
+
+  it('aplica cooldown por mp_payment_id (evita chamadas repetidas e starvation acima de maxOrders) e respeita force=true', async () => {
+    const orderA = {
+      id: 401,
+      payment_status: 'pending',
+      order_status: 'awaiting_payment',
+      mp_payment_id: 'ORD_COOLDOWN_A',
+      payment_payload: { status_detail: 'waiting_transfer', mp_order_status: 'action_required' },
+    };
+    const orderB = {
+      id: 402,
+      payment_status: 'pending',
+      order_status: 'awaiting_payment',
+      mp_payment_id: 'ORD_COOLDOWN_B',
+      payment_payload: { status_detail: 'waiting_transfer', mp_order_status: 'action_required' },
+    };
+
+    fetchMercadoPagoPaymentDetails
+      .mockResolvedValueOnce({
+        paymentStatus: 'pending',
+        mpOrderStatus: 'action_required',
+        statusDetail: 'waiting_transfer',
+      })
+      .mockResolvedValueOnce({
+        paymentStatus: 'approved',
+        mpOrderStatus: 'processed',
+        statusDetail: 'accredited',
+      })
+      .mockResolvedValueOnce({
+        paymentStatus: 'approved',
+        mpOrderStatus: 'processed',
+        statusDetail: 'accredited',
+      });
+
+    syncOrderPaymentStatus.mockResolvedValue({
+      ...orderB,
+      payment_status: 'approved',
+      order_status: 'paid',
+    });
+
+    // Primeira chamada com maxOrders=1 consulta orderA (entra no cooldown de 15s)
+    await reconcilePendingOrders([orderA, orderB], { maxOrders: 1 });
+    expect(fetchMercadoPagoPaymentDetails).toHaveBeenCalledTimes(1);
+    expect(fetchMercadoPagoPaymentDetails).toHaveBeenCalledWith('ORD_COOLDOWN_A');
+
+    // Segunda chamada imediata pula orderA em cooldown e alcança orderB (zero starvation)
+    const second = await reconcilePendingOrders([orderA, orderB], { maxOrders: 1 });
+    expect(fetchMercadoPagoPaymentDetails).toHaveBeenCalledTimes(2);
+    expect(fetchMercadoPagoPaymentDetails).toHaveBeenNthCalledWith(2, 'ORD_COOLDOWN_B');
+    expect(second.syncedCount).toBe(1);
+
+    // force=true ignora cooldown e força consulta em orderA
+    syncOrderPaymentStatus.mockResolvedValueOnce({
+      ...orderA,
+      payment_status: 'approved',
+      order_status: 'paid',
+    });
+    const forced = await reconcilePendingOrders([orderA], { maxOrders: 1, force: true });
+    expect(fetchMercadoPagoPaymentDetails).toHaveBeenCalledTimes(3);
+    expect(forced.syncedCount).toBe(1);
+  });
+
+  it('deduplica chamadas concorrentes via single-flight para o mesmo mp_payment_id', async () => {
+    let resolveFetch;
+    const inflightPromise = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    fetchMercadoPagoPaymentDetails.mockImplementationOnce(() => inflightPromise);
+
+    const order = {
+      id: 501,
+      payment_status: 'pending',
+      order_status: 'awaiting_payment',
+      mp_payment_id: 'ORD_SINGLE_FLIGHT_501',
+      payment_payload: { status_detail: 'waiting_transfer', mp_order_status: 'action_required' },
+    };
+
+    const p1 = reconcilePendingOrders([order], { maxOrders: 1, force: true });
+    const p2 = reconcilePendingOrders([order], { maxOrders: 1, force: true });
+
+    expect(fetchMercadoPagoPaymentDetails).toHaveBeenCalledTimes(1);
+    resolveFetch({
+      paymentStatus: 'pending',
+      mpOrderStatus: 'action_required',
+      statusDetail: 'waiting_transfer',
+    });
+
+    const [r1, r2] = await Promise.all([p1, p2]);
+    expect(r1.syncedCount).toBe(0);
+    expect(r2.syncedCount).toBe(0);
+  });
 });

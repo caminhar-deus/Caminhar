@@ -37,6 +37,11 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 > **Recalibrado de novo em 22/11/2026**: após endurecimento de segurança em `pages/api/settings.js`
 > e `pages/api/upload-image.js`, as âncoras de `withAuth` foram atualizadas para `upload-image.js:219`
 > e `settings.js` (`:142` e `:189`).
+>
+> **Recalibrado de novo em 26/11/2026**: `pages/api/admin/orders.js` e
+> `pages/api/admin/internal-products.js` migraram para `createAdminHandler` (passando para
+> **19** admin via factory e **4** autenticação manual), e as âncoras de `pages/api/products.js`
+> foram atualizadas para `requireAuth` em `:136` e usos em `:382,388,393,398`.
 
 ## 1. Quantos arquivos, quantas rotas
 
@@ -53,15 +58,14 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 
 | Grupo | Rotas | Onde a autenticação é aplicada |
 |---|---|---|
-| Admin via factory | 17 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
+| Admin via factory | 19 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
 | `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:219` |
 | `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:142`) e PUT (`:189`) com `withAuth` |
-| Autenticação manual | 6 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/admin/internal-products.js` (`requireAuth` em `:62`, usado em `:98`), `pages/api/admin/orders.js` (`requireAuth` em `:29`, usado em `:65`), `pages/api/settings.js` |
+| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:136`, usado em `:382,388,393,398`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
 
-As **17** admin via factory são as **16** de `pages/api/admin/` mais
-`pages/api/ip-diagnostico.js:186`. As outras **2** de `pages/api/admin/`
-(`internal-products.js` e `orders.js`) não usam a factory: fazem `requireAuth` +
-`checkRolePermission` manuais, e por isso entram no grupo manual.
+As **19** admin via factory são todas as **18** de `pages/api/admin/` mais
+`pages/api/ip-diagnostico.js:186`. As rotas `admin/internal-products.js` e `admin/orders.js`
+migraram da validação manual para `createAdminHandler` em 26/11/2026.
 
 Cuidado para o conferidor: `pages/api/settings.js` aparece em **dois** grupos. Isso é
 correto, não é contradição.

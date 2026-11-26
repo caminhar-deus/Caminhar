@@ -206,9 +206,11 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: 'approved', label: 'Aprovado' },
   { value: 'pending', label: 'Aguardando pagamento' },
   { value: 'in_process', label: 'Em análise' },
+  { value: 'authorized', label: 'Autorizado' },
   { value: 'rejected', label: 'Recusado' },
   { value: 'cancelled', label: 'Cancelado' },
   { value: 'refunded', label: 'Reembolsado' },
+  { value: 'charged_back', label: 'Contestado' },
 ];
 
 const ORDER_STATUS_OPTIONS = [
@@ -229,17 +231,21 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: 'ticket', label: 'Boleto bancário' },
 ];
 
+function getPaymentMethodLabel(method) {
+  if (!method) return '-';
+  if (method === 'bolbradesco') return 'Boleto bancário';
+  const found = PAYMENT_METHOD_OPTIONS.find((opt) => opt.value === method);
+  return found ? found.label : method;
+}
+
 function getPaymentBadge(status) {
   if (status === 'approved') return { label: 'Aprovado', cls: salesStyles.badgeApproved };
   if (status === 'pending') return { label: 'Pendente', cls: salesStyles.badgePending };
   if (status === 'in_process') return { label: 'Em análise', cls: salesStyles.badgeInfo };
   if (status === 'authorized') return { label: 'Autorizado', cls: salesStyles.badgeInfo };
-  if (status === 'rejected' || status === 'cancelled' || status === 'charged_back') {
-    return {
-      label: status === 'charged_back' ? 'Contestado' : 'Recusado/Canc.',
-      cls: salesStyles.badgeRejected,
-    };
-  }
+  if (status === 'rejected') return { label: 'Recusado', cls: salesStyles.badgeRejected };
+  if (status === 'cancelled') return { label: 'Cancelado', cls: salesStyles.badgeRejected };
+  if (status === 'charged_back') return { label: 'Contestado', cls: salesStyles.badgeRejected };
   if (status === 'refunded') return { label: 'Reembolsado', cls: salesStyles.badgeInfo };
   return { label: status || '-', cls: salesStyles.badgeInfo };
 }
@@ -427,13 +433,19 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
       { key: 'product_name', header: 'Produto' },
       { key: 'quantity', header: 'Quantidade' },
       { key: 'formatted_total_amount', header: 'Total' },
-      { key: 'payment_method', header: 'Forma Pagto' },
+      { key: 'payment_method_label', header: 'Forma Pagto' },
       { key: 'payment_status', header: 'Status Pagto' },
       { key: 'order_status', header: 'Status Pedido' },
+      { key: 'mp_payment_id', header: 'ID Mercado Pago' },
       { key: 'tracking_code', header: 'Rastreio' },
+      { key: 'created_at', header: 'Data do Pedido' },
     ];
+    const formattedData = orders.map((order) => ({
+      ...order,
+      payment_method_label: getPaymentMethodLabel(order.payment_method),
+    }));
     exportToCSV({
-      data: orders,
+      data: formattedData,
       columns: exportColumns,
       filename: 'pedidos_vendas_internas',
       onEmpty: () => toast.error('Não há pedidos para exportar.'),
@@ -599,7 +611,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                         <td>{order.product_name}</td>
                         <td>{order.quantity}</td>
                         <td>{order.formatted_total_amount}</td>
-                        <td>{order.payment_method}</td>
+                        <td>{getPaymentMethodLabel(order.payment_method)}</td>
                         <td>
                           <span className={payBadge.cls}>{payBadge.label}</span>
                         </td>
@@ -652,14 +664,34 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                     {selectedOrder.formatted_shipping_cost})
                   </div>
                   <div>
+                    <strong>Pagamento:</strong> {getPaymentMethodLabel(selectedOrder.payment_method)} —{' '}
+                    {getPaymentBadge(selectedOrder.payment_status).label}
+                  </div>
+                  <div>
                     <strong>ID Pagamento Mercado Pago:</strong> {selectedOrder.mp_payment_id || 'Aguardando geração'}
                   </div>
+                  {selectedOrder.payment_payload?.mp_transaction_id && (
+                    <div>
+                      <strong>ID Transação MP:</strong> {selectedOrder.payment_payload.mp_transaction_id}
+                    </div>
+                  )}
+                  {selectedOrder.payment_payload?.status_detail && (
+                    <div>
+                      <strong>Detalhe Mercado Pago:</strong> {selectedOrder.payment_payload.status_detail}
+                    </div>
+                  )}
                   {selectedOrder.delivery_address?.street && (
                     <div>
                       <strong>Endereço de entrega:</strong> {selectedOrder.delivery_address.street},{' '}
                       {selectedOrder.delivery_address.number} — {selectedOrder.delivery_address.neighborhood},{' '}
                       {selectedOrder.delivery_address.city}/{selectedOrder.delivery_address.state} — CEP{' '}
                       {selectedOrder.delivery_address.cep}
+                    </div>
+                  )}
+                  {selectedOrder.payment_payload?.needs_manual_refund && (
+                    <div className={salesStyles.modalWarningBox} role="alert">
+                      <strong>Atenção: estorno manual necessário.</strong> O pagamento foi aprovado tardiamente no
+                      Mercado Pago após o cancelamento deste pedido e sem estoque disponível para re-reserva.
                     </div>
                   )}
                 </div>
@@ -672,6 +704,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                     id="modal-order-status"
                     value={modalOrderStatus}
                     onChange={(e) => setModalOrderStatus(e.target.value)}
+                    disabled={selectedOrder.order_status === 'cancelled'}
                     className={`${salesStyles.filterSelect} ${salesStyles.fullWidthControl}`}
                   >
                     {ORDER_STATUS_OPTIONS.filter((o) => o.value !== '').map((opt) => (
@@ -680,6 +713,11 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                       </option>
                     ))}
                   </select>
+                  {selectedOrder.order_status === 'cancelled' && (
+                    <span className={salesStyles.fieldHint}>
+                      Pedidos cancelados com estoque devolvido não podem ser reabertos; apenas o código de rastreio permanece editável.
+                    </span>
+                  )}
                 </div>
 
                 <div className={salesStyles.modalFieldGroup}>

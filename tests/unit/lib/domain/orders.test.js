@@ -128,7 +128,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
 
     it('deve rejeitar com INSUFFICIENT_STOCK quando não há saldo suficiente', async () => {
       query.mockResolvedValueOnce({
-        rows: [{ id: 5, name: 'Terço', modality: 'internal', stock: 1, published: true }],
+        rows: [{ id: 5, name: 'Terço', price: '10.00', modality: 'internal', stock: 1, published: true }],
       });
 
       await expect(
@@ -140,6 +140,23 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
           paymentMethod: 'pix',
         })
       ).rejects.toThrow('INSUFFICIENT_STOCK');
+    });
+
+    it('deve rejeitar com BELOW_MIN_PAYMENT_AMOUNT quando total ficar abaixo do mínimo do meio escolhido', async () => {
+      query.mockResolvedValueOnce({
+        rows: [{ id: 5, name: 'Botton', price: '0.10', modality: 'internal', stock: 10, shipping_type: 'free', published: true }],
+      });
+
+      await expect(
+        createInternalOrder({
+          customerId: 1,
+          productId: 5,
+          quantity: 1,
+          deliveryAddress: {},
+          paymentMethod: 'credit_card',
+        })
+      ).rejects.toThrow('BELOW_MIN_PAYMENT_AMOUNT');
+      expect(query).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -279,7 +296,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         page: 1,
         limit: 10,
         search: 'Maria',
-        paymentStatus: 'paid',
+        paymentStatus: 'approved',
         orderStatus: 'preparing',
         paymentMethod: 'pix',
       });
@@ -399,11 +416,23 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         expect.any(Object)
       );
     });
+
+    it('deve impedir reabertura de pedido já cancelado (ORDER_CANCELLED_CANNOT_REOPEN)', async () => {
+      query.mockResolvedValueOnce({
+        rows: [{ id: 102, product_id: 5, quantity: 2, order_status: 'cancelled', stock_restored: true }],
+      });
+
+      await expect(updateAdminOrder(102, { orderStatus: 'paid' })).rejects.toThrow(
+        'ORDER_CANCELLED_CANNOT_REOPEN'
+      );
+    });
   });
 
   describe('processMercadoPagoWebhookEvent()', () => {
     it('deve ignorar evento duplicado no webhook do Mercado Pago (idempotência)', async () => {
-      query.mockResolvedValueOnce({ rows: [] });
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 50, product_id: 2, quantity: 1, order_status: 'awaiting_payment' }] })
+        .mockResolvedValueOnce({ rows: [] });
 
       const res = await processMercadoPagoWebhookEvent({
         eventId: 'evt_dup_1',
@@ -411,7 +440,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         paymentStatus: 'approved',
       });
 
-      expect(res).toEqual({ duplicate: true, order: null });
+      expect(res).toEqual({ duplicate: true, order: null, stockChanged: false });
     });
 
     it('deve retornar duplicate false e order null se mpPaymentId estiver ausente', async () => {
@@ -422,13 +451,11 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         mpPaymentId: null,
       });
 
-      expect(res).toEqual({ duplicate: false, order: null });
+      expect(res).toEqual({ duplicate: false, order: null, stockChanged: false });
     });
 
-    it('deve retornar duplicate false e order null se pedido com mpPaymentId não for encontrado', async () => {
-      query
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Insert webhook event
-        .mockResolvedValueOnce({ rows: [] }); // Select order by mp_payment_id
+    it('deve retornar orderNotFound true sem inserir event_key se pedido com mpPaymentId não for encontrado', async () => {
+      query.mockResolvedValueOnce({ rows: [] });
 
       const res = await processMercadoPagoWebhookEvent({
         eventId: 'evt_order_not_found',
@@ -436,15 +463,21 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         paymentStatus: 'approved',
       });
 
-      expect(res).toEqual({ duplicate: false, order: null });
+      expect(res).toEqual({
+        duplicate: false,
+        order: null,
+        orderNotFound: true,
+        stockChanged: false,
+      });
+      expect(query).toHaveBeenCalledTimes(1);
     });
 
     it('deve aprovar pedido quando status for approved e transitar para paid', async () => {
       query
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Insert webhook event
         .mockResolvedValueOnce({
           rows: [{ id: 50, product_id: 2, quantity: 1, order_status: 'awaiting_payment' }],
         })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Insert webhook event
         .mockResolvedValueOnce({
           rows: [
             {
@@ -466,16 +499,17 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
       });
 
       expect(res.duplicate).toBe(false);
+      expect(res.stockChanged).toBe(false);
       expect(res.order.order_status).toBe('paid');
       expect(res.order.payment_status).toBe('approved');
     });
 
     it('deve devolver estoque quando status for rejected e pedido for cancelado', async () => {
       query
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Webhook event
         .mockResolvedValueOnce({
           rows: [{ id: 51, product_id: 2, quantity: 2, order_status: 'awaiting_payment' }],
         })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Webhook event
         .mockResolvedValueOnce({ rows: [] }) // Restore stock
         .mockResolvedValueOnce({
           rows: [
@@ -487,6 +521,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
               total_amount: '160.00',
               order_status: 'cancelled',
               payment_status: 'rejected',
+              stock_restored: true,
             },
           ],
         });
@@ -498,6 +533,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
       });
 
       expect(res.duplicate).toBe(false);
+      expect(res.stockChanged).toBe(true);
       expect(res.order.order_status).toBe('cancelled');
       expect(query).toHaveBeenCalledWith(
         'UPDATE products SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
@@ -506,9 +542,8 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
       );
     });
 
-    it('não deve duplicar devolução de estoque se stock_restored já for true nem rebaixar pedido aprovado', async () => {
+    it('não deve duplicar devolução de estoque se stock_restored já for true nem rebaixar pedido aprovado ou refunded/charged_back', async () => {
       query
-        .mockResolvedValueOnce({ rows: [{ id: 2 }] })
         .mockResolvedValueOnce({
           rows: [
             {
@@ -522,6 +557,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
             },
           ],
         })
+        .mockResolvedValueOnce({ rows: [{ id: 2 }] })
         .mockResolvedValueOnce({
           rows: [
             {
@@ -545,9 +581,46 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
       expect(stalePending.order.payment_status).toBe('approved');
       expect(stalePending.order.order_status).toBe('paid');
 
+      // Proteção de refunded/charged_back contra downgrade tardio por approved/pending
       query.mockClear();
       query
-        .mockResolvedValueOnce({ rows: [{ id: 3 }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 54,
+              product_id: 2,
+              quantity: 1,
+              order_status: 'cancelled',
+              payment_status: 'refunded',
+              stock_restored: true,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [{ id: 4 }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 54,
+              product_id: 2,
+              unit_price: '50.00',
+              shipping_cost: '0.00',
+              total_amount: '50.00',
+              order_status: 'cancelled',
+              payment_status: 'refunded',
+              stock_restored: true,
+            },
+          ],
+        });
+      const staleAfterRefund = await processMercadoPagoWebhookEvent({
+        eventId: 'evt_stale_after_refund',
+        mpPaymentId: 'mp_54',
+        paymentStatus: 'approved',
+      });
+      expect(staleAfterRefund.order.payment_status).toBe('refunded');
+      expect(staleAfterRefund.order.order_status).toBe('cancelled');
+
+      query.mockClear();
+      query
         .mockResolvedValueOnce({
           rows: [
             {
@@ -560,6 +633,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
             },
           ],
         })
+        .mockResolvedValueOnce({ rows: [{ id: 3 }] })
         .mockResolvedValueOnce({
           rows: [
             {
@@ -586,6 +660,97 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         expect.anything(),
         expect.anything()
       );
+    });
+
+    it('trata aprovação tardia sobre pedido cancelado: re-reserva quando há estoque e sinaliza needs_manual_refund quando falta estoque', async () => {
+      // Cenário A: há estoque -> recupera pedido para paid e stockChanged = true
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 55,
+              product_id: 9,
+              quantity: 2,
+              order_status: 'cancelled',
+              payment_status: 'cancelled',
+              stock_restored: true,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [{ id: 10 }] })
+        .mockResolvedValueOnce({ rows: [{ stock: 3 }] }) // Re-reserva atômica com sucesso
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 55,
+              product_id: 9,
+              unit_price: '40.00',
+              shipping_cost: '0.00',
+              total_amount: '80.00',
+              order_status: 'paid',
+              payment_status: 'approved',
+              stock_restored: false,
+              mp_payload: JSON.stringify({ late_approval_recovered: true }),
+            },
+          ],
+        });
+
+      const recovered = await processMercadoPagoWebhookEvent({
+        eventId: 'evt_late_ok',
+        mpPaymentId: 'mp_55',
+        paymentStatus: 'approved',
+      });
+      expect(recovered.stockChanged).toBe(true);
+      expect(recovered.order.order_status).toBe('paid');
+      expect(recovered.order.stock_restored).toBe(false);
+
+      // Cenário B: sem estoque -> mantém cancelled e grava needs_manual_refund
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        query.mockClear();
+        query
+          .mockResolvedValueOnce({
+            rows: [
+              {
+                id: 56,
+                product_id: 9,
+                quantity: 5,
+                order_status: 'cancelled',
+                payment_status: 'cancelled',
+                stock_restored: true,
+              },
+            ],
+          })
+          .mockResolvedValueOnce({ rows: [{ id: 11 }] })
+          .mockResolvedValueOnce({ rows: [] }) // Estoque insuficiente
+          .mockResolvedValueOnce({
+            rows: [
+              {
+                id: 56,
+                product_id: 9,
+                unit_price: '40.00',
+                shipping_cost: '0.00',
+                total_amount: '200.00',
+                order_status: 'cancelled',
+                payment_status: 'approved',
+                stock_restored: true,
+                mp_payload: JSON.stringify({ needs_manual_refund: true }),
+              },
+            ],
+          });
+
+        const manualRefund = await processMercadoPagoWebhookEvent({
+          eventId: 'evt_late_nostock',
+          mpPaymentId: 'mp_56',
+          paymentStatus: 'approved',
+        });
+        expect(manualRefund.stockChanged).toBe(false);
+        expect(manualRefund.order.order_status).toBe('cancelled');
+        expect(manualRefund.order.payment_payload.needs_manual_refund).toBe(true);
+        expect(errSpy).toHaveBeenCalled();
+      } finally {
+        errSpy.mockRestore();
+      }
     });
   });
 
@@ -815,7 +980,6 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
 
     it('processMercadoPagoWebhookEvent usa fallback por externalReference quando mp_payment_id ainda não foi gravado e bloqueia conflito de id', async () => {
       query
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({
           rows: [
@@ -833,6 +997,7 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
             },
           ],
         })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({
           rows: [
             {
@@ -863,7 +1028,6 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
 
       query.mockReset();
       query
-        .mockResolvedValueOnce({ rows: [{ id: 2 }] })
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({
           rows: [
@@ -884,7 +1048,12 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         paymentStatus: 'approved',
       });
 
-      expect(mismatchRes).toEqual({ duplicate: false, order: null });
+      expect(mismatchRes).toEqual({
+        duplicate: false,
+        order: null,
+        orderNotFound: true,
+        stockChanged: false,
+      });
     });
   });
 });

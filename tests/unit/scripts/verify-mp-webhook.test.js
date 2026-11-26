@@ -53,6 +53,7 @@ describe('scripts/maintenance/verify-mp-webhook.js', () => {
         requestIdHeader: signed.requestIdHeader,
         dataId: 'ORDTST01M7JZQWF8JS91B32MM9DRDETA',
         secret,
+        nowSeconds: 1794860000,
       })
     ).toBe(true);
 
@@ -61,7 +62,18 @@ describe('scripts/maintenance/verify-mp-webhook.js', () => {
         signatureHeader: signed.signatureHeader,
         requestIdHeader: signed.requestIdHeader,
         dataId: 'ORDTST01M7JZQWF8JS91B32MM9DRDETA',
+        secret,
+        nowSeconds: 1794862000,
+      })
+    ).toBe(false);
+
+    expect(
+      verifyMercadoPagoWebhookSignature({
+        signatureHeader: signed.signatureHeader,
+        requestIdHeader: signed.requestIdHeader,
+        dataId: 'ORDTST01M7JZQWF8JS91B32MM9DRDETA',
         secret: 'segredo-adulterado',
+        nowSeconds: 1794860000,
       })
     ).toBe(false);
   });

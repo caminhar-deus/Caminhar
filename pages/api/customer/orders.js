@@ -41,7 +41,8 @@ export default async function handler(req, res) {
       if (!shouldSync) {
         return res.status(200).json({ order });
       }
-      const { orders: synced } = await reconcilePendingOrders([order], { maxOrders: 1 });
+      const force = req.query?.force === '1';
+      const { orders: synced } = await reconcilePendingOrders([order], { maxOrders: 1, force });
       return res.status(200).json({ order: synced[0] || order });
     }
 

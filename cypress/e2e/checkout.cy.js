@@ -101,7 +101,7 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
       body: { order: PENDING_PIX_ORDER },
     }).as('createOrder');
 
-    cy.intercept('GET', '/api/customer/orders?orderId=501', {
+    cy.intercept('GET', '/api/customer/orders?orderId=501*', {
       statusCode: 200,
       body: {
         order: {
@@ -155,5 +155,130 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
     cy.contains('Pedido #501').should('be.visible');
     cy.contains('Pagamento aprovado').should('be.visible');
     cy.contains('Pago').should('be.visible');
+  });
+
+  it('deve concluir compra via cartão de crédito com tokenização SDK e limpar dados sensíveis do cartão', () => {
+    cy.intercept('GET', '/api/customer/auth', {
+      statusCode: 200,
+      body: { authenticated: true, customer: MOCK_CUSTOMER },
+    }).as('getCustomerAuth');
+
+    cy.intercept('GET', '/api/checkout?productId=101', {
+      statusCode: 200,
+      body: { product: MOCK_PRODUCT },
+    }).as('getCheckoutProduct');
+
+    cy.intercept('POST', '/api/checkout', {
+      statusCode: 201,
+      body: {
+        order: {
+          ...PENDING_PIX_ORDER,
+          id: 502,
+          payment_method: 'credit_card',
+          payment_status: 'approved',
+          order_status: 'paid',
+          payment_payload: { status_detail: 'accredited', mp_order_status: 'processed' },
+        },
+      },
+    }).as('createCardOrder');
+
+    cy.visit('/checkout/101', {
+      onBeforeLoad(win) {
+        win.MercadoPago = () => ({
+          getPaymentMethods: () =>
+            Promise.resolve({
+              results: [{ id: 'master', name: 'Mastercard', payment_type_id: 'credit_card', issuer: { id: 24 } }],
+            }),
+          getInstallments: () =>
+            Promise.resolve([
+              { payer_costs: [{ installments: 1, recommended_message: '1x de R$ 45,00 sem juros' }] },
+            ]),
+          createCardToken: () => Promise.resolve({ id: 'tok_e2e_master_123' }),
+        });
+      },
+    });
+    cy.wait(['@getCustomerAuth', '@getCheckoutProduct']);
+
+    cy.get('#payer-document').type('12345678909');
+    cy.contains('[role="radio"]', 'Cartão de crédito').click();
+    cy.get('#card-holder').type('MARIA PEREGRINA');
+    cy.get('#card-number').type('5031433225206379');
+    cy.get('#card-expiry').type('1130');
+    cy.get('#card-cvv').type('123');
+    cy.contains('button', 'Confirmar e Pagar').click();
+
+    cy.wait('@createCardOrder').its('request.headers').should('have.property', 'x-idempotency-key');
+    cy.contains('Pedido #502 confirmado e pago!').should('be.visible');
+  });
+
+  it('deve exibir feedback de recusa de cartão e permitir tentar outro meio de pagamento e gerar boleto normalizado', () => {
+    cy.intercept('GET', '/api/customer/auth', {
+      statusCode: 200,
+      body: { authenticated: true, customer: MOCK_CUSTOMER },
+    }).as('getCustomerAuth');
+
+    cy.intercept('GET', '/api/checkout?productId=101', {
+      statusCode: 200,
+      body: { product: MOCK_PRODUCT },
+    }).as('getCheckoutProduct');
+
+    cy.intercept('POST', '/api/checkout', (req) => {
+      if (req.body?.paymentMethod === 'credit_card') {
+        req.reply({
+          statusCode: 201,
+          body: {
+            order: {
+              ...PENDING_PIX_ORDER,
+              id: 503,
+              payment_method: 'credit_card',
+              payment_status: 'rejected',
+              order_status: 'cancelled',
+              payment_payload: { status_detail: 'insufficient_amount' },
+            },
+          },
+        });
+      } else {
+        req.reply({
+          statusCode: 201,
+          body: {
+            order: {
+              ...PENDING_PIX_ORDER,
+              id: 504,
+              payment_method: 'ticket',
+              payment_status: 'pending',
+              order_status: 'awaiting_payment',
+              payment_payload: {
+                digitable_line: '23793380296060108770738006333306316330000004500',
+                ticket_url: 'https://www.mercadopago.com.br/staging/payments/999/ticket',
+              },
+            },
+          },
+        });
+      }
+    }).as('checkoutAttempt');
+
+    cy.visit('/checkout/101');
+    cy.wait(['@getCustomerAuth', '@getCheckoutProduct']);
+
+    cy.get('#payer-document').type('12345678909');
+    cy.contains('[role="radio"]', 'Cartão de crédito').click();
+    cy.get('#card-holder').type('APRO');
+    cy.get('#card-number').type('5031433225206379');
+    cy.get('#card-expiry').type('1130');
+    cy.get('#card-cvv').type('123');
+    cy.contains('button', 'Confirmar e Pagar').click();
+    cy.wait('@checkoutAttempt');
+
+    cy.contains('Pagamento recusado no Pedido #503').should('be.visible');
+    cy.contains(/saldo ou limite insuficiente/i).should('be.visible');
+    cy.contains('button', 'Tentar outro meio de pagamento').click();
+
+    cy.contains('[role="radio"]', 'Boleto bancário').click();
+    cy.contains('button', 'Confirmar e Pagar').click();
+    cy.wait('@checkoutAttempt');
+
+    cy.contains('Boleto gerado para o Pedido #504').should('be.visible');
+    cy.contains('a', 'Abrir boleto para pagamento')
+      .should('have.attr', 'href', 'https://www.mercadopago.com.br/sandbox/payments/999/ticket');
   });
 });

@@ -5,6 +5,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 
 jest.mock('../../../lib/cache/cache.js', () => ({
   checkRateLimit: jest.fn().mockResolvedValue(false),
+  getOrSetCache: jest.fn(async (_key, fetchFn) => await fetchFn()),
   invalidateCache: jest.fn().mockResolvedValue(true),
 }));
 
@@ -30,7 +31,7 @@ jest.mock('../../../lib/payment/mercadopago.js', () => ({
 
 import handler from '../../../pages/api/checkout.js';
 import { query } from '../../../lib/infra/db.js';
-import { checkRateLimit } from '../../../lib/cache/cache.js';
+import { checkRateLimit, getOrSetCache } from '../../../lib/cache/cache.js';
 import { getAuthenticatedCustomer } from '../../../lib/auth/customer-auth.js';
 import { getCustomerById, updateCustomerProfile } from '../../../lib/domain/customers.js';
 import {
@@ -203,7 +204,7 @@ describe('API Checkout (/api/checkout)', () => {
         method: 'POST',
         body: {
           productId: 25,
-          quantity: 500,
+          quantity: 5,
           deliveryAddress: validAddress,
           paymentMethod: 'pix',
         },
@@ -559,6 +560,135 @@ describe('API Checkout (/api/checkout)', () => {
       } finally {
         errSpy.mockRestore();
       }
+    });
+
+    it('deve validar estritamente quantity, installments, cardNumber bruto com MP ativo e BELOW_MIN_PAYMENT_AMOUNT (400)', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      getCustomerById.mockResolvedValue({ id: 8, name: 'Carlos', email: 'carlos@test.com' });
+
+      // quantity inválida (0 e não-numérica)
+      for (const badQty of [0, -2, 'abc', 100]) {
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: { productId: 25, quantity: badQty, deliveryAddress: validAddress, paymentMethod: 'pix' },
+        });
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(400);
+      }
+
+      // installments inválido para crédito (13) e débito (2)
+      const { req: badCreditInst, res: resCreditInst } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'credit_card',
+          paymentDetails: { installments: 13 },
+        },
+      });
+      await handler(badCreditInst, resCreditInst);
+      expect(resCreditInst._getStatusCode()).toBe(400);
+
+      const { req: badDebitInst, res: resDebitInst } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'debit_card',
+          paymentDetails: { installments: 2 },
+        },
+      });
+      await handler(badDebitInst, resDebitInst);
+      expect(resDebitInst._getStatusCode()).toBe(400);
+
+      // cardNumber bruto rejeitado quando MP_ACCESS_TOKEN está ativo
+      const prevToken = process.env.MP_ACCESS_TOKEN;
+      process.env.MP_ACCESS_TOKEN = 'APP_USR-active';
+      try {
+        const { req: rawCardReq, res: rawCardRes } = createMocks({
+          method: 'POST',
+          body: {
+            productId: 25,
+            quantity: 1,
+            deliveryAddress: validAddress,
+            paymentMethod: 'credit_card',
+            paymentDetails: {
+              token: 'tok_ok',
+              paymentMethodId: 'visa',
+              cardNumber: '4111111111111111',
+            },
+          },
+        });
+        await handler(rawCardReq, rawCardRes);
+        expect(rawCardRes._getStatusCode()).toBe(400);
+        expect(JSON.parse(rawCardRes._getData()).message).toMatch(/Número de cartão bruto/i);
+      } finally {
+        if (prevToken === undefined) delete process.env.MP_ACCESS_TOKEN;
+        else process.env.MP_ACCESS_TOKEN = prevToken;
+      }
+
+      // BELOW_MIN_PAYMENT_AMOUNT mapeado para 400
+      const minErr = new Error('BELOW_MIN_PAYMENT_AMOUNT');
+      minErr.minAmount = 4.0;
+      createInternalOrder.mockRejectedValueOnce(minErr);
+      const { req: minReq, res: minRes } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'ticket',
+          paymentDetails: { payerDocument: '19119119100' },
+        },
+      });
+      await handler(minReq, minRes);
+      expect(minRes._getStatusCode()).toBe(400);
+      expect(JSON.parse(minRes._getData()).message).toMatch(/abaixo do mínimo/i);
+    });
+
+    it('deve respeitar X-Idempotency-Key (rejeitar formato inválido, reutilizar resultado sem recriar pedido e recusar divergência 409)', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      getCustomerById.mockResolvedValue({ id: 8, name: 'Carlos', email: 'carlos@test.com' });
+
+      // Formato inválido de chave
+      const { req: badKeyReq, res: badKeyRes } = createMocks({
+        method: 'POST',
+        headers: { 'x-idempotency-key': 'curta' },
+        body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+      });
+      await handler(badKeyReq, badKeyRes);
+      expect(badKeyRes._getStatusCode()).toBe(400);
+
+      // Reuso da mesma chave em cache retorna o pedido existente sem duplicar createInternalOrder
+      const cachedOrder = { id: 777, total_amount: 100, payment_status: 'pending' };
+      getOrSetCache.mockResolvedValueOnce({
+        order: cachedOrder,
+        fingerprint: '25:1:pix',
+      });
+      const { req: hitReq, res: hitRes } = createMocks({
+        method: 'POST',
+        headers: { 'x-idempotency-key': 'chk_idem_key_123456' },
+        body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+      });
+      await handler(hitReq, hitRes);
+      expect(hitRes._getStatusCode()).toBe(201);
+      expect(JSON.parse(hitRes._getData()).order.id).toBe(777);
+      expect(createInternalOrder).not.toHaveBeenCalled();
+
+      // Reuso da mesma chave com parâmetros diferentes -> 409 Conflict
+      getOrSetCache.mockResolvedValueOnce({
+        order: cachedOrder,
+        fingerprint: '25:1:pix',
+      });
+      const { req: conflictReq, res: conflictRes } = createMocks({
+        method: 'POST',
+        headers: { 'x-idempotency-key': 'chk_idem_key_123456' },
+        body: { productId: 25, quantity: 2, deliveryAddress: validAddress, paymentMethod: 'pix' },
+      });
+      await handler(conflictReq, conflictRes);
+      expect(conflictRes._getStatusCode()).toBe(409);
     });
   });
 

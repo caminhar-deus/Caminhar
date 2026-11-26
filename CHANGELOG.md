@@ -9,6 +9,28 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Segurança
+
+- **Fechamento dos diagnósticos da auditoria Mercado Pago (`MP-DIAG-01` a `MP-DIAG-11`, 26/11/2026, ADR-0044):**
+  - **Webhook (`POST /api/webhooks/mercadopago`, `lib/payment/mercadopago.js`, `lib/domain/orders.js`):** adicionados rate limit (`120 req/min` via `api:webhooks:mercadopago`) e validação temporal anti-replay do `ts` (`±900s`) em `verifyMercadoPagoWebhookSignature`; substituição de `fetchMercadoPagoPaymentStatus` por `fetchMercadoPagoPaymentDetails` em produção para ignorar `external_reference` e detalhes vindos do corpo não autenticado; localização do pedido antes de gravar `event_key` em `payment_webhook_events`, respondendo `HTTP 503` (`retryable: true`) quando `!current` para evitar perda silenciosa em condição de corrida; invalidação de cache `products:*` restrita a mudanças reais de estoque (`stockChanged`).
+  - **Isolamento estrito de modalidade (`lib/domain/products.js`, `pages/api/products.js`, `pages/api/admin/internal-products.js`):** adicionado `{ expectedModality }` em `updateProduct`/`deleteProduct` e filtro estrito de `modality` em todas as operações (`GET` admin, `POST`, `PUT`, `DELETE`, `reorder`) das rotas externa e interna.
+  - **Higiene PCI-DSS e validações (`pages/checkout/[id].js`, `pages/api/checkout.js`, `lib/payment/payment-status-messages.js`):** restrição do fallback HTTP direto `/v1/card_tokens` exclusivamente a `NODE_ENV !== 'production'` em `localhost`/`127.0.0.1`, limpeza automática dos campos de cartão no navegador após submissão/troca de modalidade, bloqueio de `cardNumber` bruto com `HTTP 400` quando o gateway estiver ativo, validação módulo 11 para CPF/CNPJ e validação estrita de `quantity` (`1..99`), `installments` e valor mínimo por modalidade (`MIN_PAYMENT_METHOD_AMOUNTS`).
+
+### Adicionado
+
+- **Idempotência de checkout, resiliência de máquina de estados e diagnóstico de ambiente (26/11/2026, ADR-0044):**
+  - Suporte a `X-Idempotency-Key` no `POST /api/checkout` (via `getOrSetCache` single-flight com TTL `300s` e recusa `409` em divergência de parâmetros) acoplado à chave de tentativa em `pages/checkout/[id].js`.
+  - Proteção de `refunded` e `charged_back` contra downgrade tardio, tratamento atômico de aprovação tardia sobre pedido cancelado (re-reserva de estoque ou sinalização `needs_manual_refund`), bloqueio administrativo contra reabertura de pedido cancelado (`ORDER_CANCELLED_CANNOT_REOPEN` → `409`) e invalidação de cache `products:*` no cancelamento via painel.
+  - Cooldown em memória (`15s`) + deduplicação single-flight em `lib/payment/reconcile-orders.js` (com bypass via `force=1`/`sync=1`), diagnóstico `validateMercadoPagoEnv` em `scripts/check-env.js`, cobertura de orçamento estendido em `hooks/usePerformanceMetrics.js` para `/api/customer/orders` e `/api/admin/orders`, e threshold dedicado para `pages/api/webhooks/` em `jest.config.js`.
+  - Expansão da suíte `cypress/e2e/checkout.cy.js` para cartão de crédito, recusa com tentativa de outro meio e boleto normalizado, e nova regra concisa de varredura horizontal em `AGENTS.md` (§0.3 passo 5).
+
+### Alterado
+
+- **Padronização administrativa e UX de Gestão de Vendas (26/11/2026, ADR-0044):**
+  - Migração de `pages/api/admin/orders.js` e `pages/api/admin/internal-products.js` para `createAdminHandler` (com rate limit no `GET` de pedidos e limite de `200` caracteres em `search`), recalibração correspondente em `scripts/bench/orchestrator/{gabarito,rubrica}.md`.
+  - Tradução pt-BR da forma de pagamento, inclusão de `Autorizado`/`Contestado` no filtro, separação de selos `Recusado` × `Cancelado`, detalhamento completo e alerta `needs_manual_refund` no modal, e novas colunas no CSV em `components/Admin/AdminSales.js`.
+  - Consolidação das queries de `products` (`6 → 1`) e `orders` (`11 → 1`) via `COUNT(*) FILTER (WHERE ...)` em `pages/api/admin/stats.js` e seleção da tentativa prioritária em `selectPrimaryOrderPayment` (`lib/payment/mercadopago.js`).
+
 ### Corrigido
 
 - **Alinhamento de schema da tabela `activity_logs` (24/11/2026):** corrigida a chave `audit_log` → `activity_logs` em `tableSchemas` (`lib/crud/crud.js`) e adicionada `activity_logs` a `EXPECTED_SCHEMA` (`scripts/validate-schema.js`), zerando a deriva entre as `16` tabelas compartilhadas e permitindo validação estática de `lib/domain/audit.js`.

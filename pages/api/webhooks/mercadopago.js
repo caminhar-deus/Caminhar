@@ -1,7 +1,8 @@
-import { invalidateCache } from '../../../lib/cache/cache.js';
+import { checkRateLimit, invalidateCache } from '../../../lib/cache/cache.js';
+import { getClientIP } from '../../../lib/api/helpers.js';
 import { processMercadoPagoWebhookEvent } from '../../../lib/domain/orders.js';
 import {
-  fetchMercadoPagoPaymentStatus,
+  fetchMercadoPagoPaymentDetails,
   mapMercadoPagoStatus,
   verifyMercadoPagoWebhookSignature,
 } from '../../../lib/payment/mercadopago.js';
@@ -13,6 +14,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    const ip = getClientIP(req);
+    const isRateLimited = await checkRateLimit(ip, 'api:webhooks:mercadopago', 120, 60000);
+    if (isRateLimited) {
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Muitas notificações em sequência. Tente novamente em instantes.',
+      });
+    }
+
     const body = req.body || {};
     const signatureDataId = req.query?.['data.id'] || body?.data?.id || req.query?.id || '';
     const dataId = body?.data?.id || req.query?.['data.id'] || req.query?.id || '';
@@ -51,28 +61,41 @@ export default async function handler(req, res) {
       return res.status(200).json({ received: true, ignored: true });
     }
 
-    // O status do pagamento nunca é presumido. Em produção vem sempre da API do Mercado Pago
-    // (o corpo do webhook não é fonte confiável do status). Fora de produção, um status
-    // explícito no corpo é aceito (testes/simulações) e, sem token, vale o modo sandbox local.
+    // O status do pagamento nunca é presumido. Em produção (ou quando há token sem status explícito),
+    // status, external_reference e detalhes vêm exclusivamente da API oficial do Mercado Pago.
     const isProduction = process.env.NODE_ENV === 'production';
     const txPayment = body?.data?.transactions?.payments?.[0] || null;
     const bodyStatus = body?.payment_status || body?.data?.status;
     const bodyStatusDetail = txPayment?.status_detail || body?.data?.status_detail || '';
-    const resolvedOrderStatus = typeof body?.data?.status === 'string' ? body.data.status : null;
-    const resolvedTxId = txPayment?.id ? String(txPayment.id) : null;
-    const externalReference =
+    const bodyOrderStatus = typeof body?.data?.status === 'string' ? body.data.status : null;
+    const bodyTxId = txPayment?.id ? String(txPayment.id) : null;
+    const bodyExternalRef =
       body?.data?.external_reference !== undefined && body?.data?.external_reference !== null
         ? String(body.data.external_reference)
         : null;
 
     let paymentStatus;
+    let statusDetail = '';
+    let resolvedOrderStatus = null;
+    let resolvedTxId = null;
+    let externalReference = null;
+
     if (!isProduction && bodyStatus) {
       paymentStatus = mapMercadoPagoStatus(bodyStatus, bodyStatusDetail);
+      statusDetail = bodyStatusDetail;
+      resolvedOrderStatus = bodyOrderStatus;
+      resolvedTxId = bodyTxId;
+      externalReference = bodyExternalRef;
     } else if (isProduction || process.env.MP_ACCESS_TOKEN) {
       try {
-        paymentStatus = isOrderEvent
-          ? await fetchMercadoPagoPaymentStatus(String(dataId), { eventType: 'order' })
-          : await fetchMercadoPagoPaymentStatus(String(dataId));
+        const apiDetails = isOrderEvent
+          ? await fetchMercadoPagoPaymentDetails(String(dataId), { eventType: 'order' })
+          : await fetchMercadoPagoPaymentDetails(String(dataId));
+        paymentStatus = apiDetails.paymentStatus;
+        externalReference = apiDetails.externalReference || null;
+        statusDetail = apiDetails.statusDetail || '';
+        resolvedOrderStatus = apiDetails.mpOrderStatus || null;
+        resolvedTxId = apiDetails.transactionId || null;
       } catch (lookupError) {
         const notConfigured = lookupError?.message?.startsWith('MP_NOT_CONFIGURED');
         logger.error('MPWebhook', 'Não foi possível confirmar o status do pagamento no Mercado Pago:', lookupError);
@@ -83,6 +106,10 @@ export default async function handler(req, res) {
       }
     } else {
       paymentStatus = 'approved';
+      externalReference = bodyExternalRef;
+      statusDetail = bodyStatusDetail;
+      resolvedOrderStatus = bodyOrderStatus;
+      resolvedTxId = bodyTxId;
     }
 
     const eventId = body?.id || `${eventType}_${action || 'evt'}_${dataId}_${paymentStatus}`;
@@ -97,14 +124,28 @@ export default async function handler(req, res) {
         last_webhook_event: String(eventType),
         last_webhook_action: typeof action === 'string' ? action : null,
         last_webhook_status: paymentStatus,
-        ...(bodyStatusDetail ? { status_detail: String(bodyStatusDetail) } : {}),
+        ...(statusDetail ? { status_detail: String(statusDetail) } : {}),
         ...(resolvedOrderStatus ? { mp_order_status: resolvedOrderStatus } : {}),
         ...(resolvedTxId ? { mp_transaction_id: resolvedTxId } : {}),
         webhook_received_at: new Date().toISOString(),
       },
     });
 
-    await invalidateCache('products:*').catch(() => {});
+    if (result.orderNotFound) {
+      logger.warn(
+        'MPWebhook',
+        `Pedido não localizado para webhook ${String(dataId)}; respondendo 503 para retentativa.`
+      );
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Pedido ainda não localizado; o Mercado Pago tentará reenviar o evento',
+        retryable: true,
+      });
+    }
+
+    if (!result.duplicate && result.stockChanged) {
+      await invalidateCache('products:*').catch(() => {});
+    }
 
     return res.status(200).json({
       received: true,

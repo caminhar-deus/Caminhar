@@ -170,56 +170,34 @@ describe('API de Estatísticas (/api/admin/stats)', () => {
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
 
     query.mockImplementation(async (sql) => {
-      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'external'") {
-        return { rows: [{ count: '11' }] };
+      if (sql.includes('FROM products')) {
+        return {
+          rows: [{
+            external_total: '11',
+            external_published: '9',
+            external_draft: '2',
+            internal_total: '7',
+            internal_published: '5',
+            internal_draft: '2',
+          }],
+        };
       }
-      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'external' AND published = true") {
-        return { rows: [{ count: '9' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'external' AND published = false") {
-        return { rows: [{ count: '2' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'internal'") {
-        return { rows: [{ count: '7' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'internal' AND published = true") {
-        return { rows: [{ count: '5' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'internal' AND published = false") {
-        return { rows: [{ count: '2' }] };
-      }
-      if (sql === 'SELECT COUNT(*) FROM orders') {
-        return { rows: [{ count: '15' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method = 'pix'") {
-        return { rows: [{ count: '4' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method = 'credit_card'") {
-        return { rows: [{ count: '6' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method = 'debit_card'") {
-        return { rows: [{ count: '2' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method IN ('ticket', 'bolbradesco')") {
-        return { rows: [{ count: '3' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'awaiting_payment'") {
-        return { rows: [{ count: '4' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'paid'") {
-        return { rows: [{ count: '3' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'preparing'") {
-        return { rows: [{ count: '2' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'shipped'") {
-        return { rows: [{ count: '1' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'delivered'") {
-        return { rows: [{ count: '2' }] };
-      }
-      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'cancelled'") {
-        return { rows: [{ count: '3' }] };
+      if (sql.includes('FROM orders')) {
+        return {
+          rows: [{
+            total: '15',
+            payment_pix: '4',
+            payment_credit_card: '6',
+            payment_debit_card: '2',
+            payment_ticket: '3',
+            order_awaiting_payment: '4',
+            order_paid: '3',
+            order_preparing: '2',
+            order_shipped: '1',
+            order_delivered: '2',
+            order_cancelled: '3',
+          }],
+        };
       }
       return { rows: [{ count: '1' }] };
     });

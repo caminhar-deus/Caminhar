@@ -28,10 +28,25 @@ jest.mock('../../../../lib/crud/crud.js', () => ({
 }));
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../../lib/auth/auth.js', () => {
+  const mockAuth = {
+    getAuthToken: jest.fn(),
+    verifyToken: jest.fn(),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockAuth.getAuthToken(req);
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Não autenticado' });
+      }
+      const user = mockAuth.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Token inválido ou expirado' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockAuth;
+});
 
 import handler from '../../../../pages/api/admin/internal-products.js';
 import { query } from '../../../../lib/infra/db.js';
@@ -82,7 +97,7 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
       verifyToken.mockReturnValue({ userId: 3, username: 'com_falha', role: 'operador' });
       query.mockRejectedValueOnce(new Error('Role query failed'));
 
-      const errSpy = filterConsoleError(['Falha ao verificar permissão de Gestão de Vendas']);
+      const errSpy = filterConsoleError(['Falha ao verificar permissões no handler InternalProducts']);
       try {
         const { req, res } = createMocks({ method: 'GET' });
         await handler(req, res);
@@ -224,12 +239,12 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
         15,
         expect.objectContaining({
           name: 'Vela Sagrada Família Atualizada',
-          modality: 'internal',
-        })
+        }),
+        { expectedModality: 'internal' },
       );
     });
 
-    it('deve reordenar itens quando action for reorder', async () => {
+    it('deve reordenar itens com filtro estrito de modality internal quando action for reorder', async () => {
       const { req, res } = createMocks({
         method: 'PUT',
         body: {
@@ -245,6 +260,18 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(updateRecords).toHaveBeenCalledTimes(2);
+      expect(updateRecords).toHaveBeenNthCalledWith(
+        1,
+        'products',
+        { position: 2 },
+        { id: 1, modality: 'internal' },
+      );
+      expect(updateRecords).toHaveBeenNthCalledWith(
+        2,
+        'products',
+        { position: 1 },
+        { id: 2, modality: 'internal' },
+      );
       expect(logActivity).toHaveBeenCalledWith(
         'admin_user',
         'REORDENAR PRODUTOS INTERNOS',
@@ -288,7 +315,7 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
       expect(res._getStatusCode()).toBe(400);
     });
 
-    it('deve retornar 404 se o produto a atualizar não existir', async () => {
+    it('deve retornar 404 se o produto a atualizar não existir ou pertencer à modalidade oposta', async () => {
       updateProduct.mockResolvedValueOnce(null);
 
       const { req, res } = createMocks({
@@ -298,6 +325,18 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(404);
+    });
+
+    it('deve retornar 400 se PUT não enviar nenhum campo editável (NO_DATA_TO_UPDATE)', async () => {
+      updateProduct.mockRejectedValueOnce(new Error('NO_DATA_TO_UPDATE'));
+
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { id: 15 },
+      });
+
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(400);
     });
   });
 
@@ -315,7 +354,7 @@ describe('API Admin - Produtos Internos (/api/admin/internal-products)', () => {
       expect(res._getStatusCode()).toBe(200);
       const data = JSON.parse(res._getData());
       expect(data.success).toBe(true);
-      expect(deleteProduct).toHaveBeenCalledWith(15);
+      expect(deleteProduct).toHaveBeenCalledWith(15, { expectedModality: 'internal' });
       expect(logActivity).toHaveBeenCalledWith(
         'admin_user',
         'EXCLUIR PRODUTO INTERNO',

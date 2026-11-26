@@ -312,7 +312,13 @@ export function usePerformanceMetrics(options = {}) {
         // provedores OAuth ou processamento/upload de imagem possuem orçamento maior.
         const GATEWAY_SLOW_RESOURCE_THRESHOLD_MS = 5000;
         const DEFAULT_SLOW_RESOURCE_THRESHOLD_MS = 1000;
-        const GATEWAY_PATH_PREFIXES = ['/api/checkout', '/api/customer/auth', '/api/upload-image'];
+        const GATEWAY_PATH_PREFIXES = [
+          '/api/checkout',
+          '/api/customer/auth',
+          '/api/customer/orders',
+          '/api/admin/orders',
+          '/api/upload-image',
+        ];
 
         const parseResourceUrl = (url) => {
           try {
