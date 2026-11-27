@@ -214,6 +214,62 @@ export function summarizeWorkflowRuns(recentRuns = []) {
   return { runsByConclusion, failedRuns };
 }
 
+function compareRunRecency(a, b) {
+  const createdCmp = String(b?.created_at || '').localeCompare(String(a?.created_at || ''));
+  if (createdCmp !== 0) return createdCmp;
+  const numDiff = Number(b?.run_number || 0) - Number(a?.run_number || 0);
+  if (numDiff !== 0) return numDiff;
+  return Number(b?.id || 0) - Number(a?.id || 0);
+}
+
+/**
+ * Separa execuções com falha entre falhas ativas (quando a execução concluída mais
+ * recente de um workflow terminou em `failure`) e falhas históricas já superadas.
+ * @param {Array<Object>} [recentRuns=[]]
+ * @returns {{activeFailedRuns: Array<Object>, resolvedFailedRuns: Array<Object>}}
+ */
+export function partitionFailedRuns(recentRuns = []) {
+  const runs = Array.isArray(recentRuns) ? recentRuns.filter((r) => r && typeof r === 'object') : [];
+  const latestCompletedByWorkflow = new Map();
+
+  for (const run of runs) {
+    if (typeof run.conclusion !== 'string' || !run.conclusion.trim()) {
+      continue;
+    }
+    const wfName = run.name || 'unknown';
+    const currentBest = latestCompletedByWorkflow.get(wfName);
+    if (!currentBest || compareRunRecency(run, currentBest) < 0) {
+      latestCompletedByWorkflow.set(wfName, run);
+    }
+  }
+
+  const activeFailedRuns = [];
+  const resolvedFailedRuns = [];
+
+  for (const run of runs) {
+    if (run.conclusion !== 'failure') continue;
+    const wfName = run.name || 'unknown';
+    const latestCompleted = latestCompletedByWorkflow.get(wfName);
+    const sameById =
+      run.id !== undefined &&
+      run.id !== null &&
+      latestCompleted?.id !== undefined &&
+      latestCompleted?.id !== null &&
+      run.id === latestCompleted.id;
+
+    if (latestCompleted?.conclusion === 'failure' && (sameById || run === latestCompleted)) {
+      activeFailedRuns.push(run);
+    } else {
+      resolvedFailedRuns.push(run);
+    }
+  }
+
+  activeFailedRuns.sort(compareRunRecency);
+  resolvedFailedRuns.sort(compareRunRecency);
+
+  return { activeFailedRuns, resolvedFailedRuns };
+}
+
 /**
  * Extrai as linhas mais relevantes de erro de um log bruto de job do GitHub Actions,
  * descartando specs aprovados do Jest, ajuda CLI do npm e marcadores internos.

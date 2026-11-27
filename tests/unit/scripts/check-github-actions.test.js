@@ -17,6 +17,7 @@ import {
   formatLogMetaStart,
   parseDiagnosticsCliArgs,
   parseLogMeta,
+  partitionFailedRuns,
   summarizeEslintLog,
   summarizeJestLog,
   summarizeRunsByWorkflow,
@@ -601,6 +602,82 @@ describe('github-actions-helper e run-with-log', () => {
         });
         expect(staleOut).toContain('GitHub Actions remoto: status: NÃO VERIFICADO (contingência local)');
         expect(staleOut).toContain('Snapshot expirado');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it('partitionFailedRuns separa falhas ativas (inclusive com run in_progress mais novo) de falhas históricas e CLI oculta falhas superadas', () => {
+      const runs = [
+        // Workflow A: falha antiga superada por success mais recente
+        { id: 10, run_number: 10, name: 'Lint & Test Coverage Gate', conclusion: 'failure', status: 'completed', created_at: '2026-11-24T00:48:46Z' },
+        { id: 11, run_number: 11, name: 'Lint & Test Coverage Gate', conclusion: 'success', status: 'completed', created_at: '2026-11-24T00:55:03Z' },
+        // Workflow B: falha ativa no último concluído, mesmo havendo run em andamento depois
+        { id: 20, run_number: 20, name: 'E2E Isolated (Cypress)', conclusion: 'failure', status: 'completed', created_at: '2026-11-27T01:00:00Z', html_url: 'https://github.com/caminhar-deus/Caminhar/actions/runs/20', head_commit: { id: 'abc1234', message: 'Quebrou E2E' } },
+        { id: 21, run_number: 21, name: 'E2E Isolated (Cypress)', conclusion: null, status: 'in_progress', created_at: '2026-11-27T01:10:00Z' },
+      ];
+
+      const partitioned = partitionFailedRuns(runs);
+      expect(partitioned.activeFailedRuns.map((r) => r.id)).toEqual([20]);
+      expect(partitioned.resolvedFailedRuns.map((r) => r.id)).toEqual([10]);
+
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'caminhar-diag-active-fails-'));
+      try {
+        const logsDir = path.join(tmpDir, 'logs');
+        fs.mkdirSync(logsDir, { recursive: true });
+
+        // Caso 1: apenas falha histórica superada -> nenhuma falha ativa exibida
+        const onlyResolvedSnap = buildActionsSnapshot({
+          repo: 'caminhar-deus/Caminhar',
+          capturedAt: new Date().toISOString(),
+          sevenDaysAgo: new Date(Date.now() - 86400000).toISOString(),
+          runsResult: {
+            totalCount: 2,
+            pagesFetched: 1,
+            truncated: false,
+            recentRuns: runs.slice(0, 2),
+          },
+          failedRunDetails: [{ runId: 10, jobs: [{ id: 1, name: 'lint', status: 'completed', conclusion: 'failure', failedSteps: [], tailErrors: ['npm error code EUSAGE'] }] }],
+        });
+        const snap1 = path.join(logsDir, 'resolved-only.json');
+        fs.writeFileSync(snap1, JSON.stringify(onlyResolvedSnap), 'utf8');
+
+        const outResolvedOnly = execFileSync(
+          process.execPath,
+          [diagScriptPath, '--from-snapshot', 'logs/resolved-only.json'],
+          { cwd: tmpDir, env: { ...process.env, GITHUB_TOKEN: '' }, encoding: 'utf8' }
+        );
+        expect(outResolvedOnly).toContain('Nenhuma falha ativa!');
+        expect(outResolvedOnly).not.toContain('INVESTIGAÇÃO DETALHADA DAS FALHAS');
+        expect(outResolvedOnly).not.toContain('npm error code EUSAGE');
+
+        // Caso 2: falha histórica + falha ativa -> exibe apenas a falha ativa #20 e omite #10
+        const mixedSnap = buildActionsSnapshot({
+          repo: 'caminhar-deus/Caminhar',
+          capturedAt: new Date().toISOString(),
+          sevenDaysAgo: new Date(Date.now() - 86400000).toISOString(),
+          runsResult: {
+            totalCount: 4,
+            pagesFetched: 1,
+            truncated: false,
+            recentRuns: runs,
+          },
+          failedRunDetails: [
+            { runId: 20, jobs: [{ id: 2, name: 'e2e', status: 'completed', conclusion: 'failure', failedSteps: [{ number: 5, name: 'Run Cypress' }], tailErrors: ['AssertionError: timed out'] }] },
+          ],
+        });
+        const snap2 = path.join(logsDir, 'mixed.json');
+        fs.writeFileSync(snap2, JSON.stringify(mixedSnap), 'utf8');
+
+        const outMixed = execFileSync(
+          process.execPath,
+          [diagScriptPath, '--from-snapshot', 'logs/mixed.json'],
+          { cwd: tmpDir, env: { ...process.env, GITHUB_TOKEN: '' }, encoding: 'utf8' }
+        );
+        expect(outMixed).toContain('INVESTIGAÇÃO DETALHADA DAS FALHAS ATIVAS (1 falha(s))');
+        expect(outMixed).toContain('Falha no Run #20');
+        expect(outMixed).not.toContain('Falha no Run #10');
+        expect(outMixed).toContain('1 falha(s) histórica(s) já superada(s)');
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }

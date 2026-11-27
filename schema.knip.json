@@ -651,6 +651,10 @@
           "title": "Gatsby plugin configuration (https://knip.dev/reference/plugins/gatsby)",
           "$ref": "#/definitions/plugin"
         },
+        "git-hooks": {
+          "title": "git-hooks plugin configuration (https://knip.dev/reference/plugins/git-hooks)",
+          "$ref": "#/definitions/plugin"
+        },
         "github-action": {
           "title": "github-action plugin configuration (https://knip.dev/reference/plugins/github-action)",
           "$ref": "#/definitions/plugin"
@@ -875,6 +879,10 @@
           "title": "osls plugin configuration (https://knip.dev/reference/plugins/osls)",
           "$ref": "#/definitions/plugin"
         },
+        "oxc-node": {
+          "title": "oxc-node plugin configuration (https://knip.dev/reference/plugins/oxc-node)",
+          "$ref": "#/definitions/plugin"
+        },
         "oxfmt": {
           "title": "oxfmt plugin configuration (https://knip.dev/reference/plugins/oxfmt)",
           "$ref": "#/definitions/plugin"
@@ -983,6 +991,10 @@
           "title": "Remix plugin configuration (https://knip.dev/reference/plugins/remix)",
           "$ref": "#/definitions/plugin"
         },
+        "remotion": {
+          "title": "remotion plugin configuration (https://knip.dev/reference/plugins/remotion)",
+          "$ref": "#/definitions/plugin"
+        },
         "retry-cli": {
           "title": "retry-cli plugin configuration (https://knip.dev/reference/plugins/retry-cli)",
           "$ref": "#/definitions/plugin"
@@ -1009,6 +1021,10 @@
         },
         "rspack": {
           "title": "rspack plugin configuration (https://knip.dev/reference/plugins/rspack)",
+          "$ref": "#/definitions/plugin"
+        },
+        "rspress": {
+          "title": "rspress plugin configuration (https://knip.dev/reference/plugins/rspress)",
           "$ref": "#/definitions/plugin"
         },
         "rstest": {

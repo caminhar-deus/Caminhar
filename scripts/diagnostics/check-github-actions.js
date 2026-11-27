@@ -16,6 +16,7 @@ import {
   extractErrorLinesFromJobLog,
   fetchRecentWorkflowRuns,
   parseDiagnosticsCliArgs,
+  partitionFailedRuns,
   summarizeEslintLog,
   summarizeJestLog,
   summarizeRunsByWorkflow,
@@ -274,7 +275,8 @@ function printRunsReport({
     return;
   }
 
-  const { runsByConclusion, failedRuns } = summarizeWorkflowRuns(recentRuns);
+  const { runsByConclusion } = summarizeWorkflowRuns(recentRuns);
+  const { activeFailedRuns, resolvedFailedRuns } = partitionFailedRuns(recentRuns);
 
   console.log('📊 Resumo das execuções nos últimos 7 dias por status:');
   for (const [status, count] of Object.entries(runsByConclusion)) {
@@ -311,13 +313,13 @@ function printRunsReport({
   }
   console.log('');
 
-  if (failedRuns.length > 0) {
+  if (activeFailedRuns.length > 0) {
     const detailsByRunId = new Map(failedRunDetails.map((entry) => [entry.runId, entry.jobs || []]));
     console.log(`======================================================`);
-    console.log(`❌ INVESTIGAÇÃO DETALHADA DAS FALHAS (${failedRuns.length} falhas):`);
+    console.log(`❌ INVESTIGAÇÃO DETALHADA DAS FALHAS ATIVAS (${activeFailedRuns.length} falha(s)):`);
     console.log(`======================================================\n`);
 
-    for (const run of failedRuns) {
+    for (const run of activeFailedRuns) {
       console.log(`------------------------------------------------------`);
       console.log(`🔎 Falha no Run #${run.run_number} (ID: ${run.id}) — Workflow: "${run.name}"`);
       console.log(`Commit: ${run.head_commit?.id?.slice(0, 7)} — "${run.head_commit?.message?.split('\n')[0]}"`);
@@ -342,6 +344,15 @@ function printRunsReport({
       }
       console.log('');
     }
+    if (resolvedFailedRuns.length > 0) {
+      console.log(
+        `ℹ️ ${resolvedFailedRuns.length} falha(s) histórica(s) já superada(s) por execução mais recente foram omitidas.`
+      );
+    }
+  } else if (resolvedFailedRuns.length > 0) {
+    console.log(
+      `✅ Nenhuma falha ativa! Todos os workflows estão verdes na última execução concluída (${resolvedFailedRuns.length} falha(s) histórica(s) nos últimos 7 dias já superada(s) omitida(s)).`
+    );
   } else {
     console.log('✅ Nenhuma falha identificada nas execuções dos últimos 7 dias!');
   }
@@ -423,8 +434,8 @@ async function main() {
       return;
     }
 
-    const { failedRuns } = summarizeWorkflowRuns(runsResult.recentRuns);
-    const failedRunDetails = await collectFailedRunDetails(failedRuns);
+    const { activeFailedRuns } = partitionFailedRuns(runsResult.recentRuns);
+    const failedRunDetails = await collectFailedRunDetails(activeFailedRuns);
 
     if (cli.writeSnapshotPath) {
       const writeAbsPath = path.resolve(process.cwd(), cli.writeSnapshotPath);
