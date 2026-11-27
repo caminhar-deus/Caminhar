@@ -9,6 +9,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Adicionado
+
+- **Decisões de produto e preflight de virada HTTPS do Mercado Pago (26/11/2026, [ADR-0045](docs/adr/0045-mercadopago-refund-expiration-debit-flag-and-go-live.md)):**
+  - **Controle comercial opcional de `debit_card`:** novo helper `isDebitCardEnabled()` (`lib/payment/payment-status-messages.js`) aplicado em `pages/checkout/[id].js` (`NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD`) e `pages/api/checkout.js` (`MP_ENABLE_DEBIT_CARD`, recusando `HTTP 400` quando desabilitada), além de orientação discreta no checkout quando ativa e checagem de paridade em `scripts/check-env.js`.
+  - **Estorno explícito via Orders API no `/admin` (`POST /v1/orders/{id}/refund`):** nova função `refundMercadoPagoOrder()` (`lib/payment/mercadopago.js`) integrada a `getAdminOrderById()`/`updateAdminOrder()` (`lib/domain/orders.js`), `PUT /api/admin/orders` (`refund_payment: true`, auditoria `ESTORNAR E CANCELAR PEDIDO`) e modal `"Gerenciar Pedido"` em `components/Admin/AdminSales.js` via checkbox **opt-in** explícito (mantendo `needs_manual_refund: true` quando o operador cancelar pedido aprovado sem acionar a API).
+  - **Expiração automática anti-falso-cancelamento de pedidos abandonados (`awaiting_payment`):** nova rotina `expireAbandonedOrders()` (`lib/domain/orders.js`), script CLI `scripts/maintenance/expire-abandoned-orders.js` (`npm run orders:expire`) e botão `"Expirar vencidos"` em `AdminSales.js` (`PUT /api/admin/orders` com `action: 'expire_abandoned'`), reconciliando o pedido no Mercado Pago antes de cancelar para impedir falso cancelamento de compras já aprovadas e devolvendo estoque uma única vez sob lock `FOR UPDATE`.
+  - **Preflight de produção HTTPS (`live_mode: true`):** expansão de `validateMercadoPagoEnv()` em `scripts/check-env.js` (`TEST-` em produção e paridade `debit_card`) e criação de `scripts/maintenance/check-mp-production-readiness.js` (`npm run mp:preflight`) com validação estrita de URL HTTPS anti-loopback, verificação de `TRUST_PROXY`/Upstash e autoteste criptográfico HMAC-SHA256 v2.
+  - **Transparência de bandeira/tipo processado no Mercado Pago (`lib/payment/payment-status-messages.js`, `components/Admin/AdminSales.js`, `pages/minha-conta.js`):** adicionado helper `formatGatewayPaymentDetail()` exibindo o meio e tipo reais gravados em `mp_payload` (ex.: `Pré-pago — Elo` para `elo` / `prepaid_card`, conforme Pedido `#33` homologado no Sandbox).
+  - **Cobertura e testes reais:** ampliação das suítes unitárias, de integração de APIs, de UI (`checkout.test.js`, `AdminSales.test.js`), de banco real (`orders.db.test.js`) e criação de `expire-abandoned-orders.test.js` e `check-mp-production-readiness.test.js`.
+
 ### Segurança
 
 - **Fechamento dos diagnósticos da auditoria Mercado Pago (`MP-DIAG-01` a `MP-DIAG-11`, 26/11/2026, ADR-0044):**

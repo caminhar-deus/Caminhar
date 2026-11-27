@@ -55,4 +55,23 @@ describe('validateMercadoPagoEnv() — scripts/check-env.js', () => {
     expect(warnings[0]).toMatch(/NEXT_PUBLIC_MP_PUBLIC_KEY/);
     expect(warnings[0]).toMatch(/MP_WEBHOOK_SECRET/);
   });
+
+  it('alerta em NODE_ENV=production se credenciais TEST- estiverem em uso ou se flags de débito divergirem', () => {
+    const testCredsWarnings = validateMercadoPagoEnv({
+      NODE_ENV: 'production',
+      MP_ACCESS_TOKEN: 'TEST-token-sandbox',
+      NEXT_PUBLIC_MP_PUBLIC_KEY: 'TEST-public-sandbox',
+      MP_WEBHOOK_SECRET: 'prod-webhook-key',
+    });
+    expect(testCredsWarnings).toHaveLength(1);
+    expect(testCredsWarnings[0]).toMatch(/Credenciais sandbox \(TEST-\)/i);
+
+    const debitMismatchWarnings = validateMercadoPagoEnv({
+      NODE_ENV: 'development',
+      MP_ENABLE_DEBIT_CARD: 'false',
+      NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD: 'true',
+    });
+    expect(debitMismatchWarnings).toHaveLength(1);
+    expect(debitMismatchWarnings[0]).toMatch(/MP_ENABLE_DEBIT_CARD e NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD estão divergentes/);
+  });
 });

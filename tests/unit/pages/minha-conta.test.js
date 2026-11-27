@@ -177,4 +177,70 @@ describe('Página Minha Conta do Visitante (pages/minha-conta.js)', () => {
     expect(logoutIcon?.querySelector('polyline')).toHaveAttribute('points', '16 17 21 12 16 7');
     expect(logoutIcon?.querySelector('circle')).toBeNull();
   });
+
+  it('exibe a bandeira/tipo processado no Mercado Pago para pedidos debit_card com pré-pago e não duplica PIX', async () => {
+    fetchMock.mockImplementation(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/customer/auth')) {
+        return {
+          ok: true,
+          json: async () => ({
+            authenticated: true,
+            customer: { id: 10, name: 'Ana Silva', email: 'ana@exemplo.com' },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/customer/orders')) {
+        return {
+          ok: true,
+          json: async () => ({
+            orders: [
+              {
+                id: 33,
+                product_name: 'Livro Teste',
+                quantity: 1,
+                formatted_unit_price: 'R$ 0,50',
+                formatted_shipping_cost: 'R$ 0,00',
+                formatted_total_amount: 'R$ 0,50',
+                payment_method: 'debit_card',
+                payment_status: 'approved',
+                order_status: 'paid',
+                created_at: '2026-11-26T21:09:15Z',
+                payment_payload: {
+                  payment_method_id: 'elo',
+                  payment_type_id: 'prepaid_card',
+                },
+              },
+              {
+                id: 34,
+                product_name: 'Terço Simples',
+                quantity: 1,
+                formatted_unit_price: 'R$ 0,01',
+                formatted_shipping_cost: 'R$ 0,00',
+                formatted_total_amount: 'R$ 0,01',
+                payment_method: 'pix',
+                payment_status: 'approved',
+                order_status: 'paid',
+                created_at: '2026-11-26T21:10:00Z',
+                payment_payload: {
+                  payment_method_id: 'pix',
+                  payment_type_id: 'bank_transfer',
+                },
+              },
+            ],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    render(<MinhaContaPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Pedido #33/)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Cartão de débito \(Pré-pago — Elo\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/PIX \(PIX\)/)).not.toBeInTheDocument();
+  });
 });

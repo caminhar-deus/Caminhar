@@ -12,6 +12,7 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
   const mockPush = jest.fn();
   const mockReplace = jest.fn();
   const originalMpPublicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
+  const originalDebitFlag = process.env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD;
 
   beforeEach(() => {
     fetchMock = mockGlobalFetch();
@@ -27,7 +28,10 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
   });
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_MP_PUBLIC_KEY = originalMpPublicKey;
+    if (originalMpPublicKey === undefined) delete process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
+    else process.env.NEXT_PUBLIC_MP_PUBLIC_KEY = originalMpPublicKey;
+    if (originalDebitFlag === undefined) delete process.env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD;
+    else process.env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD = originalDebitFlag;
     delete window.MercadoPago;
     fetchMock?.mockRestore();
     consoleErrorSpy?.mockRestore();
@@ -602,5 +606,60 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
       const boletoLink = screen.getByRole('link', { name: /Abrir boleto para pagamento/i });
       expect(boletoLink).toHaveAttribute('href', expectedSandboxTicketUrl);
     });
+  });
+
+  it('oculta Cartão de débito quando NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD=false e exibe dica informativa quando habilitado e selecionado', async () => {
+    const setupBasicFetch = () => {
+      fetchMock.mockImplementation(async (url) => {
+        const urlStr = String(url);
+        if (urlStr.includes('/api/customer/auth')) {
+          return {
+            ok: true,
+            json: async () => ({
+              authenticated: true,
+              customer: { id: 10, name: 'Ana Silva', email: 'ana@exemplo.com' },
+            }),
+          };
+        }
+        if (urlStr.includes('/api/checkout?productId=5')) {
+          return {
+            ok: true,
+            json: async () => ({
+              product: {
+                id: 5,
+                name: 'Terço de Madeira',
+                price: 49.9,
+                stock: 10,
+                shipping_type: 'free',
+                shipping_cost: 0,
+                formatted_price: 'R$ 49,90',
+              },
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+    };
+
+    process.env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD = 'false';
+    setupBasicFetch();
+    const { unmount } = render(<CheckoutPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Terço de Madeira')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('radio', { name: /Cartão de débito/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Cartão de crédito/i })).toBeInTheDocument();
+    unmount();
+
+    process.env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD = 'true';
+    setupBasicFetch();
+    render(<CheckoutPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: /Cartão de débito/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('radio', { name: /Cartão de débito/i }));
+    expect(screen.getByText(/depende de habilitação comercial do emissor/i)).toBeInTheDocument();
   });
 });

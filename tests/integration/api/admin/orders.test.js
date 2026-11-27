@@ -16,8 +16,15 @@ jest.mock('../../../../lib/cache/cache.js', () => ({
 }));
 
 jest.mock('../../../../lib/domain/orders.js', () => ({
+  expireAbandonedOrders: jest.fn(),
+  getAdminOrderById: jest.fn(),
   getAdminOrders: jest.fn(),
   updateAdminOrder: jest.fn(),
+}));
+
+jest.mock('../../../../lib/payment/mercadopago.js', () => ({
+  fetchMercadoPagoPaymentDetails: jest.fn(),
+  refundMercadoPagoOrder: jest.fn(),
 }));
 
 jest.mock('../../../../lib/payment/reconcile-orders.js', () => ({
@@ -49,7 +56,13 @@ import handler from '../../../../pages/api/admin/orders.js';
 import { query } from '../../../../lib/infra/db.js';
 import { checkRateLimit, invalidateCache } from '../../../../lib/cache/cache.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
-import { getAdminOrders, updateAdminOrder } from '../../../../lib/domain/orders.js';
+import {
+  expireAbandonedOrders,
+  getAdminOrderById,
+  getAdminOrders,
+  updateAdminOrder,
+} from '../../../../lib/domain/orders.js';
+import { refundMercadoPagoOrder } from '../../../../lib/payment/mercadopago.js';
 import { reconcilePendingOrders } from '../../../../lib/payment/reconcile-orders.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
 
@@ -355,6 +368,186 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
       await handler(reqCancel, resCancel);
       expect(resCancel._getStatusCode()).toBe(200);
       expect(invalidateCache).toHaveBeenCalledWith('products:*');
+    });
+
+    it('deve processar estorno via Mercado Pago quando refund_payment=true e validar pré-condições', async () => {
+      // 404 se pedido não existe
+      getAdminOrderById.mockResolvedValueOnce(null);
+      const { req: req404, res: res404 } = createMocks({
+        method: 'PUT',
+        body: { id: 999, order_status: 'cancelled', refund_payment: true },
+      });
+      await handler(req404, res404);
+      expect(res404._getStatusCode()).toBe(404);
+
+      // 409 se já estornado
+      getAdminOrderById.mockResolvedValueOnce({
+        id: 21,
+        payment_status: 'refunded',
+        mp_payment_id: 'ORD21',
+      });
+      const { req: req409, res: res409 } = createMocks({
+        method: 'PUT',
+        body: { id: 21, order_status: 'cancelled', refund_payment: true },
+      });
+      await handler(req409, res409);
+      expect(res409._getStatusCode()).toBe(409);
+
+      // 400 se pagamento não aprovado ou sem mp_payment_id
+      getAdminOrderById.mockResolvedValueOnce({
+        id: 22,
+        payment_status: 'pending',
+        mp_payment_id: 'ORD22',
+      });
+      const { req: reqPending, res: resPending } = createMocks({
+        method: 'PUT',
+        body: { id: 22, order_status: 'cancelled', refund_payment: true },
+      });
+      await handler(reqPending, resPending);
+      expect(resPending._getStatusCode()).toBe(400);
+
+      getAdminOrderById.mockResolvedValueOnce({
+        id: 23,
+        payment_status: 'approved',
+        mp_payment_id: '',
+      });
+      const { req: reqNoMpId, res: resNoMpId } = createMocks({
+        method: 'PUT',
+        body: { id: 23, order_status: 'cancelled', refund_payment: true },
+      });
+      await handler(reqNoMpId, resNoMpId);
+      expect(resNoMpId._getStatusCode()).toBe(400);
+
+      // Falha do gateway MP (422) não altera banco nem registra auditoria de sucesso
+      getAdminOrderById.mockResolvedValueOnce({
+        id: 24,
+        payment_status: 'approved',
+        mp_payment_id: 'ORD24',
+      });
+      const gatewayErr = new Error('MP_REFUND_REJECTED');
+      gatewayErr.status = 422;
+      gatewayErr.userMessage = 'O Mercado Pago recusou o estorno.';
+      refundMercadoPagoOrder.mockRejectedValueOnce(gatewayErr);
+
+      const errSpy = filterConsoleError(['Falha ao estornar pedido #24 no Mercado Pago']);
+      try {
+        const { req: reqFail, res: resFail } = createMocks({
+          method: 'PUT',
+          body: { id: 24, order_status: 'cancelled', refund_payment: true },
+        });
+        await handler(reqFail, resFail);
+        expect(resFail._getStatusCode()).toBe(422);
+        expect(updateAdminOrder).not.toHaveBeenCalled();
+      } finally {
+        errSpy.mockRestore();
+      }
+
+      // Estorno com sucesso
+      getAdminOrderById.mockResolvedValueOnce({
+        id: 25,
+        payment_status: 'approved',
+        mp_payment_id: 'ORD25',
+      });
+      refundMercadoPagoOrder.mockResolvedValueOnce({
+        mpOrderId: 'ORD25',
+        mpTransactionId: 'PAY25',
+        paymentStatus: 'refunded',
+        mpOrderStatus: 'refunded',
+        statusDetail: 'refunded',
+        refundMode: 'live',
+        refundedAt: '2026-11-26T18:00:00Z',
+      });
+      updateAdminOrder.mockResolvedValueOnce({
+        id: 25,
+        order_status: 'cancelled',
+        payment_status: 'refunded',
+        stock_restored: true,
+      });
+
+      const { req: reqOk, res: resOk } = createMocks({
+        method: 'PUT',
+        body: { id: 25, order_status: 'cancelled', tracking_code: '', refund_payment: true },
+      });
+      await handler(reqOk, resOk);
+
+      expect(resOk._getStatusCode()).toBe(200);
+      expect(refundMercadoPagoOrder).toHaveBeenCalledWith('ORD25', { orderId: 25 });
+      expect(updateAdminOrder).toHaveBeenCalledWith(25, {
+        orderStatus: 'cancelled',
+        trackingCode: '',
+        refundResult: expect.objectContaining({
+          refundMode: 'live',
+          refundedBy: 'admin_user',
+        }),
+      });
+      expect(invalidateCache).toHaveBeenCalledWith('products:*');
+      expect(logActivity).toHaveBeenCalledWith(
+        'admin_user',
+        'ESTORNAR E CANCELAR PEDIDO',
+        'ORDER',
+        25,
+        expect.stringContaining('ORD25'),
+        expect.any(String)
+      );
+    });
+
+    it('deve executar action=expire_abandoned com invalidação de cache e auditoria e suportar dry_run', async () => {
+      expireAbandonedOrders.mockResolvedValueOnce({
+        dryRun: false,
+        checkedCount: 3,
+        expiredCount: 2,
+        reconciledToPaidCount: 1,
+        skippedCount: 0,
+        errorCount: 0,
+        expiredOrderIds: [1, 2],
+        reconciledOrderIds: [3],
+        errors: [],
+      });
+
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { action: 'expire_abandoned' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(invalidateCache).toHaveBeenCalledWith('products:*');
+      expect(logActivity).toHaveBeenCalledWith(
+        'admin_user',
+        'EXPIRAR PEDIDOS ABANDONADOS',
+        'ORDER',
+        null,
+        expect.stringContaining('Expirados: 2'),
+        expect.any(String)
+      );
+
+      jest.clearAllMocks();
+      expireAbandonedOrders.mockResolvedValueOnce({
+        dryRun: true,
+        checkedCount: 1,
+        expiredCount: 1,
+        reconciledToPaidCount: 0,
+        skippedCount: 0,
+        errorCount: 0,
+        expiredOrderIds: [5],
+        reconciledOrderIds: [],
+        errors: [],
+      });
+      const { req: reqDry, res: resDry } = createMocks({
+        method: 'PUT',
+        body: { action: 'expire_abandoned', dry_run: true },
+      });
+      await handler(reqDry, resDry);
+      expect(resDry._getStatusCode()).toBe(200);
+      expect(invalidateCache).not.toHaveBeenCalled();
+      expect(logActivity).not.toHaveBeenCalled();
+
+      const { req: reqBad, res: resBad } = createMocks({
+        method: 'PUT',
+        body: { action: 'expire_abandoned', limit: 9999 },
+      });
+      await handler(reqBad, resBad);
+      expect(resBad._getStatusCode()).toBe(400);
     });
   });
 

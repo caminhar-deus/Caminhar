@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { Button } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
 import {
+  formatGatewayPaymentDetail,
   getPaymentFeedback,
   normalizeMercadoPagoTicketUrl,
 } from '../lib/payment/payment-status-messages.js';
@@ -153,6 +154,7 @@ export default function MinhaContaPage() {
               };
               const addr = order.delivery_address || {};
               const payload = order.payment_payload || {};
+              const gatewayDetail = formatGatewayPaymentDetail(payload);
               const feedback = getPaymentFeedback(order);
               const alertClass =
                 feedback.tone === 'success'
@@ -188,6 +190,9 @@ export default function MinhaContaPage() {
                     <div>
                       <strong>Forma de pagamento:</strong>{' '}
                       {PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method}
+                      {gatewayDetail && !(order.payment_method === 'pix' && gatewayDetail === 'PIX')
+                        ? ` (${gatewayDetail})`
+                        : ''}
                     </div>
                     <div>
                       <strong>Data do pedido:</strong>{' '}

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { isDebitCardEnabled } from '../lib/payment/payment-status-messages.js';
+
 export function validateMercadoPagoEnv(env = process.env) {
   const warnings = [];
   const mpAccessToken = String(env.MP_ACCESS_TOKEN || '').trim();
@@ -27,6 +29,27 @@ export function validateMercadoPagoEnv(env = process.env) {
         'MP_ACCESS_TOKEN e NEXT_PUBLIC_MP_PUBLIC_KEY possuem prefixos incompatíveis (TEST- vs APP_USR-); pagamentos com cartão podem falhar na API do Mercado Pago.'
       );
     }
+  }
+
+  if (isProduction && (mpAccessToken.startsWith('TEST-') || mpPublicKey.startsWith('TEST-'))) {
+    warnings.push(
+      'Credenciais sandbox (TEST-) configuradas com NODE_ENV=production; substitua por credenciais de produção (APP_USR-) para operar com live_mode: true.'
+    );
+  }
+
+  const hasServerDebitFlag =
+    env.MP_ENABLE_DEBIT_CARD !== undefined && String(env.MP_ENABLE_DEBIT_CARD).trim() !== '';
+  const hasClientDebitFlag =
+    env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD !== undefined &&
+    String(env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD).trim() !== '';
+  if (
+    (hasServerDebitFlag || hasClientDebitFlag) &&
+    isDebitCardEnabled(env.MP_ENABLE_DEBIT_CARD) !==
+      isDebitCardEnabled(env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD)
+  ) {
+    warnings.push(
+      'MP_ENABLE_DEBIT_CARD e NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD estão divergentes; alinhe ambas as flags e gere novo build para evitar inconsistência entre checkout e API.'
+    );
   }
 
   if (isProduction) {

@@ -4,8 +4,18 @@ import { paginate } from '../../../lib/api/pagination.js';
 import { INVALID_PAGINATION_MESSAGE } from '../../../lib/api/helpers.js';
 import { checkRateLimit, invalidateCache } from '../../../lib/cache/cache.js';
 import { logActivity } from '../../../lib/domain/audit.js';
-import { getAdminOrders, updateAdminOrder } from '../../../lib/domain/orders.js';
+import {
+  expireAbandonedOrders,
+  getAdminOrderById,
+  getAdminOrders,
+  updateAdminOrder,
+} from '../../../lib/domain/orders.js';
+import {
+  fetchMercadoPagoPaymentDetails,
+  refundMercadoPagoOrder,
+} from '../../../lib/payment/mercadopago.js';
 import { reconcilePendingOrders } from '../../../lib/payment/reconcile-orders.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 const SALES_PERMISSION = 'Gestão de Vendas';
 const MAX_SEARCH_LENGTH = 200;
@@ -23,6 +33,15 @@ const updateOrderSchema = z.object({
   id: z.union([z.number(), z.string()]).transform((v) => parseInt(v, 10)),
   order_status: z.enum(ORDER_STATUS_VALUES).optional(),
   tracking_code: z.string().trim().max(120, 'Código de rastreio muito longo').optional().or(z.literal('')),
+  refund_payment: z.boolean().optional(),
+});
+
+const expireAbandonedOrdersSchema = z.object({
+  action: z.literal('expire_abandoned'),
+  dry_run: z.boolean().optional(),
+  pix_max_age_minutes: z.coerce.number().int().min(5).max(43200).optional(),
+  ticket_max_age_minutes: z.coerce.number().int().min(60).max(43200).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
 });
 
 async function handleGet(req, res) {
@@ -96,6 +115,52 @@ async function handleGet(req, res) {
 async function handlePut(req, res) {
   const { user, ip } = req.adminUtils;
 
+  if (req.body?.action === 'expire_abandoned') {
+    const expireValidation = expireAbandonedOrdersSchema.safeParse(req.body);
+    if (!expireValidation.success) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Parâmetros inválidos para expiração automática de pedidos.',
+        errors: expireValidation.error.flatten().fieldErrors,
+      });
+    }
+
+    const {
+      dry_run: dryRun = false,
+      pix_max_age_minutes: pixMaxAgeMinutes,
+      ticket_max_age_minutes: ticketMaxAgeMinutes,
+      limit,
+    } = expireValidation.data;
+
+    const summary = await expireAbandonedOrders({
+      dryRun,
+      ...(pixMaxAgeMinutes !== undefined ? { pixMaxAgeMinutes } : {}),
+      ...(ticketMaxAgeMinutes !== undefined ? { ticketMaxAgeMinutes } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+      reconcilePayment: process.env.MP_ACCESS_TOKEN ? fetchMercadoPagoPaymentDetails : null,
+    });
+
+    if (!summary.dryRun && summary.expiredCount > 0) {
+      await invalidateCache('products:*').catch(() => {});
+    }
+
+    if (!summary.dryRun && (summary.expiredCount > 0 || summary.reconciledToPaidCount > 0)) {
+      await logActivity(
+        user.username,
+        'EXPIRAR PEDIDOS ABANDONADOS',
+        'ORDER',
+        null,
+        `Expirados: ${summary.expiredCount}; Reconciliados para pago: ${summary.reconciledToPaidCount}`,
+        ip
+      ).catch(() => {});
+    }
+
+    return res.status(200).json({
+      action: 'expire_abandoned',
+      ...summary,
+    });
+  }
+
   const validation = updateOrderSchema.safeParse(req.body || {});
   if (!validation.success || Number.isNaN(validation.data.id)) {
     return res.status(400).json({
@@ -105,7 +170,81 @@ async function handlePut(req, res) {
     });
   }
 
-  const { id, order_status, tracking_code } = validation.data;
+  const { id, order_status, tracking_code, refund_payment } = validation.data;
+
+  if (refund_payment === true) {
+    const existing = await getAdminOrderById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Pedido não encontrado.' });
+    }
+    if (existing.payment_status === 'refunded') {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Este pedido já foi estornado anteriormente.',
+      });
+    }
+    if (existing.payment_status !== 'approved') {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Somente pedidos com pagamento aprovado podem ser estornados via Mercado Pago.',
+      });
+    }
+    if (!existing.mp_payment_id) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message:
+          'Pedido sem identificador de transação no Mercado Pago. Realize o estorno manualmente no painel do gateway.',
+      });
+    }
+
+    let refund;
+    try {
+      refund = await refundMercadoPagoOrder(existing.mp_payment_id, { orderId: id });
+    } catch (err) {
+      logger.error('AdminOrders', `Falha ao estornar pedido #${id} no Mercado Pago: ${err.code || err.message}`);
+      const status = err.status || err.statusCode || 502;
+      return res.status(status).json({
+        error: status === 422 ? 'Unprocessable Entity' : status === 503 ? 'Service Unavailable' : 'Bad Gateway',
+        message: err.userMessage || 'Não foi possível processar o estorno no Mercado Pago.',
+      });
+    }
+
+    const updated = await updateAdminOrder(id, {
+      orderStatus: 'cancelled',
+      trackingCode: tracking_code,
+      refundResult: {
+        ...refund,
+        refundedBy: user.username,
+      },
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Not Found', message: 'Pedido não encontrado.' });
+    }
+
+    if (updated.order_status === 'cancelled' && updated.stock_restored) {
+      await invalidateCache('products:*').catch(() => {});
+    }
+
+    await logActivity(
+      user.username,
+      'ESTORNAR E CANCELAR PEDIDO',
+      'ORDER',
+      id,
+      `Estorno (${refund.refundMode}) e cancelamento do pedido #${id} (MP: ${existing.mp_payment_id})`,
+      ip
+    );
+
+    return res.status(200).json({
+      ...updated,
+      refund: {
+        mode: refund.refundMode,
+        mpOrderStatus: refund.mpOrderStatus,
+        refundedAt: refund.refundedAt,
+      },
+    });
+  }
+
   let updated;
   try {
     updated = await updateAdminOrder(id, {

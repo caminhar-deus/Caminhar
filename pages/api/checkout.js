@@ -12,6 +12,7 @@ import {
 } from '../../lib/domain/orders.js';
 import { createMercadoPagoPayment } from '../../lib/payment/mercadopago.js';
 import {
+  isDebitCardEnabled,
   isValidCpfCnpjDigits,
   MIN_PAYMENT_METHOD_AMOUNTS,
 } from '../../lib/payment/payment-status-messages.js';
@@ -239,6 +240,14 @@ export default async function handler(req, res) {
     }
 
     const { productId, quantity, deliveryAddress, paymentMethod, paymentDetails } = validation.data;
+    if (paymentMethod === 'debit_card' && !isDebitCardEnabled(process.env.MP_ENABLE_DEBIT_CARD)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message:
+          'Pagamento via cartão de débito direto não está habilitado no momento. Escolha PIX, cartão de crédito ou boleto bancário.',
+      });
+    }
+
     const rawIdempotencyKey = String(
       req.headers?.['x-idempotency-key'] || req.body?.idempotencyKey || ''
     ).trim();

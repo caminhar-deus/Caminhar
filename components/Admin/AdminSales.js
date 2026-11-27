@@ -13,6 +13,7 @@ import { handleReorder } from '@/utils/reorder';
 import { exportToCSV } from '@/utils/csvExport';
 import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import { normalizePrice } from '@/lib/api/utils';
+import { formatGatewayPaymentDetail } from '@/lib/payment/payment-status-messages';
 import crudStyles from './styles/crud.module.css';
 import salesStyles from './styles/AdminSales.module.css';
 
@@ -289,8 +290,11 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modalOrderStatus, setModalOrderStatus] = useState('awaiting_payment');
   const [modalTrackingCode, setModalTrackingCode] = useState('');
+  const [modalRefundPayment, setModalRefundPayment] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const [syncingOrders, setSyncingOrders] = useState(false);
+  const [expiringOrders, setExpiringOrders] = useState(false);
+  const selectedOrderGatewayDetail = formatGatewayPaymentDetail(selectedOrder?.payment_payload);
 
   const fetchOrders = useCallback(async ({ explicitSync = false } = {}) => {
     if (explicitSync) {
@@ -388,6 +392,12 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
     setSelectedOrder(order);
     setModalOrderStatus(order.order_status || 'awaiting_payment');
     setModalTrackingCode(order.tracking_code || '');
+    setModalRefundPayment(false);
+  };
+
+  const closeManageOrderModal = () => {
+    setSelectedOrder(null);
+    setModalRefundPayment(false);
   };
 
   const handleSaveOrderUpdate = async (e) => {
@@ -395,15 +405,20 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
     if (!selectedOrder) return;
     setSavingOrder(true);
     try {
+      const requestBody = {
+        id: selectedOrder.id,
+        order_status: modalOrderStatus,
+        tracking_code: modalTrackingCode,
+      };
+      if (modalRefundPayment) {
+        requestBody.refund_payment = true;
+      }
+
       const res = await fetch('/api/admin/orders', {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedOrder.id,
-          order_status: modalOrderStatus,
-          tracking_code: modalTrackingCode,
-        }),
+        body: JSON.stringify(requestBody),
       });
       if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
         return;
@@ -415,13 +430,53 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
         return;
       }
       invalidateDashboardStatsCache();
-      toast.success(`Pedido #${selectedOrder.id} atualizado com sucesso!`);
-      setSelectedOrder(null);
+      toast.success(
+        modalRefundPayment
+          ? `Pedido #${selectedOrder.id} estornado no Mercado Pago e cancelado com sucesso!`
+          : `Pedido #${selectedOrder.id} atualizado com sucesso!`
+      );
+      closeManageOrderModal();
       fetchOrders();
     } catch {
       toast.error('Erro ao salvar alterações do pedido.');
     } finally {
       setSavingOrder(false);
+    }
+  };
+
+  const handleExpireAbandonedOrders = async () => {
+    setExpiringOrders(true);
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'expire_abandoned' }),
+      });
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || 'Não foi possível expirar pedidos pendentes vencidos.');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      const expiredCount = Number(data.expiredCount || 0);
+      const reconciledCount = Number(data.reconciledToPaidCount || 0);
+      if (expiredCount > 0 || reconciledCount > 0) {
+        invalidateDashboardStatsCache();
+        toast.success(
+          `Expirados: ${expiredCount} pedido(s); reconciliados para pago: ${reconciledCount}.`
+        );
+        fetchOrders();
+      } else {
+        toast.success('Nenhum pedido vencido aguardando pagamento encontrado.');
+      }
+    } catch {
+      toast.error('Falha de conexão ao expirar pedidos vencidos.');
+    } finally {
+      setExpiringOrders(false);
     }
   };
 
@@ -497,6 +552,19 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                 <span className={salesStyles.buttonLabel}>
                   <AppIcon name="refresh" size={16} />
                   <span>Sincronizar MP</span>
+                </span>
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                loading={expiringOrders}
+                disabled={readOnly}
+                className={salesStyles.headerActionButton}
+                onClick={handleExpireAbandonedOrders}
+              >
+                <span className={salesStyles.buttonLabel}>
+                  <AppIcon name="clock" size={16} />
+                  <span>Expirar vencidos</span>
                 </span>
               </Button>
               <Button
@@ -647,7 +715,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
 
           <Modal
             isOpen={Boolean(selectedOrder)}
-            onClose={() => setSelectedOrder(null)}
+            onClose={closeManageOrderModal}
             title={selectedOrder ? `Gerenciar Pedido #${selectedOrder.id}` : 'Gerenciar Pedido'}
           >
             {selectedOrder && (
@@ -667,6 +735,19 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                     <strong>Pagamento:</strong> {getPaymentMethodLabel(selectedOrder.payment_method)} —{' '}
                     {getPaymentBadge(selectedOrder.payment_status).label}
                   </div>
+                  {selectedOrderGatewayDetail && (
+                    <div>
+                      <strong>Meio processado no Mercado Pago:</strong> {selectedOrderGatewayDetail}
+                      {(selectedOrder.payment_payload?.payment_method_id ||
+                        selectedOrder.payment_payload?.payment_type_id) &&
+                        ` (${[
+                          selectedOrder.payment_payload?.payment_method_id,
+                          selectedOrder.payment_payload?.payment_type_id,
+                        ]
+                          .filter(Boolean)
+                          .join(' / ')})`}
+                    </div>
+                  )}
                   <div>
                     <strong>ID Pagamento Mercado Pago:</strong> {selectedOrder.mp_payment_id || 'Aguardando geração'}
                   </div>
@@ -703,7 +784,13 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                   <select
                     id="modal-order-status"
                     value={modalOrderStatus}
-                    onChange={(e) => setModalOrderStatus(e.target.value)}
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setModalOrderStatus(nextValue);
+                      if (nextValue !== 'cancelled' && selectedOrder.order_status !== 'cancelled') {
+                        setModalRefundPayment(false);
+                      }
+                    }}
                     disabled={selectedOrder.order_status === 'cancelled'}
                     className={`${salesStyles.filterSelect} ${salesStyles.fullWidthControl}`}
                   >
@@ -720,6 +807,39 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                   )}
                 </div>
 
+                {selectedOrder.payment_status === 'approved' &&
+                  Boolean(selectedOrder.mp_payment_id) &&
+                  (modalOrderStatus === 'cancelled' || selectedOrder.order_status === 'cancelled') && (
+                    <div className={salesStyles.refundOptionBox}>
+                      <label htmlFor="modal-refund-payment" className={salesStyles.refundCheckboxLabel}>
+                        <input
+                          id="modal-refund-payment"
+                          type="checkbox"
+                          checked={modalRefundPayment}
+                          onChange={(e) => setModalRefundPayment(e.target.checked)}
+                          className={salesStyles.refundCheckbox}
+                        />
+                        <span>Solicitar estorno automático no Mercado Pago (Orders API)</span>
+                      </label>
+                      <p className={salesStyles.refundOptionHint}>
+                        Ao marcar esta opção, o sistema enviará o estorno total para a Orders API do Mercado Pago antes
+                        de concluir o cancelamento e devolver o estoque. Deixe desmarcado para cancelar apenas no
+                        painel (sinalizando estorno manual).
+                      </p>
+                    </div>
+                  )}
+
+                {selectedOrder.payment_status === 'approved' &&
+                  !selectedOrder.mp_payment_id &&
+                  modalOrderStatus === 'cancelled' && (
+                    <div className={salesStyles.modalFieldGroup}>
+                      <span className={salesStyles.fieldHint}>
+                        Este pedido aprovado não possui identificador no Mercado Pago; o eventual reembolso deverá ser
+                        realizado manualmente no painel do gateway.
+                      </span>
+                    </div>
+                  )}
+
                 <div className={salesStyles.modalFieldGroup}>
                   <label htmlFor="modal-tracking-code" className={salesStyles.modalLabel}>
                     Código de Rastreio
@@ -735,7 +855,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
                 </div>
 
                 <div className={salesStyles.modalActions}>
-                  <Button type="button" variant="secondary" onClick={() => setSelectedOrder(null)}>
+                  <Button type="button" variant="secondary" onClick={closeManageOrderModal}>
                     Cancelar
                   </Button>
                   <Button type="submit" variant="primary" loading={savingOrder}>

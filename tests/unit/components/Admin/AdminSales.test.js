@@ -915,6 +915,8 @@ describe('Componente Front-End - AdminSales', () => {
             payment_payload: {
               mp_transaction_id: 'PAY_77',
               status_detail: 'accredited',
+              payment_method_id: 'elo',
+              payment_type_id: 'prepaid_card',
               needs_manual_refund: true,
             },
           },
@@ -931,7 +933,114 @@ describe('Componente Front-End - AdminSales', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
     expect(screen.getByText('PAY_77')).toBeInTheDocument();
     expect(screen.getByText('accredited')).toBeInTheDocument();
+    expect(screen.getByText(/Pré-pago — Elo \(elo \/ prepaid_card\)/)).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent(/estorno manual necessário/i);
     expect(screen.getByLabelText('Situação Logística do Pedido')).toBeDisabled();
+  });
+
+  it('permite solicitar estorno explícito via Orders API no modal e aciona Expirar vencidos no cabeçalho', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+
+    const paidOrder = {
+      id: 88,
+      customer_name: 'Paula Martins',
+      customer_email: 'paula@exemplo.com',
+      product_name: 'Terço de Cristal',
+      quantity: 1,
+      formatted_total_amount: 'R$ 65,00',
+      formatted_shipping_cost: 'R$ 0,00',
+      mp_payment_id: 'ORD_88_LIVE',
+      payment_method: 'pix',
+      payment_status: 'approved',
+      order_status: 'paid',
+      tracking_code: '',
+    };
+
+    global.fetch.mockImplementation((url, opts = {}) => {
+      if (String(url).startsWith('/api/admin/orders') && (!opts.method || opts.method === 'GET')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ data: [paidOrder], pagination: { totalPages: 1, total: 1 } }),
+        });
+      }
+      if (String(url) === '/api/admin/orders' && opts.method === 'PUT') {
+        const parsedBody = JSON.parse(opts.body);
+        if (parsedBody.action === 'expire_abandoned') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ expiredCount: 2, reconciledToPaidCount: 1 }),
+          });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+
+    try {
+      render(<AdminSales />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Paula Martins')).toBeInTheDocument();
+      });
+
+      // Fluxo 1: Modal com checkbox de estorno (desmarcado por padrão; aparece ao selecionar cancelled)
+      fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
+      expect(
+        screen.queryByLabelText(/Solicitar estorno automático no Mercado Pago/i)
+      ).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Situação Logística do Pedido'), {
+        target: { value: 'cancelled' },
+      });
+
+      const refundCheckbox = screen.getByLabelText(/Solicitar estorno automático no Mercado Pago/i);
+      expect(refundCheckbox).not.toBeChecked();
+      fireEvent.click(refundCheckbox);
+      expect(refundCheckbox).toBeChecked();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Pedido #88 estornado no Mercado Pago e cancelado com sucesso!'
+        );
+      });
+
+      const refundPut = global.fetch.mock.calls.find(
+        ([, opts]) => opts?.method === 'PUT' && opts.body.includes('"refund_payment":true')
+      );
+      expect(refundPut).toBeDefined();
+
+      // Fluxo 2: Botão Expirar vencidos (com itens expirados, depois com zero itens, depois 401)
+      const expireBtn = screen.getByRole('button', { name: /Expirar vencidos/i });
+      fireEvent.click(expireBtn);
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Expirados: 2 pedido(s); reconciliados para pago: 1.'
+        );
+      });
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ expiredCount: 0, reconciledToPaidCount: 0 }),
+      });
+      fireEvent.click(expireBtn);
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Nenhum pedido vencido aguardando pagamento encontrado.'
+        );
+      });
+
+      global.fetch.mockResolvedValueOnce({ ok: false, status: 401 });
+      fireEvent.click(expireBtn);
+      await waitFor(() => {
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      });
+    } finally {
+      unsubscribe();
+    }
   });
 });

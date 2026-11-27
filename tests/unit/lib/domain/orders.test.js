@@ -11,8 +11,10 @@ import {
   createInternalOrder,
   attachOrderPaymentInfo,
   cancelFailedCheckoutOrder,
+  expireAbandonedOrders,
   getCustomerOrders,
   getCustomerOrderById,
+  getAdminOrderById,
   getAdminOrders,
   updateAdminOrder,
   syncOrderPaymentStatus,
@@ -1054,6 +1056,235 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         orderNotFound: true,
         stockChanged: false,
       });
+    });
+  });
+
+  describe('getAdminOrderById(), estorno em updateAdminOrder() e expireAbandonedOrders()', () => {
+    it('getAdminOrderById retorna pedido formatado ou null', async () => {
+      query.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 40,
+            unit_price: '25.00',
+            shipping_cost: '5.00',
+            total_amount: '30.00',
+            customer_name: 'Maria',
+            mp_payment_id: 'ORD_40',
+          },
+        ],
+      });
+      const found = await getAdminOrderById(40);
+      expect(found.id).toBe(40);
+      expect(found.total_amount).toBe(30);
+
+      query.mockResolvedValueOnce({ rows: [] });
+      await expect(getAdminOrderById(999)).resolves.toBeNull();
+    });
+
+    it('updateAdminOrder consolida estorno via API (payment_status=refunded, devolve estoque e limpa needs_manual_refund) e sinaliza estorno manual quando cancelado sem API', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 71,
+              product_id: 5,
+              quantity: 2,
+              payment_status: 'approved',
+              order_status: 'paid',
+              stock_restored: false,
+              mp_payload: JSON.stringify({ needs_manual_refund: true, qr_code: 'pix-1' }),
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] }) // restore stock
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 71,
+              product_id: 5,
+              quantity: 2,
+              unit_price: '20.00',
+              shipping_cost: '0.00',
+              total_amount: '40.00',
+              payment_status: 'refunded',
+              order_status: 'cancelled',
+              stock_restored: true,
+              mp_payload: JSON.stringify({
+                qr_code: 'pix-1',
+                needs_manual_refund: false,
+                refund_mode: 'live',
+              }),
+            },
+          ],
+        });
+
+      const refunded = await updateAdminOrder(71, {
+        orderStatus: 'cancelled',
+        refundResult: {
+          refundMode: 'live',
+          mpOrderStatus: 'refunded',
+          statusDetail: 'refunded',
+          refundedBy: 'admin_user',
+          mpTransactionId: 'PAY_71',
+        },
+      });
+      expect(refunded.payment_status).toBe('refunded');
+      expect(refunded.order_status).toBe('cancelled');
+      expect(refunded.stock_restored).toBe(true);
+      expect(query).toHaveBeenCalledWith(
+        'UPDATE products SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [2, 5],
+        expect.any(Object)
+      );
+
+      // Cancelamento manual de pedido aprovado sem refundResult marca needs_manual_refund: true
+      query.mockReset();
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 72,
+              product_id: 5,
+              quantity: 1,
+              payment_status: 'approved',
+              order_status: 'paid',
+              stock_restored: false,
+              mp_payload: null,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 72,
+              unit_price: '20.00',
+              shipping_cost: '0.00',
+              total_amount: '20.00',
+              payment_status: 'approved',
+              order_status: 'cancelled',
+              stock_restored: true,
+              mp_payload: JSON.stringify({
+                needs_manual_refund: true,
+                manual_refund_reason: 'admin_cancelled_without_api_refund',
+              }),
+            },
+          ],
+        });
+
+      const manualCancel = await updateAdminOrder(72, { orderStatus: 'cancelled' });
+      expect(manualCancel.payment_payload.needs_manual_refund).toBe(true);
+    });
+
+    it('expireAbandonedOrders respeita dryRun, date_of_expiration, TTL por modalidade, reconciliação prévia (approved não cancela) e falhas de rede fail-safe', async () => {
+      const now = new Date('2026-11-26T20:00:00Z');
+      const candidates = [
+        {
+          id: 1,
+          product_id: 10,
+          quantity: 1,
+          payment_method: 'pix',
+          payment_status: 'pending',
+          order_status: 'awaiting_payment',
+          stock_restored: false,
+          mp_payment_id: 'mp_pix_old',
+          mp_payload: null,
+          created_at: '2026-11-25T10:00:00Z', // > 24h
+        },
+        {
+          id: 2,
+          product_id: 10,
+          quantity: 1,
+          payment_method: 'pix',
+          payment_status: 'pending',
+          order_status: 'awaiting_payment',
+          stock_restored: false,
+          mp_payment_id: 'ORD_RECENT',
+          mp_payload: null,
+          created_at: '2026-11-26T18:00:00Z', // 2h atrás (< 24h, não expira)
+        },
+        {
+          id: 3,
+          product_id: 10,
+          quantity: 2,
+          payment_method: 'ticket',
+          payment_status: 'pending',
+          order_status: 'awaiting_payment',
+          stock_restored: false,
+          mp_payment_id: 'ORD_PAID_LATE',
+          mp_payload: JSON.stringify({ date_of_expiration: '2026-11-26T12:00:00Z' }),
+          created_at: '2026-11-26T10:00:00Z',
+        },
+        {
+          id: 4,
+          product_id: 10,
+          quantity: 1,
+          payment_method: 'pix',
+          payment_status: 'pending',
+          order_status: 'awaiting_payment',
+          stock_restored: false,
+          mp_payment_id: 'ORD_MP_FAIL',
+          mp_payload: null,
+          created_at: '2026-11-24T10:00:00Z',
+        },
+      ];
+
+      // 1) Dry-run apenas contabiliza os 3 vencidos sem mutar nem chamar reconcile
+      query.mockResolvedValueOnce({ rows: candidates });
+      const drySummary = await expireAbandonedOrders({ now, dryRun: true });
+      expect(drySummary).toMatchObject({
+        dryRun: true,
+        checkedCount: 4,
+        expiredCount: 3,
+        expiredOrderIds: [1, 3, 4],
+      });
+
+      // 2) Execução real: pedido 1 expira (restaura estoque), pedido 2 fica intacto,
+      // pedido 3 reconcilia para 'approved' em vez de cancelar, pedido 4 falha consulta MP e não cancela
+      query
+        .mockResolvedValueOnce({ rows: candidates })
+        // tx cancelamento pedido 1
+        .mockResolvedValueOnce({ rows: [candidates[0]] })
+        .mockResolvedValueOnce({ rows: [] }) // restore stock
+        .mockResolvedValueOnce({ rows: [] }) // update order
+        // tx syncOrderPaymentStatus pedido 3 -> FOR UPDATE + UPDATE
+        .mockResolvedValueOnce({ rows: [candidates[2]] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ...candidates[2],
+              unit_price: '10.00',
+              shipping_cost: '0.00',
+              total_amount: '20.00',
+              payment_status: 'approved',
+              order_status: 'paid',
+            },
+          ],
+        });
+
+      const reconcilePayment = jest.fn(async (mpId) => {
+        if (mpId === 'ORD_PAID_LATE') {
+          return { paymentStatus: 'approved', statusDetail: 'accredited', mpOrderStatus: 'processed' };
+        }
+        throw new Error('MP temporary timeout');
+      });
+
+      const realSummary = await expireAbandonedOrders({ now, reconcilePayment });
+      expect(realSummary).toMatchObject({
+        dryRun: false,
+        checkedCount: 4,
+        expiredCount: 1,
+        reconciledToPaidCount: 1,
+        skippedCount: 0,
+        errorCount: 1,
+        expiredOrderIds: [1],
+        reconciledOrderIds: [3],
+      });
+      expect(query).toHaveBeenCalledWith(
+        'UPDATE products SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [1, 10],
+        expect.any(Object)
+      );
     });
   });
 });

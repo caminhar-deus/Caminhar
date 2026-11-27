@@ -112,6 +112,7 @@ components/Admin/AdminSales.js → components/Admin/styles/crud.module.css
 components/Admin/AdminSales.js → components/UI/index.js
 components/Admin/AdminSales.js → components/UI/icons.js
 components/Admin/AdminSales.js → lib/api/utils.js
+components/Admin/AdminSales.js → lib/payment/payment-status-messages.js
 components/Admin/AdminSales.js → utils/adminSession.js
 components/Admin/AdminSales.js → utils/csvExport.js
 components/Admin/AdminSales.js → utils/reorder.js
@@ -461,6 +462,8 @@ pages/api/admin/orders.js → lib/api/pagination.js
 pages/api/admin/orders.js → lib/cache/cache.js
 pages/api/admin/orders.js → lib/domain/audit.js
 pages/api/admin/orders.js → lib/domain/orders.js
+pages/api/admin/orders.js → lib/infra/logger.js
+pages/api/admin/orders.js → lib/payment/mercadopago.js
 pages/api/admin/orders.js → lib/payment/reconcile-orders.js
 pages/api/admin/posts.js → lib/api/adminCrudHandler.js
 pages/api/admin/posts.js → lib/crud/crud.js
@@ -629,6 +632,7 @@ scripts/bench/papeis/rodar.js → scripts/bench/runner-comum.js
 scripts/bench/papeis/rodar.js → scripts/bench/papeis/regressao-s1.js
 scripts/check-db-status.js → lib/infra/db.js
 scripts/check-env.js → lib/infra/db.js
+scripts/check-env.js → lib/payment/payment-status-messages.js
 scripts/check-server.js → scripts/utils/constants.js
 scripts/clean-k6-reports.js → scripts/utils/constants.js
 scripts/clean-load-test-posts.js → scripts/utils/cleanup.js
@@ -663,7 +667,14 @@ scripts/init-table.js → scripts/db/connection.js
 scripts/init-table.js → scripts/utils/init-table-utils.js
 scripts/init-table.js → scripts/utils/load-env.js
 scripts/maintenance/backup-posts.js → lib/infra/db.js
+scripts/maintenance/check-mp-production-readiness.js → lib/payment/mercadopago.js
+scripts/maintenance/check-mp-production-readiness.js → lib/payment/payment-status-messages.js
+scripts/maintenance/check-mp-production-readiness.js → scripts/check-env.js
 scripts/maintenance/clean-k6-videos.js → scripts/utils/cleanup.js
+scripts/maintenance/expire-abandoned-orders.js → lib/cache/cache.js
+scripts/maintenance/expire-abandoned-orders.js → lib/domain/orders.js
+scripts/maintenance/expire-abandoned-orders.js → lib/infra/db.js
+scripts/maintenance/expire-abandoned-orders.js → lib/payment/mercadopago.js
 scripts/maintenance/fix-hero-key.js → lib/infra/db.js
 scripts/maintenance/restore-posts.js → lib/infra/db.js
 scripts/maintenance/verify-mp-webhook.js → lib/payment/mercadopago.js
@@ -827,6 +838,7 @@ tests/integration/api/admin/orders.test.js → lib/cache/cache.js
 tests/integration/api/admin/orders.test.js → lib/domain/audit.js
 tests/integration/api/admin/orders.test.js → lib/domain/orders.js
 tests/integration/api/admin/orders.test.js → lib/infra/db.js
+tests/integration/api/admin/orders.test.js → lib/payment/mercadopago.js
 tests/integration/api/admin/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/admin/orders.test.js → pages/api/admin/orders.js
 tests/integration/api/admin/orders.test.js → tests/helpers/index.js
@@ -1342,6 +1354,7 @@ tests/unit/scripts/check-env.test.js → scripts/check-env.js
 tests/unit/scripts/check-github-actions.test.js → scripts/diagnostics/github-actions-helper.js
 tests/unit/scripts/check-hardcoded-credentials.test.js → scripts/check-hardcoded-credentials.js
 tests/unit/scripts/check-model-catalog.test.js → scripts/diagnostics/model-catalog.js
+tests/unit/scripts/check-mp-production-readiness.test.js → scripts/maintenance/check-mp-production-readiness.js
 tests/unit/scripts/check-sql-injection.test.js → scripts/check-sql-injection.js
 tests/unit/scripts/clean-orphaned-images.test.js → scripts/clean-orphaned-images.js
 tests/unit/scripts/clear-db.test.js → scripts/clear-db.js
@@ -1350,6 +1363,7 @@ tests/unit/scripts/clear-musicas.test.js → scripts/clear-musicas.js
 tests/unit/scripts/clear-musicas.test.js → scripts/db/connection.js
 tests/unit/scripts/date-format.test.js → scripts/utils/date-format.js
 tests/unit/scripts/db/connection.test.js → scripts/db/connection.js
+tests/unit/scripts/expire-abandoned-orders.test.js → scripts/maintenance/expire-abandoned-orders.js
 tests/unit/scripts/init-table.test.js → scripts/utils/init-table-utils.js
 tests/unit/scripts/migrate.test.js → scripts/migrate.js
 tests/unit/scripts/reset-db.test.js → scripts/migrate.js

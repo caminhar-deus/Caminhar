@@ -133,6 +133,7 @@ scripts/init-backup.js → scripts/backup.js
 scripts/init-table.js → scripts/db/connection.js
 scripts/init-table.js → scripts/utils/init-table-utils.js
 scripts/init-table.js → scripts/utils/load-env.js
+scripts/maintenance/check-mp-production-readiness.js → scripts/check-env.js
 scripts/maintenance/clean-k6-videos.js → scripts/utils/cleanup.js
 scripts/migrate.js → scripts/db/connection.js
 scripts/migrate.js → scripts/utils/load-env.js

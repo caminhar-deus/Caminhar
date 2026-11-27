@@ -1,7 +1,9 @@
 import { describe, it, expect } from '@jest/globals';
 import {
+  formatGatewayPaymentDetail,
   getPaymentFeedback,
   formatCpfCnpj,
+  isDebitCardEnabled,
   isValidCpfCnpjDigits,
   normalizeMercadoPagoTicketUrl,
 } from '../../../../lib/payment/payment-status-messages.js';
@@ -139,5 +141,40 @@ describe('payment-status-messages — feedback e validação de documento', () =
     expect(normalizeMercadoPagoTicketUrl(null)).toBeNull();
     expect(normalizeMercadoPagoTicketUrl('')).toBeNull();
     expect(normalizeMercadoPagoTicketUrl('   ')).toBeNull();
+  });
+
+  it('avalia corretamente a flag comercial isDebitCardEnabled mantendo padrão habilitado', () => {
+    expect(isDebitCardEnabled(undefined)).toBe(true);
+    expect(isDebitCardEnabled(null)).toBe(true);
+    expect(isDebitCardEnabled('')).toBe(true);
+    expect(isDebitCardEnabled('   ')).toBe(true);
+    expect(isDebitCardEnabled('true')).toBe(true);
+    expect(isDebitCardEnabled('1')).toBe(true);
+    expect(isDebitCardEnabled('false')).toBe(false);
+    expect(isDebitCardEnabled(' FALSE ')).toBe(false);
+    expect(isDebitCardEnabled('0')).toBe(false);
+    expect(isDebitCardEnabled('off')).toBe(false);
+    expect(isDebitCardEnabled('no')).toBe(false);
+  });
+
+  it('formata bandeira e tipo processados pelo Mercado Pago via formatGatewayPaymentDetail', () => {
+    expect(formatGatewayPaymentDetail(null)).toBeNull();
+    expect(formatGatewayPaymentDetail({})).toBeNull();
+    expect(
+      formatGatewayPaymentDetail({ payment_method_id: 'elo', payment_type_id: 'prepaid_card' })
+    ).toBe('Pré-pago — Elo');
+    expect(
+      formatGatewayPaymentDetail({ payment_method_id: 'master', payment_type_id: 'credit_card' })
+    ).toBe('Crédito — Mastercard');
+    expect(
+      formatGatewayPaymentDetail({ payment_method_id: 'debelo', payment_type_id: 'debit_card' })
+    ).toBe('Elo Débito');
+    expect(
+      formatGatewayPaymentDetail({ payment_method_id: 'pix', payment_type_id: 'bank_transfer' })
+    ).toBe('PIX');
+    expect(
+      formatGatewayPaymentDetail({ payment_method_id: 'bolbradesco', payment_type_id: 'ticket' })
+    ).toBe('Boleto — Bradesco');
+    expect(formatGatewayPaymentDetail({ payment_method_id: 'cabali' })).toBe('cabali');
   });
 });

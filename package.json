@@ -73,6 +73,8 @@
     "db:clear": "node scripts/clear-db.js",
     "settings:update": "node scripts/utils/update-setting.js",
     "validate-schema": "node scripts/cli/validate-schema.js",
+    "orders:expire": "node scripts/maintenance/expire-abandoned-orders.js",
+    "mp:preflight": "node scripts/maintenance/check-mp-production-readiness.js",
     "monitor:disk": "node scripts/monitor-disk-space.js",
     "clean:reports": "node scripts/clean-k6-reports.js",
     "clean:images": "node scripts/clean-orphaned-images.js",

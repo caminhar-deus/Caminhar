@@ -4,6 +4,7 @@ import {
   createMercadoPagoPayment,
   fetchMercadoPagoPaymentDetails,
   mapMercadoPagoStatus,
+  refundMercadoPagoOrder,
   verifyMercadoPagoWebhookSignature,
 } from '../../../../lib/payment/mercadopago.js';
 
@@ -857,6 +858,121 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
       ).rejects.toMatchObject({
         statusCode: 422,
         userMessage: expect.stringMatching(/recusados pelo Mercado Pago/i),
+      });
+    });
+  });
+
+  describe('refundMercadoPagoOrder()', () => {
+    it('rejeita identificador inválido com MP_INVALID_ORDER_ID (400)', async () => {
+      await expect(refundMercadoPagoOrder('../bad/id')).rejects.toMatchObject({
+        code: 'MP_INVALID_ORDER_ID',
+        status: 400,
+      });
+      await expect(refundMercadoPagoOrder('')).rejects.toMatchObject({
+        code: 'MP_INVALID_ORDER_ID',
+        status: 400,
+      });
+    });
+
+    it('emula estorno em modo sandbox fora de produção e bloqueia ausência de token/pedido simulado em produção', async () => {
+      process.env.NODE_ENV = 'test';
+      delete process.env.MP_ACCESS_TOKEN;
+
+      const sandboxRes = await refundMercadoPagoOrder('mp_pix_32_1234', { orderId: 32 });
+      expect(sandboxRes).toMatchObject({
+        mpOrderId: 'mp_pix_32_1234',
+        paymentStatus: 'refunded',
+        mpOrderStatus: 'refunded',
+        refundMode: 'sandbox',
+      });
+
+      process.env.NODE_ENV = 'production';
+      await expect(refundMercadoPagoOrder('ORDLIVE01')).rejects.toMatchObject({
+        code: 'MP_NOT_CONFIGURED',
+        status: 503,
+      });
+
+      process.env.MP_ACCESS_TOKEN = 'APP_USR-prod-token';
+      await expect(refundMercadoPagoOrder('mp_pix_32_1234')).rejects.toMatchObject({
+        code: 'MP_SANDBOX_ORDER_IN_PRODUCTION',
+        status: 400,
+      });
+    });
+
+    it('envia POST /v1/orders/{id}/refund com idempotência e trata sucesso, 401/403, 422, 500 e erro de rede', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.MP_ACCESS_TOKEN = 'APP_USR-prod-token';
+
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            id: 'ORDLIVE99',
+            status: 'refunded',
+            transactions: { payments: [{ id: 'PAY99', status: 'refunded', status_detail: 'refunded' }] },
+          }),
+      });
+
+      const okRefund = await refundMercadoPagoOrder('ORDLIVE99', { orderId: 99 });
+      expect(okRefund).toMatchObject({
+        mpOrderId: 'ORDLIVE99',
+        mpTransactionId: 'PAY99',
+        paymentStatus: 'refunded',
+        mpOrderStatus: 'refunded',
+        statusDetail: 'refunded',
+        refundMode: 'live',
+      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.mercadopago.com/v1/orders/ORDLIVE99/refund',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer APP_USR-prod-token',
+            'X-Idempotency-Key': 'caminhar-refund-99',
+          },
+          signal: expect.anything(),
+        })
+      );
+
+      // Recusa de negócio (422)
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        text: async () => JSON.stringify({ errors: [{ message: 'Order cannot be refunded' }] }),
+      });
+      await expect(refundMercadoPagoOrder('ORDLIVE99', { orderId: 99 })).rejects.toMatchObject({
+        code: 'MP_REFUND_REJECTED',
+        status: 422,
+        userMessage: expect.stringMatching(/Order cannot be refunded/),
+      });
+
+      // Auth 401
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ message: 'Unauthorized' }),
+      });
+      await expect(refundMercadoPagoOrder('ORDLIVE99')).rejects.toMatchObject({
+        code: 'MP_AUTH_ERROR',
+        status: 502,
+      });
+
+      // Erro 500 do gateway
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'upstream error',
+      });
+      await expect(refundMercadoPagoOrder('ORDLIVE99')).rejects.toMatchObject({
+        code: 'MP_REFUND_UNAVAILABLE',
+        status: 502,
+      });
+
+      // Erro de rede / timeout
+      global.fetch = jest.fn().mockRejectedValueOnce(new Error('ETIMEDOUT'));
+      await expect(refundMercadoPagoOrder('ORDLIVE99')).rejects.toMatchObject({
+        code: 'MP_REFUND_UNAVAILABLE',
+        status: 502,
       });
     });
   });

@@ -780,6 +780,7 @@
 │   │   ├── 0042-google-id-token-local-jwks-verification.md
 │   │   ├── 0043-admin-inactivity-timeout-and-unified-401-session-guard.md
 │   │   ├── 0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md
+│   │   ├── 0045-mercadopago-refund-expiration-debit-flag-and-go-live.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -1181,7 +1182,9 @@
 │   │   └── k6-output-parser.js
 │   ├── maintenance
 │   │   ├── backup-posts.js
+│   │   ├── check-mp-production-readiness.js
 │   │   ├── clean-k6-videos.js
+│   │   ├── expire-abandoned-orders.js
 │   │   ├── fix-hero-key.js
 │   │   ├── restore-posts.js
 │   │   ├── start-webhook-tunnel.sh
@@ -1570,6 +1573,7 @@
 │       │   ├── check-github-actions.test.js
 │       │   ├── check-hardcoded-credentials.test.js
 │       │   ├── check-model-catalog.test.js
+│       │   ├── check-mp-production-readiness.test.js
 │       │   ├── check-sql-injection.test.js
 │       │   ├── clean-orphaned-images.test.js
 │       │   ├── clear-db.test.js
@@ -1577,6 +1581,7 @@
 │       │   ├── date-format.test.js
 │       │   ├── db
 │       │   │   └── connection.test.js
+│       │   ├── expire-abandoned-orders.test.js
 │       │   ├── init-table.test.js
 │       │   ├── migrate.test.js
 │       │   ├── reset-db.test.js
@@ -1621,4 +1626,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-225 directories, 1397 files
+225 directories, 1402 files

@@ -54,6 +54,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0042](0042-google-id-token-local-jwks-verification.md) | Validação local de ID tokens do Google via JWKS (`RS256`) | Aceito | 2026-11-19 |
 | [0043](0043-admin-inactivity-timeout-and-unified-401-session-guard.md) | Expiração automática por 1h de inatividade no `/admin` e guarda unificada de HTTP 401 | Aceito | 2026-11-21 |
 | [0044](0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md) | Endurecimento do webhook Mercado Pago, isolamento estrito de modalidade e idempotência de checkout | Aceito | 2026-11-26 |
+| [0045](0045-mercadopago-refund-expiration-debit-flag-and-go-live.md) | Controle comercial de debit_card, estorno opt-in via Orders API, expiração de pedidos abandonados e preflight de produção HTTPS | Aceito | 2026-11-26 |
 
 ## Quando criar um ADR
 

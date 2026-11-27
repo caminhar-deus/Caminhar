@@ -8,6 +8,7 @@ import {
   MIN_PAYMENT_METHOD_AMOUNTS,
   getPaymentFeedback,
   formatCpfCnpj,
+  isDebitCardEnabled,
   isValidCpfCnpjDigits,
   normalizeMercadoPagoTicketUrl,
 } from '../../lib/payment/payment-status-messages.js';
@@ -262,6 +263,15 @@ export default function CheckoutPage() {
   ]);
   const [copiedField, setCopiedField] = useState('');
 
+  const debitCardEnabled = isDebitCardEnabled(process.env.NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD);
+  const availablePaymentMethods = useMemo(
+    () =>
+      debitCardEnabled
+        ? PAYMENT_METHODS
+        : PAYMENT_METHODS.filter((method) => method.id !== 'debit_card'),
+    [debitCardEnabled]
+  );
+
   const [submitting, setSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
@@ -278,6 +288,13 @@ export default function CheckoutPage() {
     setCardSecurityCode('');
     setDetectedCardMethod(null);
   }, []);
+
+  useEffect(() => {
+    if (!debitCardEnabled && paymentMethod === 'debit_card') {
+      clearSensitiveCardFields();
+      setPaymentMethod('pix');
+    }
+  }, [debitCardEnabled, paymentMethod, clearSensitiveCardFields]);
 
   const verifyOrderStatus = useCallback(
     async ({ silent = false } = {}) => {
@@ -1005,7 +1022,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className={styles.paymentMethodGrid} role="radiogroup" aria-label="Forma de pagamento">
-                  {PAYMENT_METHODS.map((pm) => (
+                  {availablePaymentMethods.map((pm) => (
                     <button
                       key={pm.id}
                       type="button"
@@ -1027,6 +1044,13 @@ export default function CheckoutPage() {
                     </button>
                   ))}
                 </div>
+
+                {debitCardEnabled && paymentMethod === 'debit_card' && (
+                  <div className={`${styles.alertInfo} ${styles.mt3}`} role="note">
+                    Cartão de débito online depende de habilitação comercial do emissor e da conta recebedora (ou cartão
+                    pré-pago). Caso o banco não autorize, utilize PIX ou cartão de crédito.
+                  </div>
+                )}
 
                 {totalValue < (MIN_PAYMENT_METHOD_AMOUNTS[paymentMethod] || 0.01) && (() => {
                   const minRequired = MIN_PAYMENT_METHOD_AMOUNTS[paymentMethod] || 0.01;

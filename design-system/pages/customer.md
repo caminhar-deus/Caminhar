@@ -1,6 +1,6 @@
 # Área do Visitante (`/entrar`, `/minha-conta`, `/checkout/[id]`) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-19 (documentação do contrato visual e responsivo das rotas de visitante e compra direta, ancorada em `pages/styles/CustomerPages.module.css` — ADR-0037 e ADR-0042).
+> Última atualização: 2026-11-26 (visibilidade condicional de `debit_card` por `NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD` e nota informativa em `/checkout/[id]`, [ADR-0045](../../docs/adr/0045-mercadopago-refund-expiration-debit-flag-and-go-live.md). Anterior: 2026-11-19 — ADR-0037 e ADR-0042).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules (`pages/styles/CustomerPages.module.css`) + variáveis CSS (`pages/styles/variables.css`, sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex avulso.
 
 > Escopo: rotas públicas dedicadas à conta do visitante (`pages/entrar.js`, `pages/minha-conta.js`) e ao checkout transparente de venda interna (`pages/checkout/[id].js`), isoladas da rota administrativa `/login`.
@@ -36,7 +36,7 @@
 ## 3. Checkout Transparente (`/checkout/[id]` — `pages/checkout/[id].js`)
 
 - **Grade principal (`.checkoutGrid`):** duas colunas em desktop (`1.5fr 1fr`, gap `--spacing-6`, coluna esquerda com endereço + pagamento, `<aside>` direito com resumo sticky/alinhado ao topo).
-- **Meios de pagamento (`.paymentMethodGrid`):** `repeat(2, 1fr)`, opções `.paymentMethodOption` / `.paymentMethodOptionActive` (`role="radio"`, `min-height: 48px`, `AppIcon`, foco duplo azul).
+- **Meios de pagamento (`.paymentMethodGrid`):** `repeat(2, 1fr)`, opções `.paymentMethodOption` / `.paymentMethodOptionActive` (`role="radio"`, `min-height: 48px`, `AppIcon`, foco duplo azul). Quando `NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD` está definida como `'false'`/`'0'`, a opção `Cartão de débito` é omitida e a seleção permanece em `PIX`; quando habilitada e selecionada, exibe aviso discreto `.alertInfo` + `.mt3` sobre habilitação comercial do emissor/recebedor e suporte a pré-pago.
 - **Aviso de valor mínimo:** `.alertWarning` + `.mt3` com ação secundária rápida para ajustar quantidade mínima exigida pelo Mercado Pago.
 - **Resumo do pedido:** `.summaryProductName`, linhas `.summaryRow`, linha final `.summaryTotal` com borda superior `--color-border-light`, alerta de erro `.alertError` + `.mt4` e CTA primário `"Confirmar e Pagar"` dentro de `.mt6`.
 - **Pós-submissão:** exibe feedback semântico por status, `.pixBox` (QR Code PIX / linha digitável de boleto + cópia em `.actionRow`), reconciliação ativa com botão `"Verificar pagamento agora"` e recuperação `"Tentar outro meio de pagamento"` em falha.

@@ -17,8 +17,10 @@ import {
   createInternalOrder,
   attachOrderPaymentInfo,
   cancelFailedCheckoutOrder,
+  expireAbandonedOrders,
   getCustomerOrders,
   getCustomerOrderById,
+  getAdminOrderById,
   getAdminOrders,
   updateAdminOrder,
   syncOrderPaymentStatus,
@@ -507,5 +509,84 @@ describeIf('Pedidos e Webhooks (orders) — Integração com PostgreSQL Real', (
     await expect(updateAdminOrder(order.id, { orderStatus: 'paid' })).rejects.toThrow(
       'ORDER_CANCELLED_CANNOT_REOPEN'
     );
+  });
+
+  it('getAdminOrderById, updateAdminOrder (com estorno/needs_manual_refund) e expireAbandonedOrders funcionam contra o schema real', async () => {
+    const customer = await insertTestCustomer();
+    const product = await insertTestProduct({ stock: 10 });
+
+    const paidOrder = await createInternalOrder({
+      customerId: customer.id,
+      productId: product.id,
+      quantity: 2,
+      deliveryAddress: { cep: '01001-000' },
+      paymentMethod: 'pix',
+    });
+    await attachOrderPaymentInfo(paidOrder.id, {
+      mpPaymentId: `ORD-DB-REF-${Date.now()}`,
+      paymentStatus: 'approved',
+      paymentPayload: { status_detail: 'accredited', needs_manual_refund: true },
+    });
+
+    const fetched = await getAdminOrderById(paidOrder.id);
+    expect(fetched.id).toBe(paidOrder.id);
+    expect(fetched.customer_email).toBe(customer.email);
+
+    const refunded = await updateAdminOrder(paidOrder.id, {
+      orderStatus: 'cancelled',
+      refundResult: {
+        refundMode: 'sandbox',
+        mpOrderStatus: 'refunded',
+        statusDetail: 'refunded',
+        refundedBy: 'admin',
+      },
+    });
+    expect(refunded.payment_status).toBe('refunded');
+    expect(refunded.order_status).toBe('cancelled');
+    expect(refunded.stock_restored).toBe(true);
+    expect(refunded.payment_payload.needs_manual_refund).toBe(false);
+
+    // Pedido abandonado expirado + pedido já pago no MP promovido em vez de cancelado
+    const expiredCandidate = await createInternalOrder({
+      customerId: customer.id,
+      productId: product.id,
+      quantity: 3,
+      deliveryAddress: { cep: '01001-000' },
+      paymentMethod: 'pix',
+    });
+    await attachOrderPaymentInfo(expiredCandidate.id, {
+      mpPaymentId: `ORD-DB-EXP-${Date.now()}`,
+      paymentStatus: 'pending',
+      paymentPayload: { date_of_expiration: '2025-01-01T00:00:00Z' },
+    });
+
+    const alreadyPaidCandidate = await createInternalOrder({
+      customerId: customer.id,
+      productId: product.id,
+      quantity: 1,
+      deliveryAddress: { cep: '01001-000' },
+      paymentMethod: 'pix',
+    });
+    const paidMpId = `ORD-DB-RECON-${Date.now()}`;
+    await attachOrderPaymentInfo(alreadyPaidCandidate.id, {
+      mpPaymentId: paidMpId,
+      paymentStatus: 'pending',
+      paymentPayload: { date_of_expiration: '2025-01-01T00:00:00Z' },
+    });
+
+    const summary = await expireAbandonedOrders({
+      now: new Date('2026-11-26T20:00:00Z'),
+      reconcilePayment: async (mpId) =>
+        mpId === paidMpId
+          ? { paymentStatus: 'approved', statusDetail: 'accredited', mpOrderStatus: 'processed' }
+          : { paymentStatus: 'pending', statusDetail: 'pending_waiting_transfer', mpOrderStatus: 'action_required' },
+    });
+
+    expect(summary.expiredOrderIds).toContain(expiredCandidate.id);
+    expect(summary.reconciledOrderIds).toContain(alreadyPaidCandidate.id);
+
+    const stockAfter = await tx.query('SELECT stock FROM products WHERE id = $1', [product.id]);
+    // 10 iniciais - 2 (paidOrder devolvido +2) - 3 (expired devolvido +3) - 1 (reconciliado pago) = 9
+    expect(stockAfter.rows[0].stock).toBe(9);
   });
 });

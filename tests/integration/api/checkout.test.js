@@ -690,6 +690,75 @@ describe('API Checkout (/api/checkout)', () => {
       await handler(conflictReq, conflictRes);
       expect(conflictRes._getStatusCode()).toBe(409);
     });
+
+    it('deve recusar debit_card com 400 quando MP_ENABLE_DEBIT_CARD estiver desabilitado e manter PIX ativo', async () => {
+      const prevFlag = process.env.MP_ENABLE_DEBIT_CARD;
+      process.env.MP_ENABLE_DEBIT_CARD = 'false';
+
+      try {
+        getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+        getCustomerById.mockResolvedValue({
+          id: 8,
+          name: 'Carlos',
+          email: 'carlos@test.com',
+          default_address: validAddress,
+        });
+
+        const { req: debitReq, res: debitRes } = createMocks({
+          method: 'POST',
+          body: {
+            productId: 25,
+            quantity: 1,
+            deliveryAddress: validAddress,
+            paymentMethod: 'debit_card',
+          },
+        });
+        await handler(debitReq, debitRes);
+
+        expect(debitRes._getStatusCode()).toBe(400);
+        expect(JSON.parse(debitRes._getData()).message).toMatch(/débito direto não está habilitado/i);
+        expect(createInternalOrder).not.toHaveBeenCalled();
+
+        createInternalOrder.mockResolvedValueOnce({
+          id: 880,
+          customer_id: 8,
+          product_id: 25,
+          product_name: 'Terço',
+          total_amount: 50,
+          payment_method: 'pix',
+          payment_status: 'pending',
+          order_status: 'awaiting_payment',
+        });
+        createMercadoPagoPayment.mockResolvedValueOnce({
+          mpPaymentId: 'ORD_PIX_880',
+          mpPreferenceId: null,
+          paymentStatus: 'pending',
+          paymentPayload: { qr_code: '000201PIX880' },
+        });
+        attachOrderPaymentInfo.mockResolvedValueOnce({
+          id: 880,
+          payment_method: 'pix',
+          payment_status: 'pending',
+          order_status: 'awaiting_payment',
+        });
+
+        const { req: pixReq, res: pixRes } = createMocks({
+          method: 'POST',
+          body: {
+            productId: 25,
+            quantity: 1,
+            deliveryAddress: validAddress,
+            paymentMethod: 'pix',
+          },
+        });
+        await handler(pixReq, pixRes);
+        expect(pixRes._getStatusCode()).toBe(201);
+        expect(createInternalOrder).toHaveBeenCalledTimes(1);
+      } finally {
+        if (prevFlag === undefined) delete process.env.MP_ENABLE_DEBIT_CARD;
+        else process.env.MP_ENABLE_DEBIT_CARD = prevFlag;
+      }
+    });
   });
 
   describe('Métodos não permitidos', () => {
