@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-21 (alinhamento em linha única da barra de filtros de `ProductList` em desktop com `Modalidade`, `Categoria` e `Ordenar por`. Anterior: 2026-11-19 — contraste AA e tipografia `--font-size-sm` dos botões de marketplace em `ProductCard.module.css` e alinhamento do selo `"Venda direta"` aos tokens `--color-success-*`; 2026-11-08 — duas modalidades de Produtos Religiosos — ADR-0037).
+> Última atualização: 2026-11-28 (contraste AA de `.totalInfo` em `Pagination.module.css` para `--color-text-secondary` e rolagem suave na paginação das galerias irmãs `MusicGallery`/`VideoGallery`. Anteriores: 2026-11-21 — alinhamento em linha única da barra de filtros de `ProductList` em desktop com `Modalidade`, `Categoria` e `Ordenar por`; 2026-11-19 — contraste AA e tipografia `--font-size-sm` dos botões de marketplace em `ProductCard.module.css` e alinhamento do selo `"Venda direta"` aos tokens `--color-success-*`; 2026-11-08 — duas modalidades de Produtos Religiosos — ADR-0037).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -123,7 +123,7 @@
 - Alinhamento: `display: flex; justify-content: center; align-items: center; gap: 1rem` (16px), `margin-top: 2rem`, `padding: 1rem 0`.
 - Acessibilidade: o elemento `.pageInfo` recebe `aria-live="polite"` e `aria-atomic="true"` (decisão D4) — `<span className={styles.pageInfo} aria-live="polite" aria-atomic="true">…</span>` — vale para as três abas.
 - "Anterior" desabilitado na página 1; "Próxima" desabilitada na última página.
-- Contador: `Página {currentPage} de {totalPages}` + `(Z produto{Z≠1?'s':''})` em `--color-text-tertiary`, `--font-size-xs`.
+- Contador: `Página {currentPage} de {totalPages}` + `(Z produto{Z≠1?'s':''})` em `--color-text-secondary` (`7,17:1` AA sobre `--color-bg-secondary`), `--font-size-xs`.
 - Durante troca de página (`pageLoading`): ambos os botões `disabled`, `opacity: var(--opacity-50)`, `cursor: not-allowed`.
 
 ### 4.2 Quando existe só 1 página

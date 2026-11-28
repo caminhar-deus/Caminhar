@@ -24,15 +24,15 @@
 | DS-03 | Estilo inline e campo duplicado em `AdminSales`/`checkout`; texto informativo em `--color-text-tertiary` | Baixa | Corrigido nos 2 arquivos originais (19/11/2026; recorrência de classe em `DS-04`) | 1 |
 | PR-01 | Correção e guard de tokens restritos a um único arquivo | Alta | Corrigido para tokens `var(--*)` e `outline: none` nos 43 `.css` (19–20/11/2026; recorrência parcial de escopo em `PR-05`) | 1 |
 | PR-02 | Páginas do visitante e Gestão de Vendas sem override em `design-system/pages/` | Média | Corrigido (19/11/2026; lacunas residuais de sincronia em `PR-06`) | 1 |
-| PR-03 | Nenhuma validação visual, responsiva ou de acessibilidade registrada na janela | Média | Parcialmente corrigido — reincidência nos 6 commits visuais de 21/11 (Opção 2A ativa no Jest; inspeção visual em 4 viewports e Opção 2B pendentes) | 1, 2 |
+| PR-03 | Nenhuma validação visual, responsiva ou de acessibilidade registrada na janela | Média | Parcialmente corrigido — invariantes estáticos ampliados para todo o repositório em 28/11/2026 (10 testes em `css-tokens.test.js`); inspeção visual nos 4 viewports e Opção 2B (`axe-core` + `cypress-axe`) seguem pendentes | 1, 2 |
 | PR-04 | Rastreabilidade: commits `ATT - …` sem escopo e sem histórico por agente | Média | Encerrado por decisão do dono (20/11/2026 — Opção 1A: padrão atual mantido) | 1 |
-| DS-04 | Correção parcial em `pages/blog/[slug].js` (`54ed1f3`): 12 `style={{`, falhas WCAG AA (WhatsApp 1,98:1 e data 2,31:1), zoom inacessível por teclado e sem `skip-link`/`<main>` | Alta | Aberto | 2 |
-| DS-05 | Inconsistência de busca/foco/raios em `AdminSales` (`Pedidos`) e mistura `--border-radius-md`/`-lg` em `CustomerPages` (e `Login`) | Média | Aberto | 2 |
-| DS-06 | Contraste < 4,5:1 na barra `Dicas` de `AdminDashboard` (`--color-secondary-700`, 4,09:1) e aperto potencial de `.statColumns` em 375px | Média | Aberto (contraste confirmado; 375px é Indício) | 2 |
-| DS-07 | Assimetria de UX na paginação das galerias irmãs (`ProductList` × `MusicGallery`/`VideoGallery`) e dívidas menores pré-existentes (`Pagination`, `pages/404.js`, `pages/design-system.js`) | Baixa | Aberto | 2 |
-| PR-05 | Guards de `style={{` (2 arquivos) e par de foco duplo (4 de 43 `.css`) restritos em `css-tokens.test.js`, somados a ajustes pontuais sem revisão de arquivo completo/irmãos | Alta | Aberto | 2 |
-| PR-06 | Lacunas residuais em overrides (`login.md`, `posts.md`, `customer.md`, `/blog`) e conflito de `designer_append.md` saneado apenas no working tree em 23/11 | Média | Parcialmente corrigido | 2 |
-| PR-07 | Observabilidade limitada entre OpenCode e Antigravity (`ai-memory` MCP negado + 20 warnings em `_lint/report.md`, `models:check` não verificado fora do host, 20 arquivos em working tree) | Baixa | Aberto | 2 |
+| DS-04 | Correção parcial em `pages/blog/[slug].js` (`54ed1f3`): 12 `style={{`, falhas WCAG AA (WhatsApp 1,98:1 e data 2,31:1), zoom inacessível por teclado e sem `skip-link`/`<main>` | Alta | Corrigido (28/11/2026) | 2 |
+| DS-05 | Inconsistência de busca/foco/raios em `AdminSales` (`Pedidos`) e mistura `--border-radius-md`/`-lg` em `CustomerPages` (e `Login`) | Média | Corrigido (28/11/2026) | 2 |
+| DS-06 | Contraste < 4,5:1 na barra `Dicas` de `AdminDashboard` (`--color-secondary-700`, 4,09:1) e aperto potencial de `.statColumns` em 375px | Média | Corrigido (28/11/2026 — `--color-secondary-800` 5,69:1 e empilhamento em `≤ 480px`) | 2 |
+| DS-07 | Assimetria de UX na paginação das galerias irmãs (`ProductList` × `MusicGallery`/`VideoGallery`) e dívidas menores pré-existentes (`Pagination`, `pages/404.js`, `pages/design-system.js`) | Baixa | Corrigido (28/11/2026) | 2 |
+| PR-05 | Guards de `style={{` (2 arquivos) e par de foco duplo (4 de 43 `.css`) restritos em `css-tokens.test.js`, somados a ajustes pontuais sem revisão de arquivo completo/irmãos | Alta | Corrigido (28/11/2026 — ampliado para todos os `.css` e `.js`/`.jsx` em `pages/`/`components/`) | 2 |
+| PR-06 | Lacunas residuais em overrides (`login.md`, `posts.md`, `customer.md`, `/blog`) e conflito de `designer_append.md` saneado apenas no working tree em 23/11 | Média | Corrigido (23/11 OpenCode/AGENTS em `084568e6`/`6c37ecae`; 28/11 todos os overrides em `design-system/pages/` sincronizados) | 2 |
+| PR-07 | Observabilidade limitada entre OpenCode e Antigravity (`ai-memory` MCP negado + 20 warnings em `_lint/report.md`, `models:check` não verificado fora do host, 20 arquivos em working tree) | Baixa | Parcialmente corrigido (working tree e `models:check` resolvidos em 23/11 nos commits `6c37ecae`..`d3d3e3de`; `_lint/report.md` e acesso MCP `ai-memory` permanecem operacionais no host) | 2 |
 
 ---
 
@@ -678,6 +678,42 @@ As fragilidades restantes estão claramente delimitadas em **dois pontos priorit
 
 **Próximos passos recomendados após autorização expressa do dono:** executar `C2-A01` (saneamento de `/blog/[slug]`), `C2-M01` (padronização de `AdminSales`/`CustomerPages`) e `C2-M02` (barra `Dicas` AA `5,69:1` + conferência 375px), travar a proteção global em `C2-A02`, sincronizar overrides/commit do OpenCode em `C2-M03` e realizar a validação visual nos 4 viewports em `C2-M04`. Nenhuma implementação foi realizada nesta etapa.
 
+## 6.10 Revisão pós-implementação e validação do processo (28/11/2026)
+
+Em **28/11/2026**, o registro do Ciclo 2 foi confrontado com o estado real do repositório (`HEAD` `fd97b388`, working tree limpo), resultando na elaboração, revisão e execução integral do Plano de Ação técnico para fechar os itens confirmados em aberto.
+
+### Confronto prévio (23/11 × 28/11/2026)
+
+- **Já resolvidos antes desta rodada (evitado retrabalho):**
+  - Os 20 arquivos do working tree de 23/11 (`AGENTS.md`, documentos de arquitetura, `.opencode/oh-my-opencode-slim/*` e `docs/melhoria_design.md`) foram commitados em `084568e6` e `6c37ecae`.
+  - `npm run models:check` foi endurecido para `--standalone` e validado no host OpenCode (`93fe9600`, `86b81950`, `3d0136c6`, `d3d3e3de`).
+  - `components/Admin/AdminSales.js` e `AdminSales.module.css` evoluíram em 26/11 (`ed8de005`, `4751bd49`) com o botão `Expirar vencidos`, `.modalWarningBox`, `.refundOptionBox`, `.refundCheckbox` e guarda estática de classes CSS/AppIcon em `tests/unit/components/Admin/AdminSales.test.js` (preservados e estendidos nesta rodada).
+- **Confirmados 100% abertos no disco e tratados:** `DS-04`, `DS-05`, `DS-06`, `DS-07`, `PR-05` e a sincronização de `design-system/pages/` em `PR-06`.
+
+### Resumo do que foi implementado por ação
+
+- **C2-A01 (`DS-04` — Corrigido):** `pages/blog/[slug].js` teve todos os `12` `style={{` migrados para `pages/blog/Blog.module.css` usando tokens de `pages/styles/variables.css`; data de publicação corrigida para `--color-text-secondary` (`7,17:1` sobre `--color-bg-secondary`); `<div data-testid="image-zoom-container">` substituído por `<button type="button">` com `aria-label` e foco duplo azul; heading corrigido para `h1` → `h2` em `"Compartilhe esta reflexão:"`; adicionados `skip-link` e `<main id="main-content">`; 3 botões de compartilhamento padronizados (`min-height: 44px`, `--border-radius-lg`, foco duplo, `aria-hidden="true" focusable="false"` nos `<svg>`, `type="button"` no Instagram e WhatsApp ajustado para `--color-text-primary` sobre `#25d366` = `9,04:1`, Facebook `6,56:1`, Instagram `4,90:1`). Suíte `tests/unit/pages/blog.slug.test.js` ampliada para cobrir todos os pontos.
+- **C2-M01 (`DS-05` — Corrigido):** `components/Admin/AdminSales.js` e `AdminSales.module.css` receberam `.searchWrapper` com `AppIcon name="search"` à esquerda e botão `Limpar busca` (`AppIcon name="close"`, com cobertura em `AdminSales.test.js`), `.subTabButton` e `.modalWarningBox` unificados em `--border-radius-lg` (`8px`), e `.searchInput:focus`/`.filterSelect:focus` com `border-color: var(--color-primary-500)` + anel duplo azul. Em `pages/styles/CustomerPages.module.css`, `.backLink`, `.modeTabButton`, `.input`, `.select` e `.paymentMethodOption` foram unificados para `--border-radius-lg` e o foco de `.input`/`.select` passou a aplicar `border-color: var(--color-primary-500)` + anel duplo azul em `:focus` e `:focus-visible`. Em `pages/styles/Login.module.css`, `.input` foi alinhado para `--border-radius-lg` e `.inputInvalid` / `.inputInvalid:focus` passaram a usar `var(--color-error-halo)`.
+- **C2-M02 (`DS-06` — Corrigido):** `components/Admin/AdminDashboard.js` alterou a barra `Dicas` de `var(--color-secondary-700)` (`4,09:1`) para `var(--color-secondary-800)` (`5,69:1` sobre `--color-text-inverse`), com atualização correspondente de `docs/ARQUITETURA_SITE_PRIVADO.md` §4.1 e data `2026-11-28`; `components/Admin/styles/dashboard.module.css` recebeu `@media (max-width: 480px)` empilhando `.statColumns` (`1fr`) e trocando a divisória para `border-top` + `padding-top`.
+- **C2-B01 e C2-B02 (`DS-07` — Corrigido):** `components/Features/Music/MusicGallery.js` e `components/Features/Video/VideoGallery.js` ganharam `listRef` + `shouldScrollOnPageChange` (`scrollIntoView` suave exclusivo para troca explícita de página, espelhando `ProductList.js`, com testes novos em `MusicGallery.test.js` e `VideoGallery.test.js`); `components/UI/Pagination.module.css` alterou `.totalInfo` para `--color-text-secondary`; `pages/styles/globals.css` adicionou `box-shadow: var(--color-focus-ring)` em `.skip-link:focus`; `pages/404.js` migrou seus `6` `style={{` e `#ffffff` para o novo `pages/styles/NotFound.module.css` com `skip-link` (validado em `404.test.js`); `pages/design-system.js` substituiu os `12` emojis decorativos por `AppIcon` preservando todos os imports de `components/UI` e `components/Layout`, e `DesignSystem.module.css` ajustou `.sectionDescription`/`.groupLabel` para `--color-text-secondary`.
+- **C2-A02 (`PR-05` — Corrigido):** `tests/unit/tests-hygiene/css-tokens.test.js` foi expandido de `7` para **`10` invariantes globais**: tokens `var(--*)` em todos os **44** `.css`, política global contra regressão de `style={{` em `pages/` (exceto `api/`) e `components/` com baseline congelada e `0` obrigatório em arquivos saneados/novos, contraste WCAG AA (`≥ 4,5:1`) em `ProductCard.module.css`, `Blog.module.css` e nas `8` barras de `AdminDashboard.js`, proibição de `outline: none`/`0` em `:focus`/`:focus-visible`, detector global de `outline: none`/`0` em regra base sem restauração no mesmo arquivo, verificação de anel de foco duplo em **todos os 44 `.css`** (com exceções documentadas e validadas apenas para foco de erro semântico e variantes/combinadores secundários) e guard global `prefers-reduced-motion`.
+- **C2-M03 (`PR-06` — Corrigido):** todos os 5 overrides em `design-system/pages/` (`admin.md`, `customer.md`, `home.md`, `login.md`, `posts.md`) foram atualizados para `2026-11-28`, removendo notas obsoletas de lint e documentando `/blog` + `/blog/[slug]` (incluindo exceção de cor de marca dos botões de compartilhamento).
+
+### Revisão e avaliação final
+
+1. **Aderência às regras e guardrails (`AGENTS.md` §0–§7):**
+   - Os 5 arquivos de design vigiados pelo canário `bench-ground-truth.test.js` (`design-system/MASTER.md`, `pages/styles/variables.css`, `components/UI/{Button,Input,BaseCard}.module.css`) permaneceram intactos.
+   - Nenhuma dependência npm nova foi instalada (`axe-core`/`cypress-axe` seguem pendentes de autorização em `C2-M04`).
+   - Navegação pública (5 abas horizontais, "Em Desenvolvimento" desabilitada, "Dicas do Dia", separação Modalidade A × B) e administrativa (sidebar recolhível, 11 abas, RBAC) integralmente preservadas.
+2. **Resultados verificados dos gates (28/11/2026):**
+   - `npx jest tests/unit/tests-hygiene/css-tokens.test.js --no-coverage`: **1/1 suíte, 10/10 testes aprovados**.
+   - `npx jest tests/unit/scripts/bench-ground-truth.test.js --no-coverage`: **1/1 suíte, 14/14 testes aprovados** (todos os 5 instrumentos calibrados).
+   - `npm test`: **249/249 suítes executadas aprovadas** (`12` suítes / `110` testes de container PostgreSQL `skipped`), **2.258 testes aprovados** (`2.368` totais), **6 snapshots aprovados** (`52,1 s`).
+   - `npm run lint`, `npm run knip`, `npm run lint:workflows` e `npm run lint:chars`: **0 erros** (`actionlint 1.7.12` sem erros, `knip` com `0 issues`, `809` arquivos limpos em `lint:chars`).
+3. **Pendências legítimas remanescentes após esta entrega:**
+   - **`C2-M04` / `PR-03`:** inspeção visual ao vivo em navegador real nos 4 viewports (`375×812`, `768×1024`, `1024×768`, `1440×900`) e decisão sobre autorização futura para **Opção 2B** (`axe-core` + `cypress-axe` no Cypress E2E).
+   - **`PR-07`:** manutenção operacional no host fora do código (revisar os `20` warnings em `_lint/report.md` do `ai-memory` e acesso MCP).
+
 ---
 
 # Histórico de ciclos
@@ -685,4 +721,4 @@ As fragilidades restantes estão claramente delimitadas em **dois pontos priorit
 | Ciclo | Data | Período | Problemas novos | Atualizados | Observação |
 |---|---|---|---|---|---|
 | 1 | 19/11/2026 23:29 | 12/11 23:29 → 19/11 23:29 | 7 (DS-01 a DS-03, PR-01 a PR-04) | 7 (pós-implementação em 19–20/11) | Auditoria + ações A-01..B-03 + decisões 1A/2A (7 testes no guard CSS) e Opção 2B documentada para validação futura |
-| 2 | 23/11/2026 12:00 | 16/11 12:00 → 23/11 12:00 | 7 (DS-04 a DS-07, PR-05 a PR-07) | 6 (status Ciclo 1 revalidados; reincidência em PR-03) | Auditoria pós-implementação do Ciclo 1 e 8 commits de UI (20–22/11); Plano de Ação C2-A01..C2-B02 (8 ações); nenhuma implementação executada |
+| 2 | 23/11/2026 12:00 | 16/11 12:00 → 23/11 12:00 | 7 (DS-04 a DS-07, PR-05 a PR-07) | 14 (reavaliação em 23/11 + revisão pós-implementação em 28/11) | Auditoria de 23/11 seguida do confronto, revisão e execução integral de C2-A01..C2-B02 em 28/11 (`DS-04`..`DS-07`, `PR-05`, `PR-06` corrigidos; 10 testes no guard global CSS; `PR-03` e `PR-07` seguem com pendências operacionais em aberto) |

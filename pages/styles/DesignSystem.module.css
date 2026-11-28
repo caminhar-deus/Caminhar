@@ -41,11 +41,14 @@
 
 .sectionDescription {
   font-size: var(--font-size-lg);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-8) 0;
 }
 
 .subsectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
@@ -65,7 +68,7 @@
 .groupLabel {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
   margin: 0 0 var(--spacing-3) 0;

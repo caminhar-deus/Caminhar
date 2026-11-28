@@ -1,6 +1,6 @@
 # Posts & Categorias — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-10-27 (ADR-0024 — CRUD completo de categorias de posts; chips display-only restaurados).
+> Última atualização: 2026-11-28 (documentação das páginas públicas `/blog` e `/blog/[slug]` em `pages/blog/Blog.module.css`, correção WCAG AA e remoção da nota obsoleta sobre `npm run lint`. Anterior: 2026-10-27 — ADR-0024 — CRUD completo de categorias de posts; chips display-only restaurados).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Tokens: sempre a variável, nunca hex. Idioma da interface: pt-BR.
 
 > Escopo: (a) chips de categoria no `PostCard` público; (b) campo de atribuição de categorias no formulário de post do painel; (c) CRUD de categorias dentro da aba "Posts/Artigos" do painel. Não altera lógica de negócio nem permissões (reuso de `Posts/Artigos`).
@@ -205,7 +205,7 @@ const fields = [
 - Toggle "Posts | Categorias" alterna entre os dois CRUDs sem perder estado do formulário (reset ao trocar é aceitável).
 - CRUD de categorias: criar/editar/excluir com slug auto-gerado e editável; exclusão usa o modal padrão.
 - Slug duplicado retorna erro visível (toast + campo).
-- `npm run lint` não é porta (429 erros pré-existentes de markdown em `.opencode/skills/**`); usar `npx eslint` nos arquivos tocados. `npx jest` passa.
+- `npm run lint`, `npm run knip` e `npx jest` devem passar sem erros.
 - Não alterar `docs/` nem lógica de negócio além do escopo; atualizar `docs/ARQUITETURA_SITE_PUBLICO.md` §7 item 13 e `docs/ARQUITETURA_SITE_PRIVADO.md` §8/§4.2 quando a mudança for estrutural (responsabilidade do orquestrador/fixer conforme AGENTS.md §0.2 regra 5).
 
 ## 6. Limites desta spec
@@ -214,3 +214,19 @@ const fields = [
 - Chips permanecem display-only; links para arquivo por categoria ficam para evolução futura (ADR-0024 "Revisão" (a)).
 - Não cria permissão nova nem aba nova no painel externo.
 - Não implementa código de componente — apenas decisões e referências de padrão.
+
+---
+
+## 7. Páginas públicas do blog (`/blog` e `/blog/[slug]` — `pages/blog/Blog.module.css`)
+
+- **Estrutura acessível:** ambas as páginas incluem `<a href="#main-content" className="skip-link">` e `<main id="main-content">` sobre superfície `.container` (`--color-bg-secondary`).
+- **Leitura do artigo (`/blog/[slug]`):**
+  - Zero estilos inline `style={{` — todo layout, tipografia e estados vivem em `pages/blog/Blog.module.css` usando tokens de `pages/styles/variables.css`.
+  - Cabeçalho `.postHeader`: `<h1>` `.postTitle` (`--font-size-4xl`, reduzindo para `--font-size-3xl` em `≤ 768px`) + data `.postDate` em `--color-text-secondary` (contraste `7,17:1` AA sobre `--color-bg-secondary`).
+  - Zoom da imagem de capa: `<button type="button" data-testid="image-zoom-container" className={styles.imageZoomButton}>` acessível por teclado, com foco duplo azul e reset sem borda/padding do navegador, abrindo `ImageLightbox`.
+  - Hierarquia sem salto de headings: `"Compartilhe esta reflexão:"` usa `<h2>` (`.shareTitle`) logo abaixo do `<h1>`.
+  - Botões de compartilhamento (`.shareButton`): `min-height: 44px`, `--border-radius-lg` (`8px`), foco duplo azul em `:focus-visible`, `<svg aria-hidden="true" focusable="false">` e `type="button"` explícito em `"Instagram / Copiar Link"`.
+  - **Exceção documentada de cores de marca externa (`MASTER.md` §7 + WCAG AA `≥ 4,5:1`):**
+    - `.shareFacebook`: `#3b5998` + `var(--color-text-inverse)` (`6,56:1`);
+    - `.shareWhatsapp`: `#25d366` + `var(--color-text-primary)` (`9,04:1`, mesmo padrão dos botões de Mercado Livre/Amazon/Spotify);
+    - `.shareInstagram`: `#c13584` + `var(--color-text-inverse)` (`4,90:1`).

@@ -182,7 +182,7 @@ export default function AdminDashboard({ setActiveTab, setActiveSalesSubTab, use
         label: 'Dicas', 
         count: stats.dicas || 0, 
         icon: 'lightbulb', 
-        color: 'var(--color-secondary-700)', 
+        color: 'var(--color-secondary-800)', 
         tabId: 'dicas',
         details: `${stats.dicasPublished || 0} publicados • ${stats.dicasDraft || 0} rascunhos`
       },

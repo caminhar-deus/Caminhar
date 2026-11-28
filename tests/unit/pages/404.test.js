@@ -19,8 +19,14 @@ describe('Página 404 personalizada (pages/404.js)', () => {
     );
   });
 
-  it('renderiza link de retorno para a página inicial com href="/"', () => {
+  it('renderiza link de retorno para a página inicial com href="/" e skip-link acessível', () => {
     render(<Custom404 />);
+
+    expect(screen.getByRole('link', { name: 'Pular para o conteúdo principal' })).toHaveAttribute(
+      'href',
+      '#main-content'
+    );
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
 
     const link = screen.getByTestId('not-found-home-link');
     expect(link).toBeInTheDocument();

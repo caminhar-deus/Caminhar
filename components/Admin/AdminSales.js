@@ -583,17 +583,35 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
 
           <div className={salesStyles.filtersRow}>
             <div className={salesStyles.filterInputsGroup}>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Buscar por cliente, e-mail, produto, pagamento ou rastreio..."
-                aria-label="Buscar pedidos"
-                className={salesStyles.searchInput}
-              />
+              <div className={salesStyles.searchWrapper}>
+                <span className={salesStyles.searchIcon} aria-hidden="true">
+                  <AppIcon name="search" size={16} />
+                </span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Buscar por cliente, e-mail, produto, pagamento ou rastreio..."
+                  aria-label="Buscar pedidos"
+                  className={salesStyles.searchInput}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    className={salesStyles.clearSearchButton}
+                    aria-label="Limpar busca"
+                    onClick={() => {
+                      setSearch('');
+                      setPage(1);
+                    }}
+                  >
+                    <AppIcon name="close" size={14} />
+                  </button>
+                )}
+              </div>
               <select
                 value={paymentStatus}
                 onChange={(e) => {

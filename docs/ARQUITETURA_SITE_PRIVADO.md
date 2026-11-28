@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`. Ambos os ambientes compartilham a mesma identidade visual (`design-system/MASTER.md` e `pages/styles/variables.css`), mantendo estruturas de navegação e responsabilidades próprias.
 > Fonte: 23 capturas de tela do painel (`localhost:3000/admin`) + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-26
+> Última atualização: 2026-11-28
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -166,7 +166,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
   | Produtos Internos | "`N` publicados • `N` rascunhos" (`modality = 'internal'`, ícone `package`; navega para a subaba Produtos Internos em Gestão de Vendas) |
   | Dicas | "`N` publicados • `N` rascunhos" |
   | Usuários | "Ativos: Hoje (N) • Mês (N) • Ano (N)" |
-- **Distribuição de Conteúdo:** 8 barras horizontais por categoria, com cores tokenizadas de contraste AA (`≥ 4,5:1` sobre texto branco): Artigos (`--color-primary-500`), Músicas (`--color-success-700`), Vídeos (`--color-error-600`), Produtos (`--color-warning-700`), Gestão de Vendas (`--color-info-700`), Produtos Internos (`--color-warning-800`), Dicas (`--color-secondary-700`), Usuários (`--color-primary-700`). Mostra o valor dentro da barra quando maior que zero.
+- **Distribuição de Conteúdo:** 8 barras horizontais por categoria, com cores tokenizadas de contraste AA (`≥ 4,5:1` sobre texto branco): Artigos (`--color-primary-500`), Músicas (`--color-success-700`), Vídeos (`--color-error-600`), Produtos (`--color-warning-700`), Gestão de Vendas (`--color-info-700`), Produtos Internos (`--color-warning-800`), Dicas (`--color-secondary-800`), Usuários (`--color-primary-700`). Mostra o valor dentro da barra quando maior que zero.
 - **Nota histórica:** nas capturas iniciais os contadores apareciam zerados (exceto Usuários = 1), situação esclarecida e validada em §8, item 1.
 
 ### 4.2 Posts/Artigos

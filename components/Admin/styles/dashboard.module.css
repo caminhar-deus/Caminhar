@@ -250,3 +250,17 @@
     width: 110px;
   }
 }
+
+@media (max-width: 480px) {
+  .statColumns {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
+  }
+
+  .statColumn + .statColumn {
+    border-left: none;
+    padding-left: 0;
+    border-top: var(--border-width-1) solid var(--color-border-light);
+    padding-top: var(--spacing-3);
+  }
+}

@@ -1,14 +1,17 @@
 /**
- * Higiene de design e CSS — invariantes de tokens, estilos inline e contraste.
+ * Higiene de design e CSS — invariantes globais de tokens, estilos inline,
+ * foco acessível duplo, restauração de outline e contraste WCAG AA.
  *
- * Por que este teste existe (DS-01 / PR-01 / DS-02 / DS-03):
- * - A passada de padrões anterior testava apenas `CustomerPages.module.css`,
- *   deixando 24 declarações com tokens inexistentes em `Home.module.css`,
- *   `ProductCard.module.css` e `AdminSales.module.css` sem detecção automática.
- * - Este invariante varre todos os `.css` do repositório contra
- *   `pages/styles/variables.css`, exige ausência de `style={{` nos arquivos
- *   auditados (`AdminSales.js` e `pages/checkout/[id].js`) e valida contraste
- *   WCAG AA (>= 4.5:1) dos botões de marketplace em `ProductCard.module.css`.
+ * Evolução (DS-01..DS-07 / PR-01 / PR-05):
+ * - Cobre todos os arquivos `.css` do repositório contra `pages/styles/variables.css`.
+ * - Varre todos os `.js`/`.jsx` em `pages/` (exceto `pages/api/`) e `components/`
+ *   contra `style={{` com baseline congelada para usos dinâmicos/legados.
+ * - Exige anel de foco duplo (`outline` + `box-shadow: var(--color-focus-ring)`)
+ *   em todos os `.css` do repositório (com exceções de erro/variante auditadas).
+ * - Garante que nenhum `outline: none`/`0` em seletor base fique sem restauração
+ *   de foco no mesmo arquivo.
+ * - Valida contraste WCAG AA (>= 4,5:1) nos botões de marketplace, botões de
+ *   compartilhamento do blog e nas 8 barras do gráfico em `AdminDashboard.js`.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,21 +36,87 @@ const VARIAVEIS_DINAMICAS_PERMITIDAS = {
   'components/Layout/Sidebar.module.css': new Set(['--main-margin']),
 };
 
+/**
+ * Baseline congelada de `style={{` em JSX fora de `pages/api/`.
+ * Arquivos saneados (`AdminSales.js`, `checkout/[id].js`, `blog/[slug].js`, `404.js`)
+ * e qualquer novo arquivo DEVEM permanecer com 0 ocorrências.
+ * Reduções abaixo do teto são aceitas (e devem reduzir este baseline).
+ */
+const BASELINE_STYLE_INLINE = {
+  'components/Admin/AdminAudit.js': 4,
+  'components/Admin/AdminCategories.js': 2,
+  'components/Admin/AdminDashboard.js': 1,
+  'components/Admin/AdminPosts.js': 3,
+  'components/Admin/AdminRolesTab.js': 1,
+  'components/Admin/CrudForm.js': 1,
+  'components/Admin/CrudTable.js': 4,
+  'components/Admin/Managers/CacheManager.js': 1,
+  'components/Admin/fields/ExternalDataButton.js': 1,
+  'components/Features/Blog/BlogSection.js': 3,
+  'components/Features/Blog/PostCard.js': 1,
+  'components/Features/Music/MusicCard.js': 1,
+  'components/Features/Products/ProductCard.js': 1,
+  'components/Features/Testimonials/index.js': 1,
+  'components/Features/Video/VideoCard.js': 3,
+  'components/Layout/Grid.js': 2,
+  'components/Layout/Sidebar.js': 2,
+  'components/Performance/ImageOptimized.js': 3,
+  'components/Performance/LazyIframe.js': 5,
+  'components/UI/Button.js': 1,
+  'components/UI/Input.js': 1,
+  'components/UI/Select.js': 1,
+  'components/UI/StateMessages.js': 3,
+  'components/UI/TextArea.js': 1,
+  'components/UI/Toast.js': 1,
+};
+
+/**
+ * Exceções auditadas de foco duplo:
+ * - 'error-focus': campos em estado inválido usam `--color-error-500` em vez de azul primário.
+ * - 'variant-override': modificadores ou combinadores que herdam ou decoram a regra base.
+ */
+const EXCECOES_FOCO_DUPLO = new Map([
+  ["components/Admin/fields/DateTimeBRField.module.css|.field[aria-invalid='true']:focus-visible", 'error-focus'],
+  ['components/Admin/styles/form.module.css|.selectError:focus-visible', 'error-focus'],
+  ['components/UI/Input.module.css|.hasError .input:focus', 'error-focus'],
+  ['components/UI/Select.module.css|.hasError .select:focus', 'error-focus'],
+  ['components/UI/TextArea.module.css|.hasError .textarea:focus', 'error-focus'],
+  ['pages/styles/Login.module.css|.inputInvalid:focus', 'error-focus'],
+  ['components/UI/Input.module.css|.filled:focus', 'variant-override'],
+  ['components/UI/Input.module.css|.flushed:focus', 'variant-override'],
+  ['components/UI/Select.module.css|.select:focus + .arrow', 'variant-override'],
+]);
+
+/**
+ * Input interno de Select pesquisável cujo anel de foco é exibido no
+ * contêiner pai `.selectFocused` (anéis duplos azul em Select.module.css).
+ */
+const EXCECOES_BASE_OUTLINE_NONE = new Set([
+  'components/UI/Select.module.css|.searchInput',
+]);
+
 function caminhoRelativo(caminhoAbsoluto) {
   return path.relative(RAIZ_PROJETO, caminhoAbsoluto).split(path.sep).join('/');
 }
 
-function listarArquivosCss(dir = RAIZ_PROJETO, acumulados = []) {
+function listarArquivosPorExtensao(dir, extensoes, ignorarSubcaminhos = new Set(), acumulados = []) {
+  if (!fs.existsSync(dir)) return acumulados;
   for (const entrada of fs.readdirSync(dir, { withFileTypes: true })) {
     if (DIRETORIOS_IGNORADOS.has(entrada.name)) continue;
     const completo = path.join(dir, entrada.name);
+    const rel = caminhoRelativo(completo);
+    if (ignorarSubcaminhos.has(rel)) continue;
     if (entrada.isDirectory()) {
-      listarArquivosCss(completo, acumulados);
-    } else if (entrada.isFile() && entrada.name.endsWith('.css')) {
+      listarArquivosPorExtensao(completo, extensoes, ignorarSubcaminhos, acumulados);
+    } else if (entrada.isFile() && extensoes.some((ext) => entrada.name.endsWith(ext))) {
       acumulados.push(completo);
     }
   }
   return acumulados.sort();
+}
+
+function listarArquivosCss(dir = RAIZ_PROJETO) {
+  return listarArquivosPorExtensao(dir, ['.css']);
 }
 
 function extrairDefinicoesTokens(conteudoCss) {
@@ -78,6 +147,26 @@ function detectarTokensAusentes(conteudoCss, arquivoRelativo, tokensGlobais) {
   });
 
   return violacoes;
+}
+
+function detectarStyleInlineConteudo(conteudoJs, arquivoRelativo, baselinePermitida) {
+  const ocorrencias = [];
+  conteudoJs.split(/\r?\n/).forEach((linha) => {
+    if (linha.includes('style={{')) {
+      ocorrencias.push(linha);
+    }
+  });
+  const teto = Object.prototype.hasOwnProperty.call(baselinePermitida, arquivoRelativo)
+    ? baselinePermitida[arquivoRelativo]
+    : 0;
+  if (ocorrencias.length > teto) {
+    return [{
+      arquivo: arquivoRelativo,
+      encontrado: ocorrencias.length,
+      permitido: teto,
+    }];
+  }
+  return [];
 }
 
 function normalizarHex(valor, tokensGlobais) {
@@ -114,16 +203,20 @@ function razaoContraste(hexA, hexB) {
   return (maior + 0.05) / (menor + 0.05);
 }
 
-function extrairBlocosFocus(conteudoCss) {
+function extrairBlocosCss(conteudoCss) {
   const semComentarios = conteudoCss.replace(/\/\*[\s\S]*?\*\//g, '');
   const blocos = [];
-  for (const match of semComentarios.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    const seletor = match[1].trim();
-    if (/:focus(?:-visible)?\b/.test(seletor)) {
-      blocos.push({ seletor, corpo: match[2] });
-    }
+  for (const match of semComentarios.matchAll(/([^{}@]+)\{([^{}]+)\}/g)) {
+    blocos.push({
+      seletor: match[1].trim().replace(/\s+/g, ' '),
+      corpo: match[2].trim().replace(/\s+/g, ' '),
+    });
   }
   return blocos;
+}
+
+function extrairBlocosFocus(conteudoCss) {
+  return extrairBlocosCss(conteudoCss).filter((bloco) => /:focus(?:-visible)?\b/.test(bloco.seletor));
 }
 
 function detectarFocusSemOutline(conteudoCss, arquivoRelativo) {
@@ -132,11 +225,84 @@ function detectarFocusSemOutline(conteudoCss, arquivoRelativo) {
     if (/\boutline\s*:\s*(?:none|0)\b/i.test(bloco.corpo)) {
       violacoes.push({
         arquivo: arquivoRelativo,
-        seletor: bloco.seletor.replace(/\s+/g, ' '),
+        seletor: bloco.seletor,
       });
     }
   }
   return violacoes;
+}
+
+function detectarBaseOutlineSemRestauracao(conteudoCss, arquivoRelativo) {
+  const blocos = extrairBlocosCss(conteudoCss);
+  const seletoresFocusComOutline = blocos
+    .filter(
+      (b) =>
+        /:focus(?:-visible)?\b/.test(b.seletor) &&
+        /\boutline\s*:/i.test(b.corpo) &&
+        !/\boutline\s*:\s*(?:none|0)\b/i.test(b.corpo)
+    )
+    .map((b) => b.seletor);
+
+  const violacoes = [];
+  for (const bloco of blocos) {
+    if (/:focus(?:-visible)?\b/.test(bloco.seletor)) continue;
+    if (!/\boutline\s*:\s*(?:none|0)\b/i.test(bloco.corpo)) continue;
+
+    for (const parte of bloco.seletor.split(',').map((s) => s.trim()).filter(Boolean)) {
+      if (EXCECOES_BASE_OUTLINE_NONE.has(`${arquivoRelativo}|${parte}`)) continue;
+
+      const classePrincipal = parte.match(/\.[a-zA-Z0-9_-]+/)?.[0] || parte;
+      const restaurado = seletoresFocusComOutline.some((selFocus) =>
+        selFocus.includes(classePrincipal)
+      );
+      if (!restaurado) {
+        violacoes.push({ arquivo: arquivoRelativo, seletor: parte });
+      }
+    }
+  }
+  return violacoes;
+}
+
+function detectarFocoDuploAusente(conteudoCss, arquivoRelativo) {
+  const violacoes = [];
+  for (const bloco of extrairBlocosFocus(conteudoCss)) {
+    const chave = `${arquivoRelativo}|${bloco.seletor}`;
+    const tipoExcecao = EXCECOES_FOCO_DUPLO.get(chave);
+    if (tipoExcecao === 'variant-override') continue;
+    if (tipoExcecao === 'error-focus') {
+      if (!/outline:\s*2px solid var\(--color-error-500\)/.test(bloco.corpo)) {
+        violacoes.push({ arquivo: arquivoRelativo, seletor: bloco.seletor, motivo: 'error-focus sem outline error-500' });
+      }
+      continue;
+    }
+
+    const temOutline = /outline:\s*2px solid var\(--color-focus-primary\)/.test(bloco.corpo);
+    const temHalo = /box-shadow:\s*[^;]*var\(--color-focus-ring\)/.test(bloco.corpo);
+    if (!temOutline || !temHalo) {
+      violacoes.push({
+        arquivo: arquivoRelativo,
+        seletor: bloco.seletor,
+        temOutline,
+        temHalo,
+      });
+    }
+  }
+  return violacoes;
+}
+
+function verificarContrasteClasseCss(conteudoCss, seletores, tokensGlobais, fundoHexFallback = null) {
+  for (const seletor of seletores) {
+    const escaped = seletor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const bloco = new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`).exec(conteudoCss);
+    expect(bloco).not.toBeNull();
+
+    const bgMatch = /background-color:\s*([^;]+);/.exec(bloco[1]);
+    const fgMatch = /(?:^|[^-])color:\s*([^;]+);/m.exec(bloco[1]);
+    expect(fgMatch).not.toBeNull();
+    const bgHex = bgMatch ? normalizarHex(bgMatch[1], tokensGlobais) : fundoHexFallback;
+    const fgHex = normalizarHex(fgMatch[1], tokensGlobais);
+    expect(razaoContraste(fgHex, bgHex)).toBeGreaterThanOrEqual(4.5);
+  }
 }
 
 describe('Higiene de CSS e Design System', () => {
@@ -146,7 +312,7 @@ describe('Higiene de CSS e Design System', () => {
 
   it('garante que todos os tokens var(--*) em todos os arquivos .css existem em variables.css ou localmente', () => {
     const arquivosCss = listarArquivosCss();
-    expect(arquivosCss.length).toBeGreaterThanOrEqual(40);
+    expect(arquivosCss.length).toBeGreaterThanOrEqual(44);
 
     const todasViolacoes = [];
     for (const arquivoAbs of arquivosCss) {
@@ -168,23 +334,35 @@ describe('Higiene de CSS e Design System', () => {
     expect(detectarTokensAusentes(cssValido, 'exemplo.module.css', tokensGlobais)).toEqual([]);
   });
 
-  it('garante ausência de estilo inline (style={{) em AdminSales.js e pages/checkout/[id].js', () => {
-    const arquivosAuditados = [
-      'components/Admin/AdminSales.js',
-      'pages/checkout/[id].js',
+  it('garante política global contra regressão de estilo inline (style={{) em pages/ e components/', () => {
+    const ignorar = new Set(['pages/api']);
+    const arquivosJs = [
+      ...listarArquivosPorExtensao(path.join(RAIZ_PROJETO, 'pages'), ['.js', '.jsx'], ignorar),
+      ...listarArquivosPorExtensao(path.join(RAIZ_PROJETO, 'components'), ['.js', '.jsx'], ignorar),
     ];
 
-    const ocorrencias = [];
-    for (const rel of arquivosAuditados) {
-      const conteudo = fs.readFileSync(path.join(RAIZ_PROJETO, rel), 'utf8');
-      conteudo.split(/\r?\n/).forEach((linha, indice) => {
-        if (linha.includes('style={{')) {
-          ocorrencias.push({ arquivo: rel, linha: indice + 1 });
-        }
-      });
+    const arquivosZeroObrigatorio = [
+      'components/Admin/AdminSales.js',
+      'pages/checkout/[id].js',
+      'pages/blog/[slug].js',
+      'pages/404.js',
+    ];
+    for (const relZero of arquivosZeroObrigatorio) {
+      expect(Object.prototype.hasOwnProperty.call(BASELINE_STYLE_INLINE, relZero)).toBe(false);
     }
 
-    expect(ocorrencias).toEqual([]);
+    const violacoes = [];
+    for (const arquivoAbs of arquivosJs) {
+      const rel = caminhoRelativo(arquivoAbs);
+      const conteudo = fs.readFileSync(arquivoAbs, 'utf8');
+      violacoes.push(...detectarStyleInlineConteudo(conteudo, rel, BASELINE_STYLE_INLINE));
+    }
+    expect(violacoes).toEqual([]);
+
+    // Sanidade do detector
+    expect(
+      detectarStyleInlineConteudo('<div style={{ color: "red" }} />', 'pages/nova-pagina.js', BASELINE_STYLE_INLINE)
+    ).toEqual([{ arquivo: 'pages/nova-pagina.js', encontrado: 1, permitido: 0 }]);
   });
 
   it('garante contraste WCAG AA (>= 4.5:1) nos botões de marketplace em ProductCard.module.css', () => {
@@ -192,27 +370,47 @@ describe('Higiene de CSS e Design System', () => {
       path.join(RAIZ_PROJETO, 'components/Features/Products/styles/ProductCard.module.css'),
       'utf8'
     );
+    verificarContrasteClasseCss(productCardCss, ['.linkMercadoLivre', '.linkShopee', '.linkAmazon'], tokensGlobais);
+  });
 
-    const seletores = ['.linkMercadoLivre', '.linkShopee', '.linkAmazon'];
-    for (const seletor of seletores) {
-      const escaped = seletor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const bloco = new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`).exec(productCardCss);
-      expect(bloco).not.toBeNull();
+  it('garante contraste WCAG AA (>= 4.5:1) nos botões de compartilhamento e data em pages/blog/Blog.module.css', () => {
+    const blogCss = fs.readFileSync(
+      path.join(RAIZ_PROJETO, 'pages/blog/Blog.module.css'),
+      'utf8'
+    );
+    verificarContrasteClasseCss(
+      blogCss,
+      ['.shareFacebook', '.shareWhatsapp', '.shareInstagram'],
+      tokensGlobais
+    );
+    verificarContrasteClasseCss(
+      blogCss,
+      ['.postDate'],
+      tokensGlobais,
+      normalizarHex('var(--color-bg-secondary)', tokensGlobais)
+    );
+  });
 
-      const bgMatch = /background-color:\s*([^;]+);/.exec(bloco[1]);
-      const fgMatch = /(?:^|[^-])color:\s*([^;]+);/m.exec(bloco[1]);
-      expect(bgMatch).not.toBeNull();
-      expect(fgMatch).not.toBeNull();
+  it('garante contraste WCAG AA (>= 4.5:1) nas 8 barras de Distribuição de Conteúdo em AdminDashboard.js', () => {
+    const dashboardJs = fs.readFileSync(
+      path.join(RAIZ_PROJETO, 'components/Admin/AdminDashboard.js'),
+      'utf8'
+    );
+    const coresBarras = [...dashboardJs.matchAll(/color:\s*['"](var\(--[a-zA-Z0-9_-]+\))['"]/g)].map(
+      (m) => m[1]
+    );
+    expect(coresBarras).toHaveLength(8);
 
-      const bgHex = normalizarHex(bgMatch[1], tokensGlobais);
-      const fgHex = normalizarHex(fgMatch[1], tokensGlobais);
-      expect(razaoContraste(fgHex, bgHex)).toBeGreaterThanOrEqual(4.5);
+    const textoHex = normalizarHex('var(--color-text-inverse)', tokensGlobais);
+    for (const corToken of coresBarras) {
+      const fundoHex = normalizarHex(corToken, tokensGlobais);
+      expect(razaoContraste(textoHex, fundoHex)).toBeGreaterThanOrEqual(4.5);
     }
   });
 
   it('proíbe outline: none ou outline: 0 dentro de seletores :focus / :focus-visible em todos os .css', () => {
     const arquivosCss = listarArquivosCss();
-    expect(arquivosCss.length).toBeGreaterThanOrEqual(40);
+    expect(arquivosCss.length).toBeGreaterThanOrEqual(44);
 
     const violacoes = [];
     for (const arquivoAbs of arquivosCss) {
@@ -233,24 +431,58 @@ describe('Higiene de CSS e Design System', () => {
     expect(detectarFocusSemOutline(cssValido, 'exemplo.module.css')).toEqual([]);
   });
 
-  it('garante par de foco duplo (outline + halo) nos CSS Modules auditados', () => {
-    const modulosAuditados = [
-      'pages/styles/Home.module.css',
-      'pages/styles/CustomerPages.module.css',
-      'components/Features/Products/styles/ProductCard.module.css',
-      'components/Admin/styles/AdminSales.module.css',
-    ];
+  it('exige restauração de foco no mesmo arquivo para qualquer seletor base com outline: none ou outline: 0', () => {
+    const arquivosCss = listarArquivosCss();
+    const violacoes = [];
 
-    for (const rel of modulosAuditados) {
-      const conteudo = fs.readFileSync(path.join(RAIZ_PROJETO, rel), 'utf8');
-      const blocos = extrairBlocosFocus(conteudo);
-      expect(blocos.length).toBeGreaterThanOrEqual(1);
-
-      for (const bloco of blocos) {
-        expect(bloco.corpo).toMatch(/outline:\s*2px solid var\(--color-focus-primary\)/);
-        expect(bloco.corpo).toMatch(/box-shadow:\s*var\(--color-focus-ring\)/);
-      }
+    for (const arquivoAbs of arquivosCss) {
+      const rel = caminhoRelativo(arquivoAbs);
+      const conteudo = fs.readFileSync(arquivoAbs, 'utf8');
+      violacoes.push(...detectarBaseOutlineSemRestauracao(conteudo, rel));
     }
+
+    expect(violacoes).toEqual([]);
+
+    // Sanidade do detector
+    expect(
+      detectarBaseOutlineSemRestauracao('.campo { outline: none; }', 'exemplo.module.css')
+    ).toEqual([{ arquivo: 'exemplo.module.css', seletor: '.campo' }]);
+
+    expect(
+      detectarBaseOutlineSemRestauracao(
+        '.campo { outline: none; }\n.campo:focus-visible { outline: 2px solid var(--color-focus-primary); box-shadow: var(--color-focus-ring); }',
+        'exemplo.module.css'
+      )
+    ).toEqual([]);
+  });
+
+  it('garante par de foco duplo (outline + halo) em TODOS os arquivos .css do repositório', () => {
+    const arquivosCss = listarArquivosCss();
+    expect(arquivosCss.length).toBeGreaterThanOrEqual(44);
+
+    const violacoes = [];
+    let totalBlocosFocus = 0;
+
+    for (const arquivoAbs of arquivosCss) {
+      const rel = caminhoRelativo(arquivoAbs);
+      const conteudo = fs.readFileSync(arquivoAbs, 'utf8');
+      totalBlocosFocus += extrairBlocosFocus(conteudo).length;
+      violacoes.push(...detectarFocoDuploAusente(conteudo, rel));
+    }
+
+    expect(totalBlocosFocus).toBeGreaterThan(20);
+    expect(violacoes).toEqual([]);
+
+    // Sanidade do detector
+    const cssSemHalo = '.btn:focus-visible { outline: 2px solid var(--color-focus-primary); }';
+    expect(detectarFocoDuploAusente(cssSemHalo, 'exemplo.module.css')).toEqual([
+      {
+        arquivo: 'exemplo.module.css',
+        seletor: '.btn:focus-visible',
+        temOutline: true,
+        temHalo: false,
+      },
+    ]);
   });
 
   it('garante guard global prefers-reduced-motion: reduce em pages/styles/globals.css', () => {

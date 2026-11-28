@@ -1,0 +1,70 @@
+/* Custom 404 page styles — tokens de pages/styles/variables.css */
+.main {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-10) var(--spacing-5);
+  text-align: center;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.card {
+  max-width: 560px;
+  width: 100%;
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-12) var(--spacing-8);
+  border-radius: var(--border-radius-2xl);
+  box-shadow: var(--shadow-md);
+  border: var(--border-width-1) solid var(--color-border-light);
+}
+
+.code {
+  display: block;
+  font-size: var(--font-size-7xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-primary-500);
+  line-height: var(--line-height-none);
+  margin-bottom: var(--spacing-4);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-3) 0;
+  color: var(--color-text-primary);
+}
+
+.message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-8) 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.homeLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--spacing-3) var(--spacing-7);
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  border-radius: var(--border-radius-lg);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  transition: var(--transition-background);
+}
+
+.homeLink:hover {
+  background-color: var(--color-hover-primary);
+}
+
+.homeLink:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}

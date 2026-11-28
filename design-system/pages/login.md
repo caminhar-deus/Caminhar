@@ -1,5 +1,6 @@
 # Login — spec de implementação (override do MASTER)
 
+> Última atualização: 2026-11-28 (alinhamento de `.input` para `--border-radius-lg`, uso do token `var(--color-error-halo)` e remoção da nota obsoleta sobre `npm run lint`. Anterior: 2026-11-21 — `sessionNotice`).
 > Página de login geral do site. Override de `design-system/MASTER.md`: tudo aqui vence
 > o MASTER; o que não for mencionado segue o MASTER. Stack: Pages Router + CSS Modules
 > (sem Tailwind). Somente criar arquivos novos — **não alterar** `pages/api/auth/login.js`,
@@ -66,7 +67,7 @@ Página (`min-height: 100vh`, fundo `--color-bg-secondary`, `display: flex`,
 5. Campo Usuário: `label htmlFor="login-usuario"` "Usuário" + `*`; `input`
    `id="login-usuario"`, `name="username"`, `type="text"`, `autoComplete="username"`,
    `required`, `aria-invalid` + `aria-describedby="login-usuario-erro"` quando inválido,
-   placeholder "Seu nome de usuário", altura `--spacing-12` 48px.
+   placeholder "Seu nome de usuário", altura `--spacing-12` 48px, raio `--border-radius-lg` (`8px`).
    Erro inline `p#login-usuario-erro` 12px `--color-error-700`.
 6. Campo Senha: mesma estrutura (`id/name="login-senha"`, `type="password"`,
    `autoComplete="current-password"`, placeholder "Sua senha"); botão "mostrar senha"
@@ -107,7 +108,7 @@ Espaçamento vertical do `form`: `display: flex`, `flex-direction: column`,
   o halo sozinho tem 1,36:1 e não basta, ver MASTER §2). Input inválido com
   declaração exata `.inputInvalid:focus { border-color: var(--color-error-500);
   outline: 2px solid var(--color-error-500); outline-offset: 2px; box-shadow:
-  0 0 0 3px rgba(239,68,68,.1); }` — anel na cor do estado (≈ 3,6:1 sobre claro),
+  0 0 0 3px var(--color-error-halo); }` — anel na cor do estado (≈ 3,6:1 sobre claro),
   nunca azul sobre vermelho; desmembrar a regra combinada atual (sem foco, o
   inválido segue só com borda + halo, sem `outline`). O `outline: none` da base
   `.input` é permitido porque cada `:focus` repõe o indicador. Botão, toggle
@@ -120,7 +121,7 @@ Espaçamento vertical do `form`: `display: flex`, `flex-direction: column`,
   parado + texto visível "Entrando…" no `p` com `aria-hidden` (item 3.8); o anúncio
   para leitor de tela vem só do `span` com `aria-live` dentro do botão.
 - **Erro de validação**: borda `--color-error-500` + anel `0 0 0 3px
-  rgba(239,68,68,.1)` no campo, `.errorMessage` abaixo (12px `--color-error-700`),
+  var(--color-error-halo)` no campo, `.errorMessage` abaixo (12px `--color-error-700`),
   resumo no topo com foco.
 - **Erro de credenciais/servidor**: resumo genérico (sem apontar qual campo falhou),
   campos mantidos preenchidos excetoSenha? Não — **manter ambos preenchidos** e focar
@@ -208,11 +209,9 @@ botão; `p` visível com `aria-hidden`, sem `role="status"`); anel de foco duplo
 `--color-error-500` com a regra desmembrada), toggle, links e resumo; links do
 resumo com altura clicável ≥ 44px; sucesso redireciona para `?next=` válido ou
 `/admin`; navegação só-teclado completa o fluxo; `reduced-motion` e zoom 200% sem
-quebra. Verificação de código: `npx eslint pages/login.js` (mais cada arquivo tocado)
-e `npx jest` — `npm run lint` quebra no repo com 429 erros pré-existentes de markdown
-em `.opencode/skills/**`, fora do escopo, então não usar como porta. Pendências
-conhecidas: rota `/esqueci-senha` ainda não existe (link sem destino funcional); sem
-cadastro público (rodapé volta ao início).
+quebra. Verificação de código: `npm run lint`, `npm run knip` e `npx jest`
+devem passar sem erros. Pendências conhecidas: rota `/esqueci-senha` ainda
+não existe (link sem destino funcional); sem cadastro público (rodapé volta ao início).
 
 ### 9.1. Extração e teste de `resolveNext` (R5)
 

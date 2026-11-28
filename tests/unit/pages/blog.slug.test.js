@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { suppressConsoleError, filterConsoleWarn } from '../../helpers/index.js';
 
@@ -8,6 +8,19 @@ jest.mock('../../../pages/blog/Blog.module.css', () => ({
   postBackLinkWrapper: 'postBackLinkWrapper',
   backLink: 'backLink',
   article: 'article',
+  postHeader: 'postHeader',
+  postTitle: 'postTitle',
+  postDate: 'postDate',
+  imageZoomButton: 'imageZoomButton',
+  postImage: 'postImage',
+  postContent: 'postContent',
+  shareSection: 'shareSection',
+  shareTitle: 'shareTitle',
+  shareActions: 'shareActions',
+  shareButton: 'shareButton',
+  shareFacebook: 'shareFacebook',
+  shareWhatsapp: 'shareWhatsapp',
+  shareInstagram: 'shareInstagram',
 }));
 jest.mock('../../../lib/infra/db.js', () => ({
   query: jest.fn(),
@@ -104,10 +117,23 @@ describe('pages/blog/[slug].js (SSR e componente)', () => {
   });
 
   describe('Componente BlogPost', () => {
-    it('renderiza título, data e conteúdo do post', () => {
+    it('renderiza título, data, skip-link, landmark main, zoom acessível e compartilhamento sem saltos de heading', () => {
+      const writeTextMock = jest.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        share: undefined,
+        clipboard: { writeText: writeTextMock },
+      });
+
       render(<BlogPost post={fakePost} siteTitle="O Caminhar com Deus" />);
 
+      expect(screen.getByRole('link', { name: 'Pular para o conteúdo principal' })).toHaveAttribute(
+        'href',
+        '#main-content'
+      );
+      expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Post de Teste');
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Compartilhe esta reflexão:');
+      expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
       expect(screen.getByText('Conteúdo completo do post de teste.')).toBeInTheDocument();
 
       const backLink = screen.getByRole('link', { name: '← Voltar' });
@@ -116,6 +142,20 @@ describe('pages/blog/[slug].js (SSR e componente)', () => {
       expect(backLink).toHaveClass('backLink');
       expect(backLink.parentElement).toHaveClass('postBackLinkWrapper');
       expect(screen.getByRole('article')).toHaveClass('article');
+
+      // Imagem clicável é um botão acessível por teclado que abre o ImageLightbox
+      const zoomButton = screen.getByTestId('image-zoom-container');
+      expect(zoomButton.tagName).toBe('BUTTON');
+      expect(zoomButton).toHaveAttribute('type', 'button');
+      expect(zoomButton).toHaveAttribute('aria-label', 'Ampliar imagem: Post de Teste');
+      fireEvent.click(zoomButton);
+      expect(screen.getByTestId('image-lightbox')).toBeInTheDocument();
+
+      // Botão Instagram possui type="button" e copia o link quando navigator.share não está disponível
+      const instagramButton = screen.getByRole('button', { name: 'Instagram / Copiar Link' });
+      expect(instagramButton).toHaveAttribute('type', 'button');
+      fireEvent.click(instagramButton);
+      expect(writeTextMock).toHaveBeenCalledWith('http://localhost:3000/blog/post-de-teste');
     });
   });
 });

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { Button, Input, TextArea, Select, Card, Modal, Spinner, Badge, Alert, Toast } from '../components/UI';
 import { Container, Grid, Stack, Sidebar } from '../components/Layout';
+import { AppIcon } from '../components/UI/icons';
 import styles from './styles/DesignSystem.module.css';
 
 /**
@@ -50,7 +51,10 @@ export default function DesignSystem() {
 
             {/* Cores */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>🎨 Paleta de Cores</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="palette" size={20} />
+                Paleta de Cores
+              </h3>
               <Stack spacing="lg">
                 <div>
                   <h4 className={styles.paletteLabel}>Primária (Azul Serenidade)</h4>
@@ -88,7 +92,10 @@ export default function DesignSystem() {
 
             {/* Botões */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>🔘 Botões</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="zap" size={20} />
+                Botões
+              </h3>
               
               <div className={styles.componentGroup}>
                 <h4 className={styles.groupLabel}>Variantes</h4>
@@ -124,7 +131,10 @@ export default function DesignSystem() {
 
             {/* Inputs */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>📝 Inputs</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="fileText" size={20} />
+                Inputs
+              </h3>
               <Grid columns={2} gap="lg">
                 <Input label="Nome completo" placeholder="Digite seu nome" />
                 <Input label="Email" type="email" placeholder="seu@email.com" />
@@ -137,7 +147,7 @@ export default function DesignSystem() {
                 />
                 <Input 
                   label="Com ícone"
-                  leftAddon={<span>🔍</span>}
+                  leftAddon={<AppIcon name="search" size={16} />}
                   placeholder="Buscar..."
                 />
               </Grid>
@@ -163,7 +173,10 @@ export default function DesignSystem() {
 
             {/* Cards */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>🃏 Cards</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="package" size={20} />
+                Cards
+              </h3>
               <Grid columns={3} gap="md">
                 <Card variant="default">
                   <h4>Card Padrão</h4>
@@ -201,7 +214,10 @@ export default function DesignSystem() {
 
             {/* Badges */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>🏷️ Badges</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="sparkles" size={20} />
+                Badges
+              </h3>
               <Stack direction="horizontal" wrap spacing="sm" align="center">
                 <Badge>Default</Badge>
                 <Badge variant="primary">Primary</Badge>
@@ -217,7 +233,10 @@ export default function DesignSystem() {
 
             {/* Alerts */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>⚠️ Alerts</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="alertTriangle" size={20} />
+                Alerts
+              </h3>
               <Stack spacing="md">
                 <Alert status="info" title="Informação">
                   Esta é uma mensagem informativa para o usuário.
@@ -236,7 +255,10 @@ export default function DesignSystem() {
 
             {/* Spinners */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>⏳ Spinners</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="clock" size={20} />
+                Spinners
+              </h3>
               <Stack direction="horizontal" wrap spacing="lg" align="center">
                 <Spinner size="sm" />
                 <Spinner size="md" />
@@ -252,13 +274,19 @@ export default function DesignSystem() {
 
             {/* Modal Demo */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>🪟 Modal</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="clipboard" size={20} />
+                Modal
+              </h3>
               <Button onClick={() => setModalOpen(true)}>Abrir Modal</Button>
             </section>
 
             {/* Toast Demo */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>🍞 Toast</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="info" size={20} />
+                Toast
+              </h3>
               <Stack direction="horizontal" wrap spacing="sm">
                 <Button variant="success" onClick={() => setToastVisible(true)}>
                   Mostrar Toast
@@ -275,7 +303,10 @@ export default function DesignSystem() {
 
             {/* Layout Components */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>📐 Layout</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="chart" size={20} />
+                Layout
+              </h3>
               
               <div className={styles.componentGroup}>
                 <h4 className={styles.groupLabel}>Stack Vertical</h4>
@@ -308,7 +339,10 @@ export default function DesignSystem() {
 
             {/* Documentação */}
             <section className={styles.section}>
-              <h3 className={styles.subsectionTitle}>📚 Documentação</h3>
+              <h3 className={styles.subsectionTitle}>
+                <AppIcon name="book" size={20} />
+                Documentação
+              </h3>
               <Card>
                 <Stack spacing="md">
                   <p>O Design System inclui:</p>

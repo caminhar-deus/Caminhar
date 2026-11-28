@@ -79,32 +79,46 @@ describe('Componente Front-End - MusicGallery', () => {
     });
   });
 
-  it('deve navegar pelas páginas quando houver múltiplas páginas', async () => {
-    // Primeiro retorno: página 1 com 6 itens
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: mockMusicas.slice(0, 6), totalPages: 2, total: 7 }),
-    });
+  it('deve navegar pelas páginas quando houver múltiplas páginas e rolar suavemente para o topo apenas na paginação', async () => {
+    const scrollIntoViewMock = jest.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoViewMock;
 
-    render(<MusicGallery />);
+    try {
+      // Primeiro retorno: página 1 com 6 itens
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: mockMusicas.slice(0, 6), totalPages: 2, total: 7 }),
+      });
 
-    await waitFor(() => {
-      expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
-    });
+      render(<MusicGallery />);
 
-    // Configura mock da página 2 ANTES de clicar
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [mockMusicas[6]], totalPages: 2, total: 7 }),
-    });
+      await waitFor(() => {
+        expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
+      });
 
-    // Clica em Próxima
-    const nextButton = screen.getByLabelText('Próxima página');
-    fireEvent.click(nextButton);
+      // Carga inicial NÃO deve acionar rolagem
+      expect(scrollIntoViewMock).not.toHaveBeenCalled();
 
-    await waitFor(() => {
-      expect(screen.getByText('Página 2 de 2')).toBeInTheDocument();
-    });
+      // Configura mock da página 2 ANTES de clicar
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [mockMusicas[6]], totalPages: 2, total: 7 }),
+      });
+
+      // Clica em Próxima
+      const nextButton = screen.getByLabelText('Próxima página');
+      fireEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Página 2 de 2')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+      });
+    } finally {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    }
   });
 
   it('deve buscar músicas por término e mostrar o contador de resultados', async () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import { Pagination } from '@/components/UI';
@@ -20,6 +20,8 @@ export default function VideoGallery() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('recent');
+  const listRef = useRef(null);
+  const shouldScrollOnPageChange = useRef(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -38,27 +40,42 @@ export default function VideoGallery() {
   const totalPages = responseData?.pagination?.totalPages || 1;
   const totalItems = responseData?.pagination?.total || 0;
 
+  // Rola suavemente para o topo da lista apenas ao trocar de página na paginação
+  useEffect(() => {
+    if (!loading && shouldScrollOnPageChange.current && listRef.current) {
+      shouldScrollOnPageChange.current = false;
+      if (typeof listRef.current.scrollIntoView === 'function') {
+        listRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [currentPage, loading]);
+
   const handleSearchChange = (e) => {
+    shouldScrollOnPageChange.current = false;
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
   const clearSearch = () => {
+    shouldScrollOnPageChange.current = false;
     setSearchTerm('');
     setCurrentPage(1);
   };
 
   const handleSortChange = (e) => {
+    shouldScrollOnPageChange.current = false;
     setSortBy(e.target.value);
     setCurrentPage(1);
   };
 
   const goToPage = (page) => {
+    if (page === currentPage || page < 1 || page > totalPages) return;
+    shouldScrollOnPageChange.current = true;
     setCurrentPage(page);
   };
 
   return (
-    <div className={styles.galleryContainer}>
+    <div className={styles.galleryContainer} ref={listRef}>
       <div className={styles.searchContainer}>
         <div className={styles.searchRow}>
           <div className={styles.searchWrapper}>

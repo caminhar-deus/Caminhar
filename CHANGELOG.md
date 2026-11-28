@@ -9,6 +9,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Alterado
+
+- **Fechamento do Ciclo 2 da auditoria de design (`DS-04` a `DS-07`, `PR-05`, `PR-06` — 28/11/2026, [docs/melhoria_design.md](docs/melhoria_design.md)):**
+  - **`pages/blog/[slug].js` e `pages/blog/Blog.module.css` (`DS-04`):** migrados os `12` estilos inline `style={{` para classes com tokens em CSS Module, adicionados `skip-link` e `<main id="main-content">`, data de publicação em `--color-text-secondary` (`7,17:1`), botão `<button type="button">` com foco duplo para o zoom da imagem, hierarquia `h1` → `h2` no compartilhamento e contraste AA (`≥ 4,5:1`) em todos os 3 botões de rede social (WhatsApp `9,04:1`, Facebook `6,56:1`, Instagram `4,90:1`).
+  - **`AdminSales`, `CustomerPages.module.css` e `Login.module.css` (`DS-05`):** busca de `Pedidos` em `components/Admin/AdminSales.js` alinhada com lupa `AppIcon name="search"` e botão `Limpar busca` (`AppIcon name="close"`), raios de controles interativos e `.subTabButton`/`.modalWarningBox` unificados em `--border-radius-lg` (`8px`), foco com `border-color: var(--color-primary-500)` e halo de erro tokenizado com `var(--color-error-halo)`.
+  - **`components/Admin/AdminDashboard.js` e `dashboard.module.css` (`DS-06`):** barra `Dicas` alterada de `--color-secondary-700` para `--color-secondary-800` (`5,69:1` AA, sincronizado em `docs/ARQUITETURA_SITE_PRIVADO.md` §4.1) e empilhamento responsivo de `.statColumns` (`1fr` com divisória superior) adicionado em `@media (max-width: 480px)`.
+  - **Galerias irmãs, paginação, `pages/404.js`, `skip-link` e `pages/design-system.js` (`DS-07`):** `MusicGallery.js` e `VideoGallery.js` receberam rolagem suave ao topo exclusiva na troca explícita de página (mesmo padrão de `ProductList.js`); `.totalInfo` de `components/UI/Pagination.module.css` corrigido para `--color-text-secondary`; `.skip-link:focus` em `pages/styles/globals.css` recebeu `box-shadow: var(--color-focus-ring)`; `pages/404.js` migrada para `pages/styles/NotFound.module.css` com `skip-link`; `pages/design-system.js` substituiu os `12` emojis decorativos por `AppIcon` preservando os imports monitorados pelo `knip`.
+  - **Higiene global e overrides (`PR-05` e `PR-06`):** `tests/unit/tests-hygiene/css-tokens.test.js` ampliado de `7` para `10` invariantes cobrindo todos os `44` `.css`, baseline global de `style={{` em `pages/`/`components/`, restauração obrigatória de `outline: none` base, foco duplo global e contraste AA de `Blog.module.css` e `AdminDashboard.js`; overrides `design-system/pages/{admin,customer,home,login,posts}.md` sincronizados sem afetar os arquivos vigiados pelo canário `bench-ground-truth.test.js`.
+
 ### Segurança
 
 - **Ativação, rotação e revogação server-side em `customer_refresh_tokens` (28/11/2026 — `H7`, [ADR-0046](docs/adr/0046-customer-refresh-tokens-activation-and-revocation.md)):**

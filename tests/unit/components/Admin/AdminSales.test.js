@@ -1043,4 +1043,37 @@ describe('Componente Front-End - AdminSales', () => {
       unsubscribe();
     }
   });
+
+  it('exibe botão de limpar busca em Pedidos ao digitar e reseta o filtro ao clicar', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [],
+        pagination: { totalPages: 1, total: 0 },
+      }),
+    });
+
+    render(<AdminSales />);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    const searchInput = screen.getByLabelText('Buscar pedidos');
+    expect(screen.queryByRole('button', { name: 'Limpar busca' })).not.toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: 'Maria' } });
+    await waitFor(() => {
+      expect(String(global.fetch.mock.calls.at(-1)[0])).toContain('search=Maria');
+    });
+
+    const clearBtn = screen.getByRole('button', { name: 'Limpar busca' });
+    fireEvent.click(clearBtn);
+
+    expect(searchInput).toHaveValue('');
+    expect(screen.queryByRole('button', { name: 'Limpar busca' })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(String(global.fetch.mock.calls.at(-1)[0])).not.toContain('search=Maria');
+    });
+  });
 });

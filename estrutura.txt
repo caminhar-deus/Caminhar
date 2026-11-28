@@ -295,6 +295,7 @@ lib/payment/reconcile-orders.js → lib/domain/orders.js
 lib/payment/reconcile-orders.js → lib/infra/logger.js
 lib/payment/reconcile-orders.js → lib/payment/mercadopago.js
 pages/404.js → lib/seo/config.js
+pages/404.js → pages/styles/NotFound.module.css
 pages/_app.js → hooks/index.js
 pages/_app.js → pages/styles/globals.css
 pages/_document.js → components/Performance/CriticalCSS.js
@@ -501,6 +502,7 @@ pages/checkout/[id].js → components/UI/index.js
 pages/checkout/[id].js → components/UI/icons.js
 pages/design-system.js → components/Layout/index.js
 pages/design-system.js → components/UI/index.js
+pages/design-system.js → components/UI/icons.js
 pages/design-system.js → pages/styles/DesignSystem.module.css
 pages/entrar.js → pages/styles/CustomerPages.module.css
 pages/entrar.js → components/UI/index.js

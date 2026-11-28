@@ -86,8 +86,122 @@
   margin: 0 auto;
 }
 
+/* Post detail ([slug].js) */
+.postHeader {
+  margin-bottom: var(--spacing-8);
+  text-align: center;
+}
+
+.postTitle {
+  font-size: var(--font-size-4xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+  line-height: var(--line-height-tight);
+}
+
+.postDate {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.imageZoomButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  margin-bottom: var(--spacing-10);
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  background-color: var(--color-bg-secondary);
+  cursor: zoom-in;
+  transition: var(--transition-all);
+}
+
+.imageZoomButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.postImage {
+  width: 100%;
+  height: auto;
+  max-height: 65vh;
+  object-fit: contain;
+  display: block;
+}
+
+.postContent {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+}
+
+.shareSection {
+  margin-top: var(--spacing-12);
+  border-top: var(--border-width-1) solid var(--color-border-light);
+  padding-top: var(--spacing-8);
+}
+
+.shareTitle {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-5);
+  color: var(--color-text-secondary);
+}
+
+.shareActions {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.shareButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-5);
+  border-radius: var(--border-radius-lg);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: var(--transition-all);
+}
+
+.shareButton:hover {
+  opacity: 0.92;
+}
+
+.shareButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* Exceção documentada em posts.md (cores oficiais das redes com contraste WCAG AA >= 4,5:1) */
+.shareFacebook {
+  background-color: #3b5998;
+  color: var(--color-text-inverse);
+}
+
+.shareWhatsapp {
+  background-color: #25d366;
+  color: var(--color-text-primary);
+}
+
+.shareInstagram {
+  background-color: #c13584;
+  color: var(--color-text-inverse);
+}
+
 @media (max-width: 768px) {
-  .title {
-    font-size: 2rem;
+  .title,
+  .postTitle {
+    font-size: var(--font-size-3xl);
   }
 }

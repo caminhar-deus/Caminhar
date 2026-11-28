@@ -164,29 +164,42 @@ describe('Componente Front-End - VideoGallery', () => {
     });
   }, 15_000);
 
-  it('deve navegar pelas páginas (Anterior e Próxima)', async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => mockVideos });
+  it('deve navegar pelas páginas (Anterior e Próxima) e rolar para o topo apenas na troca de página', async () => {
+    const scrollIntoViewMock = jest.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoViewMock;
 
-    render(<VideoGallery />);
+    try {
+      global.fetch.mockResolvedValue({ ok: true, json: async () => mockVideos });
 
-    await waitFor(() => {
-      expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
-    });
+      render(<VideoGallery />);
 
-    // Live region da paginação (MASTER §7 / decisão D4)
-    const pageInfo = screen.getByText('Página 1 de 2');
-    expect(pageInfo).toHaveAttribute('aria-live', 'polite');
-    expect(pageInfo).toHaveAttribute('aria-atomic', 'true');
+      await waitFor(() => {
+        expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
+      });
 
-    const nextBtn = screen.getByText('Próxima ❯');
-    await act(async () => { fireEvent.click(nextBtn); });
+      expect(scrollIntoViewMock).not.toHaveBeenCalled();
 
-    await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('page=2'), expect.any(Object)));
+      // Live region da paginação (MASTER §7 / decisão D4)
+      const pageInfo = screen.getByText('Página 1 de 2');
+      expect(pageInfo).toHaveAttribute('aria-live', 'polite');
+      expect(pageInfo).toHaveAttribute('aria-atomic', 'true');
 
-    const prevBtn = screen.getByText('❮ Anterior');
-    await act(async () => { fireEvent.click(prevBtn); });
+      const nextBtn = screen.getByText('Próxima ❯');
+      await act(async () => { fireEvent.click(nextBtn); });
 
-    await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(3, expect.stringContaining('page=1'), expect.any(Object)));
+      await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('page=2'), expect.any(Object)));
+      await waitFor(() => {
+        expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+      });
+
+      const prevBtn = screen.getByText('❮ Anterior');
+      await act(async () => { fireEvent.click(prevBtn); });
+
+      await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(3, expect.stringContaining('page=1'), expect.any(Object)));
+    } finally {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    }
   });
 
   it('deve oferecer as opções de ordenação na ordem do contrato e pedir sort=positioned ao selecionar "Posicionados"', async () => {

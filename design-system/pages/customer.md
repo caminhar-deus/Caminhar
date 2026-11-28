@@ -1,6 +1,6 @@
 # Área do Visitante (`/entrar`, `/minha-conta`, `/checkout/[id]`) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-26 (visibilidade condicional de `debit_card` por `NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD` e nota informativa em `/checkout/[id]`, [ADR-0045](../../docs/adr/0045-mercadopago-refund-expiration-debit-flag-and-go-live.md). Anterior: 2026-11-19 — ADR-0037 e ADR-0042).
+> Última atualização: 2026-11-28 (unificação dos raios de `.backLink`, `.modeTabButton`, `.input`, `.select` e `.paymentMethodOption` em `--border-radius-lg` e foco com `border-color: var(--color-primary-500)`. Anteriores: 2026-11-26 — ADR-0045; 2026-11-19 — ADR-0037 e ADR-0042).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules (`pages/styles/CustomerPages.module.css`) + variáveis CSS (`pages/styles/variables.css`, sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex avulso.
 
 > Escopo: rotas públicas dedicadas à conta do visitante (`pages/entrar.js`, `pages/minha-conta.js`) e ao checkout transparente de venda interna (`pages/checkout/[id].js`), isoladas da rota administrativa `/login`.
@@ -9,10 +9,10 @@
 
 - **Superfície externa (`.pageWrapper`):** altura mínima `100vh`, fundo `--color-bg-secondary` (`#f5f5f5`), padding `--spacing-8` vertical e `--spacing-4` horizontal.
 - **Containers:** `.narrowCard` (`max-width: 480px`) para `/entrar`; `.container` (`max-width: var(--container-xl)`) para `/minha-conta` e `/checkout/[id]`.
-- **Barra superior (`.topBar`):** `display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-4); flex-wrap: wrap;` com `.backLink` (`min-height: 44px`, `AppIcon name="chevronLeft"`, foco duplo azul).
+- **Barra superior (`.topBar`):** `display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-4); flex-wrap: wrap;` com `.backLink` (`min-height: 44px`, raio `--border-radius-lg`, `AppIcon name="chevronLeft"`, foco duplo azul).
 - **Cabeçalhos internos:** `.pageTitle` (`h1` único da página, `--font-size-2xl`, `bold`, `--color-text-primary`) e `.pageSubtitle` (`--font-size-sm`, `--color-text-secondary`, `--line-height-relaxed`).
 - **Cartões de seção (`.sectionCard`):** fundo `--color-bg-primary`, borda `--border-width-1` `--color-border-light`, raio `--border-radius-xl` (`12px`), padding `--spacing-6` (`--spacing-5` em `≤ 640px`), sombra `--shadow-sm`.
-- **Formulários e foco:** labels visíveis (`.label`, `--font-size-sm`, `semibold`), campos `.input`/`.select` (`min-height: 44px`, raio `--border-radius-md`, borda `--color-border-default`, `--font-size-base`), foco duplo azul obrigatório (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);`).
+- **Formulários e foco:** labels visíveis (`.label`, `--font-size-sm`, `semibold`), campos `.input`/`.select` (`min-height: 44px`, raio `--border-radius-lg`, borda `--color-border-default`, `--font-size-base`), `border-color: var(--color-primary-500)` + foco duplo azul obrigatório (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);`).
 - **Alertas semânticos:** `.alertError`, `.alertInfo`, `.alertSuccess`, `.alertWarning` usando tokens `-50` (fundo), `-800` (texto) e `-200` (borda). Zero `style={{` inline de layout: utilitários de margem e destaque vivem em `.mt3`, `.mt4`, `.mt6` e `.summaryProductName`.
 
 ## 1. Acesso e Cadastro (`/entrar` — `pages/entrar.js`)

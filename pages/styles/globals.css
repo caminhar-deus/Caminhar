@@ -52,6 +52,7 @@ a {
   top: var(--spacing-4);
   outline: 2px solid var(--color-focus-primary);
   outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 /* Guard global de movimento reduzido (MASTER §5) */
