@@ -7,6 +7,11 @@ import {
   setCustomerAuthCookie,
   clearCustomerAuthCookie,
   getAuthenticatedCustomer,
+  generateCustomerRefreshToken,
+  hashCustomerRefreshToken,
+  setCustomerRefreshCookie,
+  clearCustomerRefreshCookie,
+  getCustomerRefreshTokenCookie,
 } from '../../../lib/auth/customer-auth.js';
 import { verifyGoogleIdToken } from '../../../lib/auth/google-id-token.js';
 import {
@@ -15,6 +20,10 @@ import {
   upsertGoogleCustomer,
   getCustomerById,
   updateCustomerProfile,
+  storeCustomerRefreshToken,
+  validateCustomerRefreshToken,
+  consumeCustomerRefreshToken,
+  revokeCustomerRefreshToken,
 } from '../../../lib/domain/customers.js';
 
 const registerSchema = z.object({
@@ -54,6 +63,29 @@ const profileUpdateSchema = z.object({
 });
 
 const GOOGLE_CONFIG_ERROR_CODES = new Set(['GOOGLE_NOT_CONFIGURED', 'GOOGLE_AUDIENCE_MISMATCH']);
+
+function clearCustomerSessionCookies(res) {
+  clearCustomerAuthCookie(res);
+  clearCustomerRefreshCookie(res);
+}
+
+async function issueCustomerSession(res, customer) {
+  const token = generateCustomerToken(customer);
+  setCustomerAuthCookie(res, token);
+
+  const refreshToken = generateCustomerRefreshToken();
+  const tokenHash = hashCustomerRefreshToken(refreshToken);
+  if (!tokenHash) {
+    return;
+  }
+
+  try {
+    await storeCustomerRefreshToken(customer.id, tokenHash);
+    setCustomerRefreshCookie(res, refreshToken);
+  } catch (storeErr) {
+    logger.error('CustomerAuth', 'Falha ao armazenar refresh token do visitante:', storeErr);
+  }
+}
 
 async function verifyGoogleCredential(payload) {
   if (payload.credential) {
@@ -95,14 +127,40 @@ export default async function handler(req, res) {
         });
       }
       const session = getAuthenticatedCustomer(req);
-      if (!session) {
+      if (session) {
+        const customer = await getCustomerById(session.customerId);
+        if (!customer) {
+          clearCustomerSessionCookies(res);
+          return res.status(200).json({ authenticated: false, customer: null });
+        }
+        return res.status(200).json({ authenticated: true, customer });
+      }
+
+      const rawRefresh = getCustomerRefreshTokenCookie(req);
+      if (!rawRefresh) {
         return res.status(200).json({ authenticated: false, customer: null });
       }
-      const customer = await getCustomerById(session.customerId);
+
+      const tokenHash = hashCustomerRefreshToken(rawRefresh);
+      if (!tokenHash) {
+        clearCustomerSessionCookies(res);
+        return res.status(200).json({ authenticated: false, customer: null });
+      }
+
+      const stored = await validateCustomerRefreshToken(tokenHash);
+      if (!stored) {
+        clearCustomerSessionCookies(res);
+        return res.status(200).json({ authenticated: false, customer: null });
+      }
+
+      const customer = await getCustomerById(stored.customer_id);
       if (!customer) {
-        clearCustomerAuthCookie(res);
+        clearCustomerSessionCookies(res);
         return res.status(200).json({ authenticated: false, customer: null });
       }
+
+      const renewedToken = generateCustomerToken(customer);
+      setCustomerAuthCookie(res, renewedToken);
       return res.status(200).json({ authenticated: true, customer });
     }
 
@@ -128,7 +186,7 @@ export default async function handler(req, res) {
       }
       const updated = await updateCustomerProfile(session.customerId, validation.data);
       if (!updated) {
-        clearCustomerAuthCookie(res);
+        clearCustomerSessionCookies(res);
         return res.status(404).json({ error: 'Not Found', message: 'Conta não encontrada.' });
       }
       return res.status(200).json({ customer: updated });
@@ -138,20 +196,79 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
     }
 
+    const ip = getClientIP(req);
     const action = req.body?.action;
 
     if (action === 'logout') {
-      clearCustomerAuthCookie(res);
+      if (await checkRateLimit(ip, 'api:customer:logout', 30, 60000)) {
+        return res.status(429).json({
+          error: 'Too Many Requests',
+          message: 'Muitas tentativas. Aguarde um minuto e tente novamente.',
+        });
+      }
+      const rawRefresh = getCustomerRefreshTokenCookie(req);
+      const tokenHash = hashCustomerRefreshToken(rawRefresh);
+      if (tokenHash) {
+        try {
+          await revokeCustomerRefreshToken(tokenHash);
+        } catch (revokeErr) {
+          logger.warn('CustomerAuth', 'Falha ao revogar refresh token no logout:', revokeErr);
+        }
+      }
+      clearCustomerSessionCookies(res);
       return res.status(200).json({ message: 'Sessão encerrada com sucesso.' });
     }
 
-    const ip = getClientIP(req);
     const isRateLimited = await checkRateLimit(ip, 'api:customer:auth', 20, 60000);
     if (isRateLimited) {
       return res.status(429).json({
         error: 'Too Many Requests',
         message: 'Muitas tentativas. Aguarde um minuto e tente novamente.',
       });
+    }
+
+    if (action === 'refresh') {
+      const rawRefresh = getCustomerRefreshTokenCookie(req);
+      const tokenHash = hashCustomerRefreshToken(rawRefresh);
+      if (!tokenHash) {
+        clearCustomerSessionCookies(res);
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Sessão expirada. Faça login novamente.',
+        });
+      }
+
+      const consumed = await consumeCustomerRefreshToken(tokenHash);
+      if (!consumed) {
+        clearCustomerSessionCookies(res);
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Sessão expirada. Faça login novamente.',
+        });
+      }
+
+      const customer = await getCustomerById(consumed.customer_id);
+      if (!customer) {
+        clearCustomerSessionCookies(res);
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Sessão expirada. Faça login novamente.',
+        });
+      }
+
+      const newRefreshToken = generateCustomerRefreshToken();
+      const newTokenHash = hashCustomerRefreshToken(newRefreshToken);
+      try {
+        await storeCustomerRefreshToken(customer.id, newTokenHash);
+      } catch (storeErr) {
+        clearCustomerRefreshCookie(res);
+        throw storeErr;
+      }
+
+      const newAccessToken = generateCustomerToken(customer);
+      setCustomerAuthCookie(res, newAccessToken);
+      setCustomerRefreshCookie(res, newRefreshToken);
+      return res.status(200).json({ authenticated: true, customer });
     }
 
     if (action === 'register') {
@@ -165,8 +282,7 @@ export default async function handler(req, res) {
       }
       try {
         const customer = await registerCustomer(validation.data);
-        const token = generateCustomerToken(customer);
-        setCustomerAuthCookie(res, token);
+        await issueCustomerSession(res, customer);
         return res.status(201).json({ customer });
       } catch (err) {
         if (err.message === 'EMAIL_ALREADY_REGISTERED') {
@@ -195,8 +311,7 @@ export default async function handler(req, res) {
           message: 'E-mail ou senha incorretos.',
         });
       }
-      const token = generateCustomerToken(customer);
-      setCustomerAuthCookie(res, token);
+      await issueCustomerSession(res, customer);
       return res.status(200).json({ customer });
     }
 
@@ -242,8 +357,7 @@ export default async function handler(req, res) {
         }
         throw err;
       }
-      const token = generateCustomerToken(customer);
-      setCustomerAuthCookie(res, token);
+      await issueCustomerSession(res, customer);
       return res.status(200).json({ customer });
     }
 

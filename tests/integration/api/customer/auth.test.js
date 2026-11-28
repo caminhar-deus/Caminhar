@@ -12,6 +12,13 @@ jest.mock('../../../../lib/auth/customer-auth.js', () => ({
   setCustomerAuthCookie: jest.fn(),
   clearCustomerAuthCookie: jest.fn(),
   getAuthenticatedCustomer: jest.fn(),
+  generateCustomerRefreshToken: jest.fn().mockReturnValue('a'.repeat(96)),
+  hashCustomerRefreshToken: jest.fn((raw) =>
+    typeof raw === 'string' && /^[a-f0-9]{96}$/i.test(raw) ? `hash_${raw.toLowerCase()}` : null
+  ),
+  setCustomerRefreshCookie: jest.fn(),
+  clearCustomerRefreshCookie: jest.fn(),
+  getCustomerRefreshTokenCookie: jest.fn().mockReturnValue(null),
 }));
 
 jest.mock('../../../../lib/domain/customers.js', () => ({
@@ -20,15 +27,25 @@ jest.mock('../../../../lib/domain/customers.js', () => ({
   upsertGoogleCustomer: jest.fn(),
   getCustomerById: jest.fn(),
   updateCustomerProfile: jest.fn(),
+  storeCustomerRefreshToken: jest.fn().mockResolvedValue({ id: 1 }),
+  validateCustomerRefreshToken: jest.fn().mockResolvedValue(null),
+  consumeCustomerRefreshToken: jest.fn().mockResolvedValue(null),
+  revokeCustomerRefreshToken: jest.fn().mockResolvedValue(true),
 }));
 
 import handler from '../../../../pages/api/customer/auth.js';
 import { checkRateLimit } from '../../../../lib/cache/cache.js';
 import { logger } from '../../../../lib/infra/logger.js';
 import {
+  generateCustomerToken,
   setCustomerAuthCookie,
   clearCustomerAuthCookie,
   getAuthenticatedCustomer,
+  generateCustomerRefreshToken,
+  hashCustomerRefreshToken,
+  setCustomerRefreshCookie,
+  clearCustomerRefreshCookie,
+  getCustomerRefreshTokenCookie,
 } from '../../../../lib/auth/customer-auth.js';
 import {
   registerCustomer,
@@ -36,6 +53,10 @@ import {
   upsertGoogleCustomer,
   getCustomerById,
   updateCustomerProfile,
+  storeCustomerRefreshToken,
+  validateCustomerRefreshToken,
+  consumeCustomerRefreshToken,
+  revokeCustomerRefreshToken,
 } from '../../../../lib/domain/customers.js';
 
 describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)', () => {
@@ -105,7 +126,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(data.customer.name).toBe('Maria Silva');
     });
 
-    it('deve limpar cookie e retornar authenticated: false quando cliente não existir mais no banco', async () => {
+    it('deve limpar cookies e retornar authenticated: false quando cliente não existir mais no banco', async () => {
       getAuthenticatedCustomer.mockReturnValue({ customerId: 999, email: 'removido@test.com' });
       getCustomerById.mockResolvedValueOnce(null);
 
@@ -114,7 +135,72 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
       expect(res._getStatusCode()).toBe(200);
       expect(clearCustomerAuthCookie).toHaveBeenCalledWith(res);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(res);
       expect(JSON.parse(res._getData())).toEqual({ authenticated: false, customer: null });
+    });
+
+    it('deve renovar customerToken de forma idempotente quando houver customerRefreshToken válido e não rotacionar em GET', async () => {
+      const validRefresh = 'b'.repeat(96);
+      getAuthenticatedCustomer.mockReturnValueOnce(null);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(validRefresh);
+      validateCustomerRefreshToken.mockResolvedValueOnce({
+        id: 15,
+        customer_id: 42,
+        expires_at: new Date(Date.now() + 86400000),
+      });
+      getCustomerById.mockResolvedValueOnce({
+        id: 42,
+        name: 'Maria Renovada',
+        email: 'maria.renovada@test.com',
+      });
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(validateCustomerRefreshToken).toHaveBeenCalledWith(`hash_${validRefresh}`);
+      expect(consumeCustomerRefreshToken).not.toHaveBeenCalled();
+      expect(setCustomerRefreshCookie).not.toHaveBeenCalled();
+      expect(generateCustomerToken).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 42, email: 'maria.renovada@test.com' })
+      );
+      expect(setCustomerAuthCookie).toHaveBeenCalledWith(res, 'mock-customer-token');
+      expect(JSON.parse(res._getData())).toEqual({
+        authenticated: true,
+        customer: { id: 42, name: 'Maria Renovada', email: 'maria.renovada@test.com' },
+      });
+    });
+
+    it('deve limpar cookies em GET quando customerRefreshToken tiver formato inválido, estiver revogado ou cliente não existir', async () => {
+      getAuthenticatedCustomer.mockReturnValueOnce(null);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce('token-curto-invalido');
+      const { req: badFmtReq, res: badFmtRes } = createMocks({ method: 'GET' });
+      await handler(badFmtReq, badFmtRes);
+      expect(badFmtRes._getStatusCode()).toBe(200);
+      expect(validateCustomerRefreshToken).not.toHaveBeenCalled();
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(badFmtRes);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(badFmtRes);
+      expect(JSON.parse(badFmtRes._getData())).toEqual({ authenticated: false, customer: null });
+
+      const deadRefresh = 'c'.repeat(96);
+      getAuthenticatedCustomer.mockReturnValueOnce(null);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(deadRefresh);
+      validateCustomerRefreshToken.mockResolvedValueOnce(null);
+      const { req: deadReq, res: deadRes } = createMocks({ method: 'GET' });
+      await handler(deadReq, deadRes);
+      expect(deadRes._getStatusCode()).toBe(200);
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(deadRes);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(deadRes);
+
+      getAuthenticatedCustomer.mockReturnValueOnce(null);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(deadRefresh);
+      validateCustomerRefreshToken.mockResolvedValueOnce({ id: 16, customer_id: 999 });
+      getCustomerById.mockResolvedValueOnce(null);
+      const { req: ghostReq, res: ghostRes } = createMocks({ method: 'GET' });
+      await handler(ghostReq, ghostRes);
+      expect(ghostRes._getStatusCode()).toBe(200);
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(ghostRes);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(ghostRes);
     });
   });
 
@@ -139,7 +225,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(getAuthenticatedCustomer).not.toHaveBeenCalled();
     });
 
-    it('PUT deve definir Cache-Control no-store, private, limpar cookie e retornar 404 quando visitante não existir', async () => {
+    it('PUT deve definir Cache-Control no-store, private, limpar cookies e retornar 404 quando visitante não existir', async () => {
       getAuthenticatedCustomer.mockReturnValueOnce({ customerId: 999 });
       updateCustomerProfile.mockResolvedValueOnce(null);
 
@@ -152,6 +238,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(res._getStatusCode()).toBe(404);
       expect(res._getHeaders()['cache-control']).toBe('no-store, private');
       expect(clearCustomerAuthCookie).toHaveBeenCalledWith(res);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(res);
     });
   });
 
@@ -179,6 +266,8 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       const data = JSON.parse(res._getData());
       expect(data.customer.name).toBe('Novo Visitante');
       expect(setCustomerAuthCookie).toHaveBeenCalledWith(res, 'mock-customer-token');
+      expect(storeCustomerRefreshToken).toHaveBeenCalledWith(1, `hash_${'a'.repeat(96)}`);
+      expect(setCustomerRefreshCookie).toHaveBeenCalledWith(res, 'a'.repeat(96));
     });
 
     it('action=register: deve retornar 409 se e-mail já estiver cadastrado', async () => {
@@ -220,6 +309,52 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       const data = JSON.parse(res._getData());
       expect(data.customer.id).toBe(5);
       expect(setCustomerAuthCookie).toHaveBeenCalledWith(res, 'mock-customer-token');
+      expect(storeCustomerRefreshToken).toHaveBeenCalledWith(5, `hash_${'a'.repeat(96)}`);
+      expect(setCustomerRefreshCookie).toHaveBeenCalledWith(res, 'a'.repeat(96));
+    });
+
+    it('action=login: não deve bloquear o login se a gravação do refresh token falhar ou hash resultar nulo', async () => {
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+      try {
+        authenticateCustomer.mockResolvedValueOnce({
+          id: 6,
+          name: 'Visitante Resiliente',
+          email: 'resiliente@test.com',
+        });
+        storeCustomerRefreshToken.mockRejectedValueOnce(new Error('DB write timeout'));
+
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: { action: 'login', email: 'resiliente@test.com', password: 'senhaValida' },
+        });
+        await handler(req, res);
+
+        expect(res._getStatusCode()).toBe(200);
+        expect(setCustomerAuthCookie).toHaveBeenCalledWith(res, 'mock-customer-token');
+        expect(setCustomerRefreshCookie).not.toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Falha ao armazenar refresh token do visitante:',
+          expect.any(Error)
+        );
+
+        authenticateCustomer.mockResolvedValueOnce({
+          id: 7,
+          name: 'Visitante Sem Hash',
+          email: 'semhash@test.com',
+        });
+        hashCustomerRefreshToken.mockReturnValueOnce(null);
+        const { req: req2, res: res2 } = createMocks({
+          method: 'POST',
+          body: { action: 'login', email: 'semhash@test.com', password: 'senhaValida' },
+        });
+        await handler(req2, res2);
+        expect(res2._getStatusCode()).toBe(200);
+        expect(setCustomerAuthCookie).toHaveBeenCalledWith(res2, 'mock-customer-token');
+        expect(setCustomerRefreshCookie).not.toHaveBeenCalled();
+      } finally {
+        errorSpy.mockRestore();
+      }
     });
 
     it('action=login: deve retornar 401 se credenciais forem inválidas', async () => {
@@ -238,7 +373,10 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(res._getStatusCode()).toBe(401);
     });
 
-    it('action=logout: deve limpar cookie de autenticação', async () => {
+    it('action=logout: deve revogar refresh token no banco, limpar ambos os cookies e tolerar falha transitória na revogação', async () => {
+      const validRefresh = 'd'.repeat(96);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(validRefresh);
+
       const { req, res } = createMocks({
         method: 'POST',
         body: { action: 'logout' },
@@ -247,7 +385,165 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
+      expect(checkRateLimit).toHaveBeenCalledWith(expect.any(String), 'api:customer:logout', 30, 60000);
+      expect(revokeCustomerRefreshToken).toHaveBeenCalledWith(`hash_${validRefresh}`);
       expect(clearCustomerAuthCookie).toHaveBeenCalledWith(res);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(res);
+
+      // Sem cookie não consulta banco e ainda limpa cookies
+      revokeCustomerRefreshToken.mockClear();
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(null);
+      const { req: reqNoCookie, res: resNoCookie } = createMocks({
+        method: 'POST',
+        body: { action: 'logout' },
+      });
+      await handler(reqNoCookie, resNoCookie);
+      expect(resNoCookie._getStatusCode()).toBe(200);
+      expect(revokeCustomerRefreshToken).not.toHaveBeenCalled();
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(resNoCookie);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(resNoCookie);
+
+      // Falha ao revogar no banco não impede o logout
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      try {
+        getCustomerRefreshTokenCookie.mockReturnValueOnce(validRefresh);
+        revokeCustomerRefreshToken.mockRejectedValueOnce(new Error('DB transient error'));
+        const { req: reqErr, res: resErr } = createMocks({
+          method: 'POST',
+          body: { action: 'logout' },
+        });
+        await handler(reqErr, resErr);
+        expect(resErr._getStatusCode()).toBe(200);
+        expect(warnSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Falha ao revogar refresh token no logout:',
+          expect.any(Error)
+        );
+        expect(clearCustomerAuthCookie).toHaveBeenCalledWith(resErr);
+        expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(resErr);
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    it('action=logout: deve retornar 429 quando exceder rate limit de logout', async () => {
+      checkRateLimit.mockResolvedValueOnce(true);
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { action: 'logout' },
+      });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(429);
+      expect(clearCustomerAuthCookie).not.toHaveBeenCalled();
+    });
+
+    it('action=refresh: deve rotacionar refresh token por cookie HttpOnly sem expor tokens no body', async () => {
+      const currentRefresh = 'e'.repeat(96);
+      const nextRefresh = 'f'.repeat(96);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(currentRefresh);
+      consumeCustomerRefreshToken.mockResolvedValueOnce({
+        id: 21,
+        customer_id: 55,
+        expires_at: new Date(Date.now() + 86400000),
+      });
+      getCustomerById.mockResolvedValueOnce({
+        id: 55,
+        name: 'Visitante Rotacionado',
+        email: 'rotacao@test.com',
+      });
+      generateCustomerRefreshToken.mockReturnValueOnce(nextRefresh);
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { action: 'refresh' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(consumeCustomerRefreshToken).toHaveBeenCalledWith(`hash_${currentRefresh}`);
+      expect(storeCustomerRefreshToken).toHaveBeenCalledWith(55, `hash_${nextRefresh}`);
+      expect(setCustomerAuthCookie).toHaveBeenCalledWith(res, 'mock-customer-token');
+      expect(setCustomerRefreshCookie).toHaveBeenCalledWith(res, nextRefresh);
+      const body = JSON.parse(res._getData());
+      expect(body).toEqual({
+        authenticated: true,
+        customer: { id: 55, name: 'Visitante Rotacionado', email: 'rotacao@test.com' },
+      });
+      expect(body).not.toHaveProperty('token');
+      expect(body).not.toHaveProperty('refreshToken');
+    });
+
+    it('action=refresh: deve recusar com 401 e limpar cookies quando ausente no cookie (mesmo se enviado no body), malformado, consumido ou cliente ausente', async () => {
+      // 1. Sem cookie (ignora body.refreshToken por segurança — ADR-0011)
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(null);
+      const { req: noCookieReq, res: noCookieRes } = createMocks({
+        method: 'POST',
+        body: { action: 'refresh', refreshToken: 'a'.repeat(96) },
+      });
+      await handler(noCookieReq, noCookieRes);
+      expect(noCookieRes._getStatusCode()).toBe(401);
+      expect(consumeCustomerRefreshToken).not.toHaveBeenCalled();
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(noCookieRes);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(noCookieRes);
+
+      // 2. Formato inválido
+      getCustomerRefreshTokenCookie.mockReturnValueOnce('invalido');
+      const { req: badFmtReq, res: badFmtRes } = createMocks({
+        method: 'POST',
+        body: { action: 'refresh' },
+      });
+      await handler(badFmtReq, badFmtRes);
+      expect(badFmtRes._getStatusCode()).toBe(401);
+      expect(consumeCustomerRefreshToken).not.toHaveBeenCalled();
+
+      // 3. Já revogado/expirado (replay)
+      const replayed = '9'.repeat(96);
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(replayed);
+      consumeCustomerRefreshToken.mockResolvedValueOnce(null);
+      const { req: replayReq, res: replayRes } = createMocks({
+        method: 'POST',
+        body: { action: 'refresh' },
+      });
+      await handler(replayReq, replayRes);
+      expect(replayRes._getStatusCode()).toBe(401);
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(replayRes);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(replayRes);
+
+      // 4. Cliente removido após emissão do refresh token
+      getCustomerRefreshTokenCookie.mockReturnValueOnce(replayed);
+      consumeCustomerRefreshToken.mockResolvedValueOnce({ id: 30, customer_id: 999 });
+      getCustomerById.mockResolvedValueOnce(null);
+      const { req: missingCustReq, res: missingCustRes } = createMocks({
+        method: 'POST',
+        body: { action: 'refresh' },
+      });
+      await handler(missingCustReq, missingCustRes);
+      expect(missingCustRes._getStatusCode()).toBe(401);
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(missingCustRes);
+      expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(missingCustRes);
+    });
+
+    it('action=refresh: deve limpar customerRefreshToken e retornar 500 se persistência do novo refresh falhar', async () => {
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+      try {
+        const currentRefresh = '8'.repeat(96);
+        getCustomerRefreshTokenCookie.mockReturnValueOnce(currentRefresh);
+        consumeCustomerRefreshToken.mockResolvedValueOnce({ id: 31, customer_id: 55 });
+        getCustomerById.mockResolvedValueOnce({ id: 55, name: 'Maria', email: 'm@t.com' });
+        storeCustomerRefreshToken.mockRejectedValueOnce(new Error('DB write failure'));
+
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: { action: 'refresh' },
+        });
+        await handler(req, res);
+
+        expect(res._getStatusCode()).toBe(500);
+        expect(clearCustomerRefreshCookie).toHaveBeenCalledWith(res);
+        expect(setCustomerAuthCookie).not.toHaveBeenCalled();
+      } finally {
+        errorSpy.mockRestore();
+      }
     });
 
     it('action=google: deve vincular ou autenticar conta do Google quando ALLOW_GOOGLE_DEV_BYPASS=true fora de produção', async () => {

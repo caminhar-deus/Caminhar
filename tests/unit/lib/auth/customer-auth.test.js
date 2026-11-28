@@ -1,11 +1,17 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
+import { createHash } from 'node:crypto';
 import {
   generateCustomerToken,
   verifyCustomerToken,
   setCustomerAuthCookie,
   clearCustomerAuthCookie,
   getAuthenticatedCustomer,
+  generateCustomerRefreshToken,
+  hashCustomerRefreshToken,
+  setCustomerRefreshCookie,
+  clearCustomerRefreshCookie,
+  getCustomerRefreshTokenCookie,
 } from '../../../../lib/auth/customer-auth.js';
 import { generateToken, verifyToken } from '../../../../lib/auth/auth.js';
 
@@ -16,7 +22,7 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
     email: 'joao@exemplo.com',
   };
 
-  it('deve gerar e validar um JWT exclusivo de visitante com scope=customer', () => {
+  it('deve gerar e validar um JWT exclusivo de visitante com scope=customer e expiração de 1h', () => {
     const token = generateCustomerToken(sampleCustomer);
     const decoded = verifyCustomerToken(token);
 
@@ -25,6 +31,7 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
     expect(decoded.email).toBe('joao@exemplo.com');
     expect(decoded.name).toBe('João Católico');
     expect(decoded.scope).toBe('customer');
+    expect(decoded.exp - decoded.iat).toBe(3600);
   });
 
   it('deve impedir que o verifyToken administrativo aceite um token de visitante (isolamento estrito)', () => {
@@ -50,6 +57,8 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
       'Set-Cookie',
       expect.stringContaining('customerToken=')
     );
+    expect(headers[0][1]).toContain('Max-Age=3600');
+    expect(headers[0][1]).toContain('SameSite=Lax');
 
     const cookieHeader = headers[0][1].split(';')[0];
     const req = { headers: { cookie: cookieHeader } };
@@ -58,6 +67,55 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
 
     clearCustomerAuthCookie(res);
     expect(headers[1][1]).toContain('Max-Age=0');
+  });
+
+  it('deve gerar refresh token opaco seguro, gerar hash SHA-256 canônico e validar formato bruto', () => {
+    const raw1 = generateCustomerRefreshToken();
+    const raw2 = generateCustomerRefreshToken();
+
+    expect(raw1).toMatch(/^[a-f0-9]{96}$/);
+    expect(raw2).toMatch(/^[a-f0-9]{96}$/);
+    expect(raw1).not.toBe(raw2);
+
+    const expectedDigest = createHash('sha256').update(raw1).digest('hex');
+    expect(hashCustomerRefreshToken(raw1)).toBe(expectedDigest);
+    expect(hashCustomerRefreshToken(raw1.toUpperCase())).toBe(expectedDigest);
+    expect(hashCustomerRefreshToken(raw1)).toMatch(/^[a-f0-9]{64}$/);
+
+    expect(hashCustomerRefreshToken('')).toBeNull();
+    expect(hashCustomerRefreshToken(null)).toBeNull();
+    expect(hashCustomerRefreshToken(12345)).toBeNull();
+    expect(hashCustomerRefreshToken('abc')).toBeNull();
+    expect(hashCustomerRefreshToken('z'.repeat(96))).toBeNull();
+  });
+
+  it('deve gravar, ler e limpar o cookie customerRefreshToken com HttpOnly, SameSite=Strict e Path=/api/customer/auth', () => {
+    const headers = [];
+    const res = {
+      appendHeader: jest.fn((name, val) => headers.push([name, val])),
+    };
+
+    const refreshToken = generateCustomerRefreshToken();
+    setCustomerRefreshCookie(res, refreshToken);
+
+    expect(headers[0][1]).toContain(`customerRefreshToken=${refreshToken}`);
+    expect(headers[0][1]).toContain('HttpOnly');
+    expect(headers[0][1]).toContain('SameSite=Strict');
+    expect(headers[0][1]).toContain('Max-Age=2592000');
+    expect(headers[0][1]).toContain('Path=/api/customer/auth');
+
+    const cookiePair = headers[0][1].split(';')[0];
+    expect(getCustomerRefreshTokenCookie({ headers: { cookie: `outro=1; ${cookiePair}` } })).toBe(
+      refreshToken
+    );
+    expect(getCustomerRefreshTokenCookie({ headers: { cookie: 'customerToken=abc' } })).toBeNull();
+    expect(getCustomerRefreshTokenCookie({})).toBeNull();
+    expect(getCustomerRefreshTokenCookie(null)).toBeNull();
+
+    clearCustomerRefreshCookie(res);
+    expect(headers[1][1]).toContain('customerRefreshToken=');
+    expect(headers[1][1]).toContain('Max-Age=0');
+    expect(headers[1][1]).toContain('Path=/api/customer/auth');
   });
 
   it('deve rejeitar token vazio/inválido, ignorar cookies malformados e devolver null sem headers', () => {
@@ -140,6 +198,13 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
       prodAuth.setCustomerAuthCookie(res, token);
       expect(headers[0][1]).toContain('; Secure');
       expect(headers[0][1]).toContain('; HttpOnly');
+
+      const refresh = prodAuth.generateCustomerRefreshToken();
+      prodAuth.setCustomerRefreshCookie(res, refresh);
+      expect(headers[1][1]).toContain('; Secure');
+      expect(headers[1][1]).toContain('; HttpOnly');
+      expect(headers[1][1]).toContain('; SameSite=Strict');
+      expect(headers[1][1]).toContain('; Path=/api/customer/auth');
     } finally {
       process.env.NODE_ENV = prevEnv;
       if (prevSecret === undefined) delete process.env.JWT_SECRET;

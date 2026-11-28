@@ -1020,6 +1020,7 @@ tests/integration/domain/audit.db.test.js → lib/domain/audit.js
 tests/integration/domain/audit.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/categories.db.test.js → lib/domain/categories.js
 tests/integration/domain/categories.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/customers.db.test.js → lib/auth/customer-auth.js
 tests/integration/domain/customers.db.test.js → lib/domain/customers.js
 tests/integration/domain/customers.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/dicas.db.test.js → lib/domain/dicas.js

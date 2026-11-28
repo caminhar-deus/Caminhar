@@ -799,6 +799,7 @@
 │   │   ├── 0043-admin-inactivity-timeout-and-unified-401-session-guard.md
 │   │   ├── 0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md
 │   │   ├── 0045-mercadopago-refund-expiration-debit-flag-and-go-live.md
+│   │   ├── 0046-customer-refresh-tokens-activation-and-revocation.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -1233,6 +1234,7 @@
 │   │   ├── 021-videos-public-sort-support.js
 │   │   ├── 022-musicas-products-public-sort-support.js
 │   │   ├── 023-sales-customers-and-modalities.js
+│   │   ├── 024-customer-refresh-tokens-indexes.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1645,4 +1647,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-229 directories, 1417 files
+229 directories, 1419 files

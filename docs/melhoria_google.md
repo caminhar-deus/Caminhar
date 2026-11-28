@@ -832,3 +832,40 @@ Além dos itens `V1`–`V12` do Ciclo 1 (preservados), ficam validados com evid�
   - `pages/api/customer/auth.js`: **`100% L / 94.20% B`** | `pages/api/customer/orders.js`: **`100% L / 95.65% B`** | `pages/api/checkout.js`: **`98.79% L / 87.28% B`**
   - Medição focada nas páginas e script: `pages/entrar.js` (**`97.13% L / 86.73% B / 94.11% F`**), `pages/minha-conta.js` (`85.86% L / 72.72% B`), `pages/checkout/[id].js` (`84.87% L / 59.25% B`), `scripts/check-env.js` (`80.29% L / 94.82% B`).
 - **Pendências estritamente externas:** validação no PostgreSQL real via CI (`test-db-coverage.yml`) para o teste concorrente em `customers.db.test.js` após push (Docker indisponível no sandbox local), `lint:workflows` offline (`curl` para baixar `actionlint`), e decisões externas/de produto `H1`, `H4`, `H6` e `H7`.
+
+---
+
+# Ciclo 6 — Confronto, Execução e Avaliação de `customer_refresh_tokens` (`H7` / ADR-0046, 28/11/2026)
+
+## 1. Confronto com o estado do repositório (`548100db`)
+
+- **Data e horário:** 28/11/2026 (`America/Sao_Paulo`, BRT).
+- **Commit confrontado:** `548100db` (`ATT - Correções e melhorias identificadas Google`).
+- **Fatos verificados no confronto da hipótese `H7`:**
+  1. `customer_refresh_tokens` (`id`, `customer_id`, `token`, `expires_at`, `revoked`, `created_at`) existia em `scripts/migrations/023-sales-customers-and-modalities.js:37-44` e `scripts/validate-schema.js:32-34`, mas tinha **zero consumidores** em código de produção (`lib/`, `pages/`, `components/`).
+  2. O único teste que referenciava a tabela era um `INSERT` SQL direto + validação de `ON DELETE CASCADE` em `tests/integration/domain/customers.db.test.js:281-292`.
+  3. `lib/auth/customer-auth.js` emitia exclusivamente JWT stateless de `24h` (`customerToken`), sem revogação server-side em `logout`, sem renovação/rotação de sessão e sem revogação de tokens prévios durante o vínculo inicial de conta Google (`upsertGoogleCustomer`).
+  4. Diferentemente da tabela administrativa `refresh_tokens` (`scripts/migrations/016-create-refresh-tokens-table.js`), `customer_refresh_tokens` não possuía índices em `customer_id` nem em `expires_at`.
+
+## 2. Decisão e plano executado ([ADR-0046](adr/0046-customer-refresh-tokens-activation-and-revocation.md))
+
+| Componente | O que foi implementado | Benefício técnico / segurança |
+|---|---|---|
+| [`lib/auth/customer-auth.js`](../lib/auth/customer-auth.js) | Access token `customerToken` reduzido de `24h` para **`1h`** (`Max-Age=3600`); novas funções `generateCustomerRefreshToken` (`48` bytes / `96` hex chars), `hashCustomerRefreshToken` (SHA-256 + validação prévia `/^[a-f0-9]{96}$/i`), `setCustomerRefreshCookie`, `clearCustomerRefreshCookie` e `getCustomerRefreshTokenCookie` (`HttpOnly; SameSite=Strict; Path=/api/customer/auth; Max-Age=2592000`; `Secure` em produção). | Janela stateless reduzida em 24x; cookie de longa duração nunca trafega para páginas públicas, checkout ou `/admin`. |
+| [`lib/domain/customers.js`](../lib/domain/customers.js) | Novas funções parametrizadas (alinhadas a `EXPECTED_SCHEMA.customer_refresh_tokens`): `storeCustomerRefreshToken`, `validateCustomerRefreshToken`, `consumeCustomerRefreshToken` (rotação atômica `UPDATE ... SET revoked = true ... RETURNING`), `revokeCustomerRefreshToken` e `revokeAllCustomerRefreshTokens`; `linkGoogleAccountByEmail` agora revoga refresh tokens anteriores no vínculo inicial por e-mail. | Apenas hashes SHA-256 são gravados no banco; rotação atômica bloqueia replay; vínculo Google inicial invalida sessões prévias baseadas em senha. |
+| [`pages/api/customer/auth.js`](../pages/api/customer/auth.js) | `issueCustomerSession` resiliente em `register`/`login`/`google` (não bloqueia login se gravação falhar e não grava cookie órfão); `GET` reemite `customerToken` (`1h`) de forma idempotente via `customerRefreshToken` válido (sem rotacionar em leitura); `POST action='refresh'` executa rotação de uso único apenas por cookie (zero tokens no body JSON); `POST action='logout'` revoga o token no PostgreSQL sob rate limit `api:customer:logout` (`30 req/min`); limpeza consistente de ambos os cookies em falhas/`404`. | Preserva 100% da UX de `/`, `/entrar`, `/minha-conta` e `/checkout/[id]`, mantém contagem de rotas intacta (`bench-ground-truth`) e garante revogação server-side real. |
+| [`scripts/migrations/024-customer-refresh-tokens-indexes.js`](../scripts/migrations/024-customer-refresh-tokens-indexes.js) | Migration idempotente criando `idx_customer_refresh_tokens_customer_id` e `idx_customer_refresh_tokens_expires_at` + `ANALYZE customer_refresh_tokens`. | Acelera revogação em lote (`revokeAllCustomerRefreshTokens`), `ON DELETE CASCADE` e futuras rotinas de limpeza por expiração. |
+| **Testes e documentação** | Ampliação de `customer-auth.test.js`, `customers.test.js`, `auth.test.js` e `customers.db.test.js`; criação de `docs/adr/0046-customer-refresh-tokens-activation-and-revocation.md` + atualização de `docs/adr/README.md`, `ARQUITETURA_SITE_PUBLICO.md` (§5.1 e §6), `PROJECT_{lib,pages,scripts}.md` e `CHANGELOG.md`. | Prevenção estática (`schema-sources.test.js`) e regressão completa com alta cobertura de branches e documentação sincronizada. |
+
+## 3. Verificação, cobertura e pendências externas
+
+- **Suítes direcionadas + canários:** `10/10` suítes (`149 passed, 149 total`), incluindo `customer-auth.test.js`, `customers.test.js`, `customer/auth.test.js`, `customer/orders.test.js`, `checkout.test.js`, `schema-sources.test.js`, `bench-ground-truth.test.js`, `validate-schema.test.js`, `migrate.test.js` e `css-tokens.test.js`.
+- **Suíte completa com thresholds (`npm run test:ci`):** **`249 passed, 12 skipped (261 total)`** suítes | **`2254 passed, 110 skipped (2364 total)`** testes | **`6 snapshots passed`** | Global: `96.65% Stmts | 88.55% Branch | 95.8% Funcs | 96.65% Lines`.
+  - `lib/auth/customer-auth.js`: **`100% L / 97.91% B / 100% F`**
+  - `lib/domain/customers.js`: **`100% L / 94.52% B / 100% F`**
+  - `pages/api/customer/auth.js`: **`100% L / 95.87% B / 100% F`** (agregado `pages/api/customer/`: **`100% L / 95.83% B / 100% F`**)
+- **Gates estáticos:** `npm run lint`, `npm run knip`, `npm run lint:chars` (`808` arquivos), `npm run security:check-sql` (`269` arquivos) e `npm run security:check-credentials` (`107` arquivos) aprovados com exit code `0`.
+- **Validação física no PostgreSQL local (`28/11/2026`):** `npm run migrate` aplicou `024-customer-refresh-tokens-indexes` com sucesso; `npm run migrate:status` confirmou `24/24` aplicadas (`0` pendentes); `npm run validate-schema` confirmou `19/19` tabelas sincronizadas (incluindo `customers` e `customer_refresh_tokens`); e `pg_indexes` confirmou os 4 índices esperados em `customer_refresh_tokens` (`customer_refresh_tokens_pkey`, `customer_refresh_tokens_token_key`, `idx_customer_refresh_tokens_customer_id` e `idx_customer_refresh_tokens_expires_at`).
+- **Pendências estritamente externas:**
+  - Execução automatizada da suíte `tests/integration/domain/customers.db.test.js` no CI (`test-db-coverage.yml`) após push (Docker indisponível no sandbox local: `8 skipped` em `test:db:container`, cobrindo ciclo completo em transação e corrida concorrente);
+  - `H1` (`nonce` contra replay de ID token no GIS), `H4` (smoke manual + Google Cloud Console em produção) e `H6` (UX para contas vinculadas com `password_hash = NULL`). Status de `H7`: **Concluído em código, testes, migration `024`, schema local e ADR-0046; pendente apenas execução em PostgreSQL efêmero no CI.**

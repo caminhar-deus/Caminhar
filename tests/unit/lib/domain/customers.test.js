@@ -11,6 +11,11 @@ import {
   upsertGoogleCustomer,
   getCustomerById,
   updateCustomerProfile,
+  storeCustomerRefreshToken,
+  validateCustomerRefreshToken,
+  consumeCustomerRefreshToken,
+  revokeCustomerRefreshToken,
+  revokeAllCustomerRefreshTokens,
 } from '../../../../lib/domain/customers.js';
 
 describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
@@ -184,7 +189,7 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
       );
     });
 
-    it('deve vincular google_sub a uma conta existente que tinha apenas e-mail e anular password_hash com guarda google_id IS NULL', async () => {
+    it('deve vincular google_sub a uma conta existente que tinha apenas e-mail, anular password_hash com guarda google_id IS NULL e revogar refresh tokens anteriores', async () => {
       query
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({
@@ -192,7 +197,8 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
         })
         .mockResolvedValueOnce({
           rows: [{ id: 12, name: 'Conta Normal', email: 'normal@exemplo.com', google_id: 'sub_new' }],
-        });
+        })
+        .mockResolvedValueOnce({ rowCount: 2 });
 
       const customer = await upsertGoogleCustomer({
         googleSub: 'sub_new',
@@ -205,6 +211,11 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
       expect(updateCall[0]).toMatch(/UPDATE customers\s+SET google_id = \$1,\s*password_hash = NULL/i);
       expect(updateCall[0]).toMatch(/WHERE id = \$2 AND \(google_id IS NULL OR google_id = \$1\)/i);
       expect(updateCall[1]).toEqual(['sub_new', 12]);
+      expect(query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringMatching(/UPDATE customer_refresh_tokens\s+SET revoked = true\s+WHERE customer_id = \$1 AND revoked = false/i),
+        [12]
+      );
     });
 
     it('deve lançar GOOGLE_ACCOUNT_CONFLICT quando conta encontrada por e-mail já possuir outro google_id ou UPDATE condicional não atualizar', async () => {
@@ -313,7 +324,8 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
         }) // retryByEmail
         .mockResolvedValueOnce({
           rows: [{ id: 52, name: 'Maria', email: 'maria@gmail.com', google_id: 'sub_maria' }],
-        }); // linkGoogleAccountByEmail UPDATE
+        }) // linkGoogleAccountByEmail UPDATE
+        .mockResolvedValueOnce({ rowCount: 0 }); // revokeAllCustomerRefreshTokens
 
       const customer = await upsertGoogleCustomer({
         googleSub: 'sub_maria',
@@ -455,6 +467,81 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
         expect.stringMatching(/UPDATE customers\s+SET name = \$1, phone = \$2, address_json = \$3/i),
         ['Manter', '333', null, 41]
       );
+    });
+  });
+
+  describe('Refresh tokens do visitante (customer_refresh_tokens)', () => {
+    it('storeCustomerRefreshToken deve inserir hash com expires_at calculado por ttlDays', async () => {
+      const nowBefore = Date.now();
+      query.mockResolvedValueOnce({
+        rows: [{ id: 10, customer_id: 77, expires_at: new Date(nowBefore + 7 * 86400000) }],
+      });
+
+      const stored = await storeCustomerRefreshToken(77, 'hash-sha256-test', 7);
+      expect(stored.id).toBe(10);
+      expect(stored.customer_id).toBe(77);
+
+      const [, params] = query.mock.calls[0];
+      expect(params[0]).toBe(77);
+      expect(params[1]).toBe('hash-sha256-test');
+      expect(params[2]).toBeInstanceOf(Date);
+      const deltaMs = params[2].getTime() - nowBefore;
+      expect(deltaMs).toBeGreaterThanOrEqual(7 * 86400000 - 1000);
+      expect(deltaMs).toBeLessThanOrEqual(7 * 86400000 + 2000);
+
+      query.mockResolvedValueOnce({ rows: [{ id: 11, customer_id: 77, expires_at: new Date() }] });
+      await storeCustomerRefreshToken(77, 'hash-default-ttl');
+      const [, defaultParams] = query.mock.calls[1];
+      expect(defaultParams[2].getTime() - nowBefore).toBeGreaterThanOrEqual(30 * 86400000 - 2000);
+    });
+
+    it('validateCustomerRefreshToken deve retornar null sem consultar o banco se hash ausente e retornar linha ativa quando válido', async () => {
+      expect(await validateCustomerRefreshToken(null)).toBeNull();
+      expect(await validateCustomerRefreshToken('')).toBeNull();
+      expect(query).not.toHaveBeenCalled();
+
+      query.mockResolvedValueOnce({ rows: [{ id: 1, customer_id: 77, expires_at: new Date() }] });
+      const active = await validateCustomerRefreshToken('hash-valido');
+      expect(active).toEqual(expect.objectContaining({ id: 1, customer_id: 77 }));
+
+      query.mockResolvedValueOnce({ rows: [] });
+      expect(await validateCustomerRefreshToken('hash-expirado')).toBeNull();
+    });
+
+    it('consumeCustomerRefreshToken deve rotacionar atomicamente com UPDATE ... RETURNING e recusar replay/nulo', async () => {
+      expect(await consumeCustomerRefreshToken(null)).toBeNull();
+      expect(query).not.toHaveBeenCalled();
+
+      query.mockResolvedValueOnce({ rows: [{ id: 2, customer_id: 88, expires_at: new Date() }] });
+      const consumed = await consumeCustomerRefreshToken('hash-uso-unico');
+      expect(consumed).toEqual(expect.objectContaining({ id: 2, customer_id: 88 }));
+      expect(query).toHaveBeenCalledWith(
+        expect.stringMatching(/UPDATE customer_refresh_tokens\s+SET revoked = true\s+WHERE token = \$1 AND revoked = false AND expires_at > NOW\(\)\s+RETURNING id, customer_id, expires_at/i),
+        ['hash-uso-unico']
+      );
+
+      query.mockResolvedValueOnce({ rows: [] });
+      expect(await consumeCustomerRefreshToken('hash-ja-revogado')).toBeNull();
+    });
+
+    it('revokeCustomerRefreshToken e revokeAllCustomerRefreshTokens devem devolver status booleano e contagem de revogações', async () => {
+      expect(await revokeCustomerRefreshToken('')).toBe(false);
+      expect(query).not.toHaveBeenCalled();
+
+      query.mockResolvedValueOnce({ rowCount: 1 });
+      expect(await revokeCustomerRefreshToken('hash-revogar')).toBe(true);
+
+      query.mockResolvedValueOnce({ rowCount: 0 });
+      expect(await revokeCustomerRefreshToken('hash-ausente')).toBe(false);
+
+      query.mockResolvedValueOnce({});
+      expect(await revokeCustomerRefreshToken('hash-sem-rowcount')).toBe(false);
+
+      query.mockResolvedValueOnce({ rowCount: 3 });
+      expect(await revokeAllCustomerRefreshTokens(77)).toBe(3);
+
+      query.mockResolvedValueOnce({});
+      expect(await revokeAllCustomerRefreshTokens(77)).toBe(0);
     });
   });
 });

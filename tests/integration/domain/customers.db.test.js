@@ -17,7 +17,16 @@ import {
   upsertGoogleCustomer,
   getCustomerById,
   updateCustomerProfile,
+  storeCustomerRefreshToken,
+  validateCustomerRefreshToken,
+  consumeCustomerRefreshToken,
+  revokeCustomerRefreshToken,
+  revokeAllCustomerRefreshTokens,
 } from '../../../lib/domain/customers.js';
+import {
+  generateCustomerRefreshToken,
+  hashCustomerRefreshToken,
+} from '../../../lib/auth/customer-auth.js';
 
 let mockDbQuery = null;
 
@@ -290,6 +299,62 @@ describeIf('Clientes (customers) — Integração com PostgreSQL Real', () => {
       [tempCustomer.id]
     );
     expect(remainingTokens.rows[0].cnt).toBe(0);
+  });
+
+  it('ciclo completo de customer_refresh_tokens no banco real (armazenar, validar, rotacionar uso único, revogar no vínculo Google e índices da 024)', async () => {
+    const indexes = await tx.query(
+      `SELECT indexname
+       FROM pg_indexes
+       WHERE tablename = 'customer_refresh_tokens'`
+    );
+    const indexNames = indexes.rows.map((r) => r.indexname);
+    expect(indexNames).toEqual(
+      expect.arrayContaining([
+        'idx_customer_refresh_tokens_customer_id',
+        'idx_customer_refresh_tokens_expires_at',
+      ])
+    );
+
+    const email = `refresh.real.${Date.now()}@exemplo.com`;
+    const customer = await registerCustomer({
+      name: 'Peregrino Sessão',
+      email,
+      password: 'SenhaSessao@123',
+    });
+
+    const raw1 = generateCustomerRefreshToken();
+    const hash1 = hashCustomerRefreshToken(raw1);
+    const stored1 = await storeCustomerRefreshToken(customer.id, hash1, 30);
+    expect(stored1.customer_id).toBe(customer.id);
+
+    const validated1 = await validateCustomerRefreshToken(hash1);
+    expect(validated1?.id).toBe(stored1.id);
+
+    const consumed1 = await consumeCustomerRefreshToken(hash1);
+    expect(consumed1?.id).toBe(stored1.id);
+
+    // Uso único: segunda tentativa e validação devem falhar
+    expect(await consumeCustomerRefreshToken(hash1)).toBeNull();
+    expect(await validateCustomerRefreshToken(hash1)).toBeNull();
+
+    const hash2 = hashCustomerRefreshToken(generateCustomerRefreshToken());
+    await storeCustomerRefreshToken(customer.id, hash2, 30);
+    expect(await revokeCustomerRefreshToken(hash2)).toBe(true);
+    expect(await revokeCustomerRefreshToken(hash2)).toBe(false);
+
+    const hash3 = hashCustomerRefreshToken(generateCustomerRefreshToken());
+    await storeCustomerRefreshToken(customer.id, hash3, 30);
+    await upsertGoogleCustomer({
+      googleSub: `google-revoke-${Date.now()}`,
+      email,
+      name: 'Peregrino Google',
+    });
+    expect(await validateCustomerRefreshToken(hash3)).toBeNull();
+
+    const hash4 = hashCustomerRefreshToken(generateCustomerRefreshToken());
+    await storeCustomerRefreshToken(customer.id, hash4, 30);
+    expect(await revokeAllCustomerRefreshTokens(customer.id)).toBe(1);
+    expect(await validateCustomerRefreshToken(hash4)).toBeNull();
   });
 
   it('recupera-se de concorrência real via pool.query em Promise.all sem 23505 nem duplicação', async () => {

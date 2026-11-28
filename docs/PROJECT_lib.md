@@ -202,17 +202,22 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 
 **Localização:** `/lib/auth/customer-auth.js`
 
-**Propósito:** Gestão de sessão JWT e cookie `HttpOnly` (`customerToken`) exclusiva de visitantes/compradores do site público, isolada da autenticação administrativa de `lib/auth/auth.js`.
+**Propósito:** Gestão de sessão JWT (`customerToken`) e refresh token opaco por cookie `HttpOnly` (`customerRefreshToken`) exclusiva de visitantes/compradores do site público, isolada da autenticação administrativa de `lib/auth/auth.js` (ADR-0046).
 
 **Funções exportadas:**
 
 | Função | Descrição |
 |--------|-----------|
-| `generateCustomerToken(customer)` | Assina JWT `HS256` (`algorithm: 'HS256'`, TTL `24h`) com `customerId`, `email`, `name` e `scope: 'customer'` |
+| `generateCustomerToken(customer)` | Assina JWT `HS256` (`algorithm: 'HS256'`, TTL `1h`) com `customerId`, `email`, `name` e `scope: 'customer'` |
 | `verifyCustomerToken(token)` | Verifica JWT com `algorithms: ['HS256']` e exige `decoded.scope === 'customer'`, rejeitando tokens de operador |
-| `setCustomerAuthCookie(res, token)` | Define cookie `customerToken` (`HttpOnly; Path=/; SameSite=Lax; Max-Age=86400`, com `Secure` em produção) |
+| `setCustomerAuthCookie(res, token)` | Define cookie `customerToken` (`HttpOnly; Path=/; SameSite=Lax; Max-Age=3600`, com `Secure` em produção) |
 | `clearCustomerAuthCookie(res)` | Expira o cookie `customerToken` (`Max-Age=0`) |
 | `getAuthenticatedCustomer(req)` | Lê cookies via `parseCookie` resiliente a `URIError` (pares corrompidos preservam valor bruto sem derrubar cookies válidos) e valida `customerToken` |
+| `generateCustomerRefreshToken()` | Gera refresh token opaco criptograficamente seguro (`48` bytes / `96` caracteres hex) |
+| `hashCustomerRefreshToken(rawToken)` | Valida formato (`/^[a-f0-9]{96}$/i`) e retorna digest SHA-256 (`64` hex) ou `null` quando inválido |
+| `setCustomerRefreshCookie(res, token)` | Define cookie `customerRefreshToken` (`HttpOnly; Path=/api/customer/auth; SameSite=Strict; Max-Age=2592000`, com `Secure` em produção) |
+| `clearCustomerRefreshCookie(res)` | Expira o cookie `customerRefreshToken` (`Max-Age=0`) |
+| `getCustomerRefreshTokenCookie(req)` | Extrai o valor bruto do cookie `customerRefreshToken` da requisição, se presente |
 
 **Observações:** exige `JWT_SECRET` fora de `development`/`test` (fail-closed na carga do módulo).
 
@@ -477,9 +482,14 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 |--------|-----------|
 | `registerCustomer({ name, email, password, phone })` | Valida unicidade do e-mail, gera hash bcrypt e cria registro em `customers` (`EMAIL_ALREADY_REGISTERED` em conflito) |
 | `authenticateCustomer({ email, password })` | Autentica credenciais locais por e-mail/senha (`bcryptjs.compare`) e atualiza `last_login_at` |
-| `upsertGoogleCustomer({ googleSub, email, name })` | Busca por `google_id`, vincula por `LOWER(email)` anulando `password_hash = NULL` com guarda `google_id IS NULL OR google_id = $1` (`GOOGLE_ACCOUNT_CONFLICT` em troca de titularidade) e trata corrida `23505` no `INSERT` reconsultando por `google_id`/`email` |
+| `upsertGoogleCustomer({ googleSub, email, name })` | Busca por `google_id`, vincula por `LOWER(email)` anulando `password_hash = NULL` com guarda `google_id IS NULL OR google_id = $1` (`GOOGLE_ACCOUNT_CONFLICT` em troca de titularidade), revoga refresh tokens anteriores no vínculo inicial e trata corrida `23505` no `INSERT` reconsultando por `google_id`/`email` |
 | `getCustomerById(id)` | Busca cliente higienizado (sem `password_hash`) e converte `address_json` para `default_address` |
 | `updateCustomerProfile(id, { name, phone, defaultAddress })` | Atualiza perfil e endereço mantendo campos omitidos; retorna `null` se o visitante não existir |
+| `storeCustomerRefreshToken(customerId, tokenHash, ttlDays)` | Grava o hash SHA-256 em `customer_refresh_tokens` com expiração padrão de `30` dias |
+| `validateCustomerRefreshToken(tokenHash)` | Busca refresh token ativo (`revoked = false AND expires_at > NOW()`) para renovação idempotente |
+| `consumeCustomerRefreshToken(tokenHash)` | Consome atomicamente refresh token válido (`UPDATE ... SET revoked = true ... RETURNING`) para rotação de uso único |
+| `revokeCustomerRefreshToken(tokenHash)` | Revoga um refresh token específico pelo seu hash SHA-256 |
+| `revokeAllCustomerRefreshTokens(customerId)` | Revoga em lote todos os refresh tokens ativos de um visitante |
 
 ---
 
@@ -669,7 +679,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **API — Helpers** | `api/helpers.js` | Extração de IP e detecção de spoofing |
 | **API — Utilitários** | `api/utils.js` | Parse de imagens |
 | **Autenticação** | `auth/auth.js` | JWT, bcrypt, cookies, refresh tokens, login com rate limit |
-| **Autenticação** | `auth/customer-auth.js` | Sessão JWT (`HS256`, `scope: 'customer'`) e cookie `customerToken` do visitante com `parseCookie` seguro |
+| **Autenticação** | `auth/customer-auth.js` | Sessão JWT (`HS256`, `1h`, `scope: 'customer'`) e refresh token opaco/hash (`customerRefreshToken`, `30d`, `Strict`) do visitante |
 | **Autenticação** | `auth/google-id-token.js` | Verificação local `RS256` de ID tokens do Google via JWKS com cache, single-flight e cooldown (ADR-0042) |
 | **Cache** | `cache/cache.js` | Cache multi-nível (memória + Redis) + rate limit |
 | **CRUD Genérico** | `crud/crud.js` | Operações SQL genéricas parametrizadas com validação de schema |
@@ -683,7 +693,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **Domínio** | `domain/settings.js` | Configurações dinâmicas do sistema |
 | **Domínio** | `domain/shared-pagination.js` | Paginação genérica com busca e SELECT otimizado |
 | **Domínio** | `domain/videos.js` | CRUD de vídeos com reordenação |
-| **Domínio** | `domain/customers.js` | Cadastro, login, vínculo OIDC Google resiliente a `23505` e perfil em `customers` |
+| **Domínio** | `domain/customers.js` | Cadastro, login, vínculo OIDC Google resiliente a `23505`, perfil em `customers` e ciclo em `customer_refresh_tokens` |
 | **Infra** | `infra/db.js` | Pool PostgreSQL + query + transações + health check |
 | **Infra** | `infra/logger.js` | Logger estruturado (níveis, JSON, requestId, transports) |
 | **Infra** | `infra/redis.js` | Cliente Redis Upstash com fallback em memória |

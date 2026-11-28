@@ -4,7 +4,7 @@
 > **Diretório analisado:** `/scripts`  
 > **Objetivo:** Descrever a finalidade, localização e funcionamento de cada script e subpasta.  
 > **Data da análise:** 23/09/2026  
-> **Última atualização:** 27/11/2026 — inclusão da migration `023-sales-customers-and-modalities.js` (tabelas `customers`, `customer_refresh_tokens`, `orders` e colunas de modalidade em `products`) e das funções exportadas `validateGoogleEnv()`/`validateMercadoPagoEnv()` em `scripts/check-env.js`. Atualização anterior: 03/11/2026 — baseline de migrations atualizada para **22 arquivos (000–022)**.
+> **Última atualização:** 28/11/2026 — inclusão das migrations `023-sales-customers-and-modalities.js` (tabelas `customers`, `customer_refresh_tokens`, `orders` e colunas de modalidade em `products`) e `024-customer-refresh-tokens-indexes.js` (índices em `customer_refresh_tokens`), além das funções exportadas `checkEnv()`/`validateGoogleEnv()`/`validateMercadoPagoEnv()` em `scripts/check-env.js`. Atualização anterior: 03/11/2026 — baseline de migrations atualizada para **22 arquivos (000–022)**.
 
 ---
 
@@ -22,7 +22,7 @@ scripts/
 ├── diagnostics/     → diagnósticos pontuais
 ├── lib/             → módulos de biblioteca (parsing de saída do k6)
 ├── maintenance/     → manutenção de dados
-├── migrations/      → migrações de schema (000-023)
+├── migrations/      → migrações de schema (000-024)
 ├── schemas/         → definições JSON de tabelas
 ├── tests/           → testes manuais
 └── utils/           → módulos compartilhados
@@ -117,6 +117,7 @@ Diretório novo, criado em 08/10/2026 junto com a captura de saída do orquestra
 | `021-videos-public-sort-support.js` | Cria `idx_videos_recent (published, created_at DESC, id DESC)` para `recent`/`oldest`, mantém `idx_videos_pagination` (serve `positioned` via Incremental Sort) e habilita `CREATE EXTENSION IF NOT EXISTS unaccent` para `lower(unaccent(titulo))` no A-Z/Z-A — ADR-0033. |
 | `022-musicas-products-public-sort-support.js` | Cria `idx_musicas_recent` e `idx_products_recent` (mesma chave da 021) para `default`/`oldest`, mantém `idx_musicas_pagination`/`idx_products_pagination` para `positioned` e repete `CREATE EXTENSION IF NOT EXISTS unaccent` para `/api/musicas?sort=alpha` — ADR-0033 §Revisão. |
 | `023-sales-customers-and-modalities.js` | Adiciona colunas de modalidade, estoque e frete em `products`; cria as tabelas `customers` (`email UNIQUE`, `google_id UNIQUE`, `password_hash`, `address_json`, `last_login_at`), `customer_refresh_tokens` e `orders` com constraints e índices (ADR-0037). |
+| `024-customer-refresh-tokens-indexes.js` | Cria os índices `idx_customer_refresh_tokens_customer_id` e `idx_customer_refresh_tokens_expires_at` em `customer_refresh_tokens` para acelerar revogação em lote e limpeza de expirados (ADR-0046). |
 
 ---
 
@@ -284,7 +285,7 @@ máquina e momento.
 | Categoria | Quantidade | Arquivos |
 |-----------|:----------:|----------|
 | Backup | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
-| Migrações | 26 | `migrate.js` + `migrations/` (23 arquivos 000-023) + `seed-migrations-table.js` + `verify-applied.js` |
+| Migrações | 27 | `migrate.js` + `migrations/` (24 arquivos 000-024) + `seed-migrations-table.js` + `verify-applied.js` |
 | Schemas | 4 | `schemas/*.json` |
 | Seeds | 6 | `seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js` |
 | Inicialização | 3 | `init-server.js`, `init-table.js`, `setup-test-db.js` |
@@ -303,7 +304,7 @@ máquina e momento.
 | Biblioteca | 1 | `lib/k6-output-parser.js` |
 | **Total** | **94** | — |
 
-> **Acréscimo de 28/11/2026:** a categoria `Migrações` foi atualizada de 25 para **26** entradas após a inclusão da migration `023-sales-customers-and-modalities.js` (`000-023`). As demais linhas da tabela preservam o recorte histórico conferido em `19/10/2026`.
+> **Acréscimo de 28/11/2026:** a categoria `Migrações` foi atualizada para **27** entradas após a inclusão das migrations `023-sales-customers-and-modalities.js` e `024-customer-refresh-tokens-indexes.js` (`000-024`, sendo o prefixo `010` historicamente vago). As demais linhas da tabela preservam o recorte histórico conferido em `19/10/2026`.
 >
 > **Contagens conferidas no repositório em 19/10/2026** (`find scripts -type f` = 96, sendo 1 o `.ndjson` de execução que o `.gitignore` exclui; a tabela acima é uma **partição** e soma 94). O número "90" que valia aqui até 18/10/2026 já estava defasado: entre a medição de 08/10 e hoje a pasta tinha 88 arquivos antes do bench, ou seja, **-2** de saldo líquido, e `check-hardcoded-credentials.js` segue sem linha própria nesta tabela. Não auditei de onde saiu o saldo; o que está aqui é o estado medido, e a divergência está declarada em vez de arredondada.
 

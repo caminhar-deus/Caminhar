@@ -410,7 +410,7 @@ O sistema de backup é gerenciado pelo script `scripts/backup.js` e oferece as s
 
 ## 12. Estrutura do Banco de Dados (Contexto)
 
-O banco PostgreSQL gerenciado por este sistema de backup contém **16 tabelas**:
+O banco PostgreSQL gerenciado por este sistema de backup contém **20 tabelas** (`19` tabelas de aplicação validadas em `scripts/validate-schema.js` + `_migrations`):
 
 | Tabela | Descrição |
 |--------|-----------|
@@ -424,11 +424,15 @@ O banco PostgreSQL gerenciado por este sistema de backup contém **16 tabelas**:
 | `post_tags` | Relacionamento N:N entre posts e tags |
 | `musicas` | Músicas cadastradas (via Spotify) |
 | `videos` | Vídeos cadastrados |
-| `products` | Produtos cadastrados |
+| `products` | Produtos cadastrados (Modalidade A e Modalidade B) |
+| `customers` | Visitantes/compradores da loja pública (migration 023) |
+| `customer_refresh_tokens` | Hashes SHA-256 de refresh tokens das sessões de visitante (migrations 023 e 024, ADR-0046) |
+| `orders` | Pedidos de venda interna da Modalidade B com vínculo Mercado Pago (migration 023) |
+| `payment_webhook_events` | Registro idempotente de eventos de webhook do Mercado Pago (migration 023) |
 | `dicas` | Dicas cadastradas |
 | `activity_logs` | Log de auditoria |
 | `roles` | Cargos e permissões |
-| `refresh_tokens` | Tokens de refresh de sessão (migration 016) |
+| `refresh_tokens` | Tokens de refresh de sessão administrativa (migration 016) |
 | `_migrations` | Controle de versão das migrações aplicadas |
 
 ### 12.1 Nomenclatura da coluna de publicação (unificada — ADR-0029)
@@ -454,7 +458,7 @@ Regras decorrentes:
 
 ## 13. Migrações Aplicadas
 
-A tabela `_migrations` registra as migrações executadas no schema do banco. Estado conferido em **03/11/2026** com `npm run migrate:status` no banco de desenvolvimento: **22 de 22 aplicadas, 0 pendentes** (inclui as migrations `019` a `022`, criadas em 29/10 e 02/11/2026):
+A tabela `_migrations` registra as migrações executadas no schema do banco. Estado conferido em **28/11/2026** com `npm run migrate:status` no banco de desenvolvimento: **24 de 24 aplicadas, 0 pendentes** (inclui as migrations `023` e `024`, criadas em 08/11 e 28/11/2026):
 
 | ID | Nome | Descrição |
 |----|------|-----------|
@@ -480,10 +484,12 @@ A tabela `_migrations` registra as migrações executadas no schema do banco. Es
 | 20 | `020-unify-published-column` | Renomeia `publicado`→`published` em musicas/videos (dados preservados) e fixa `DEFAULT false` em musicas, videos, dicas e products — ADR-0029 (aplicada em 29/10/2026) |
 | 21 | `021-videos-public-sort-support` | Cria `idx_videos_recent (published, created_at DESC, id DESC)` para `recent`/`oldest`, mantém `idx_videos_pagination` para `positioned` e habilita a extensão `unaccent` para o A-Z/Z-A de `/api/videos` — ADR-0033 (aplicada) |
 | 22 | `022-musicas-products-public-sort-support` | Cria `idx_musicas_recent` e `idx_products_recent` (mesma chave da 021) para `default`/`oldest`, mantém os índices `*_pagination` para `positioned` e reafirma `CREATE EXTENSION IF NOT EXISTS unaccent` para o A-Z/Z-A de `/api/musicas` — ADR-0033 §Revisão (aplicada) |
+| 23 | `023-sales-customers-and-modalities` | Adiciona colunas de modalidade, estoque e frete em `products` e cria `customers`, `customer_refresh_tokens`, `orders` e `payment_webhook_events` com FKs e constraints — ADR-0037 (aplicada) |
+| 24 | `024-customer-refresh-tokens-indexes` | Cria os índices `idx_customer_refresh_tokens_customer_id` e `idx_customer_refresh_tokens_expires_at` em `customer_refresh_tokens` — ADR-0046 (aplicada em 28/11/2026) |
 
 **Observação:** A migration `010-sync-sqlite-pg-schemas` foi criada durante a unificação SQLite → PostgreSQL, mas seu arquivo foi removido posteriormente. As alterações de schema correspondentes já estão presentes no banco (a numeração salta de 009 para 011 por isso).
 
-**Reset:** `npm run db:reset` dropa as tabelas de conteúdo e auxiliares, limpa `_migrations` por inteiro e reaplica TODAS as migrations (`scripts/reset-db.js`) — todas são idempotentes. Não dropa `products` (sem schema JSON; dados preservados), `users`, `settings`, `images`, `roles`, `activity_logs` nem `refresh_tokens`.
+**Reset:** `npm run db:reset` dropa as tabelas de conteúdo e auxiliares, limpa `_migrations` por inteiro e reaplica TODAS as migrations (`scripts/reset-db.js`) — todas são idempotentes. Não dropa `products` (sem schema JSON; dados preservados), `users`, `settings`, `images`, `roles`, `activity_logs`, `refresh_tokens` nem as tabelas de vendas/visitantes criadas na migration 023 (`customers`, `customer_refresh_tokens`, `orders`, `payment_webhook_events`).
 
 ---
 

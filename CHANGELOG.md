@@ -11,6 +11,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Segurança
 
+- **Ativação, rotação e revogação server-side em `customer_refresh_tokens` (28/11/2026 — `H7`, [ADR-0046](docs/adr/0046-customer-refresh-tokens-activation-and-revocation.md)):**
+  - **`lib/auth/customer-auth.js`:** reduziu a validade stateless do `customerToken` de `24h` (`86400s`) para `1h` (`3600s`) e adicionou emissão/hash de refresh token opaco (`generateCustomerRefreshToken` de `48` bytes / `96` hex chars, `hashCustomerRefreshToken` SHA-256 com validação prévia de formato) e cookies `HttpOnly; SameSite=Strict; Path=/api/customer/auth` (`setCustomerRefreshCookie`, `clearCustomerRefreshCookie`, `getCustomerRefreshTokenCookie`, `30d`).
+  - **`lib/domain/customers.js`:** implementou `storeCustomerRefreshToken`, `validateCustomerRefreshToken`, `consumeCustomerRefreshToken` (rotação atômica de uso único via `UPDATE ... RETURNING`), `revokeCustomerRefreshToken` e `revokeAllCustomerRefreshTokens`; `linkGoogleAccountByEmail()` passou a revogar refresh tokens anteriores ao vincular `google_id` pela primeira vez (junto à anulação de `password_hash`).
+  - **`pages/api/customer/auth.js`:** ativou emissão resiliente de refresh token em `register`/`login`/`google` (em falha de gravação no banco, mantém `customerToken` de `1h` e omite cookie não persistido), renovação idempotente do `customerToken` no `GET`, rotação por cookie em `POST action='refresh'` (sem expor nem aceitar tokens no body JSON), revogação real no banco em `POST action='logout'` sob rate limit dedicado `api:customer:logout` (`30 req/min`) e limpeza consistente de ambos os cookies em falhas/`404`.
+  - **`scripts/migrations/024-customer-refresh-tokens-indexes.js`:** migration idempotente criando `idx_customer_refresh_tokens_customer_id` e `idx_customer_refresh_tokens_expires_at` em `customer_refresh_tokens`.
+  - **Testes e documentação:** suítes ampliadas em `customer-auth.test.js`, `customers.test.js`, `auth.test.js` e `customers.db.test.js`, com sincronização de `docs/ARQUITETURA_SITE_PUBLICO.md` (§5.1 e §6), `docs/PROJECT_{lib,pages,scripts}.md`, ADR-0046 e Ciclo 6 de `docs/melhoria_google.md`.
+
 - **Fechamento horizontal de sessão, SEO e testes da conta do visitante (28/11/2026 — Ciclo 5 pós-`e975f207`):**
   - **`pages/minha-conta.js` e `pages/checkout/[id].js`:** passaram a tratar `429` e `5xx` de `GET /api/customer/auth` exibindo alerta transitório (`role="alert"`) em vez de redirecionar erroneamente o visitante para `/entrar` sob rate limit ou falha temporária.
   - **`pages/api/checkout.js`:** adicionou cabeçalho `Cache-Control: no-store, private` em toda resposta da rota de checkout.
