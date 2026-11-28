@@ -273,6 +273,92 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
       });
       expect(customer2.name).toBe('Visitante');
     });
+
+    it('deve recuperar-se de corrida 23505 quando INSERT concorrente criou o mesmo google_id', async () => {
+      const uniqueViolation = Object.assign(new Error('duplicate key value violates unique constraint'), {
+        code: '23505',
+      });
+
+      query
+        .mockResolvedValueOnce({ rows: [] }) // bySub
+        .mockResolvedValueOnce({ rows: [] }) // byEmail
+        .mockRejectedValueOnce(uniqueViolation) // INSERT concorrente
+        .mockResolvedValueOnce({
+          rows: [{ id: 51, name: 'Concorrente', email: 'race@gmail.com', google_id: 'sub_race_1' }],
+        }) // retryBySub
+        .mockResolvedValueOnce({
+          rows: [{ id: 51, name: 'Concorrente', email: 'race@gmail.com', google_id: 'sub_race_1' }],
+        }); // touchGoogleCustomerLogin
+
+      const customer = await upsertGoogleCustomer({
+        googleSub: 'sub_race_1',
+        email: 'race@gmail.com',
+        name: 'Concorrente',
+      });
+
+      expect(customer.id).toBe(51);
+      expect(customer.email).toBe('race@gmail.com');
+    });
+
+    it('deve recuperar-se de corrida 23505 vinculando conta criada simultaneamente pelo mesmo e-mail', async () => {
+      const uniqueViolation = Object.assign(new Error('duplicate key value'), { code: '23505' });
+
+      query
+        .mockResolvedValueOnce({ rows: [] }) // bySub
+        .mockResolvedValueOnce({ rows: [] }) // byEmail
+        .mockRejectedValueOnce(uniqueViolation) // INSERT concorrente
+        .mockResolvedValueOnce({ rows: [] }) // retryBySub
+        .mockResolvedValueOnce({
+          rows: [{ id: 52, name: 'Maria', email: 'maria@gmail.com', google_id: null }],
+        }) // retryByEmail
+        .mockResolvedValueOnce({
+          rows: [{ id: 52, name: 'Maria', email: 'maria@gmail.com', google_id: 'sub_maria' }],
+        }); // linkGoogleAccountByEmail UPDATE
+
+      const customer = await upsertGoogleCustomer({
+        googleSub: 'sub_maria',
+        email: 'maria@gmail.com',
+        name: 'Maria',
+      });
+
+      expect(customer.id).toBe(52);
+    });
+
+    it('deve lançar GOOGLE_ACCOUNT_CONFLICT se após corrida 23505 o e-mail já estiver vinculado a outro google_id', async () => {
+      const uniqueViolation = Object.assign(new Error('duplicate key value'), { code: '23505' });
+
+      query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockRejectedValueOnce(uniqueViolation)
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 53, name: 'Outro', email: 'outro@gmail.com', google_id: 'sub_other_owner' }],
+        });
+
+      await expect(
+        upsertGoogleCustomer({
+          googleSub: 'sub_attacker',
+          email: 'outro@gmail.com',
+          name: 'Outro',
+        })
+      ).rejects.toThrow('GOOGLE_ACCOUNT_CONFLICT');
+    });
+
+    it('deve propagar erros de banco diferentes de 23505 no INSERT de upsertGoogleCustomer', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+      await expect(
+        upsertGoogleCustomer({
+          googleSub: 'sub_fail',
+          email: 'fail@gmail.com',
+          name: 'Fail',
+        })
+      ).rejects.toThrow('ECONNREFUSED');
+    });
   });
 
   describe('getCustomerById() e updateCustomerProfile()', () => {

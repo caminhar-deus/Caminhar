@@ -28,28 +28,52 @@ function resolveGoogleButtonWidth(hostEl) {
   return 320;
 }
 
+const GOOGLE_SCRIPT_TIMEOUT_MS = 10000;
+
 function attachScriptListeners(scriptEl, resolve, reject) {
-  scriptEl.addEventListener(
-    'load',
-    () => {
-      scriptEl.dataset.loaded = 'true';
-      if (window.google?.accounts?.id) {
-        resolve(window.google.accounts.id);
-      } else {
-        scriptEl.remove();
-        reject(new Error('SDK do Google não inicializou corretamente.'));
-      }
-    },
-    { once: true }
-  );
-  scriptEl.addEventListener(
-    'error',
-    () => {
+  let settled = false;
+  let timeoutId = null;
+
+  function cleanup() {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    scriptEl.removeEventListener('load', onLoad);
+    scriptEl.removeEventListener('error', onError);
+  }
+
+  function onLoad() {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    scriptEl.dataset.loaded = 'true';
+    if (window.google?.accounts?.id) {
+      resolve(window.google.accounts.id);
+    } else {
       scriptEl.remove();
-      reject(new Error('Não foi possível carregar o SDK do Google.'));
-    },
-    { once: true }
-  );
+      reject(new Error('SDK do Google não inicializou corretamente.'));
+    }
+  }
+
+  function onError() {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    scriptEl.remove();
+    reject(new Error('Não foi possível carregar o SDK do Google.'));
+  }
+
+  scriptEl.addEventListener('load', onLoad, { once: true });
+  scriptEl.addEventListener('error', onError, { once: true });
+
+  timeoutId = setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    scriptEl.remove();
+    reject(new Error('Tempo esgotado ao carregar o SDK do Google.'));
+  }, GOOGLE_SCRIPT_TIMEOUT_MS);
 }
 
 function loadGoogleIdentityScript() {
@@ -100,9 +124,12 @@ export default function EntrarPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [googleStatus, setGoogleStatus] = useState('idle');
+  const [googleStatus, setGoogleStatus] = useState(() =>
+    getGoogleClientId() ? 'loading' : 'unconfigured'
+  );
   const [googleRetryCount, setGoogleRetryCount] = useState(0);
 
+  const submittingRef = useRef(false);
   const googleButtonRef = useRef(null);
   const nextUrl = resolveNext(router?.query, '/minha-conta');
   const nextUrlRef = useRef(nextUrl);
@@ -133,6 +160,8 @@ export default function EntrarPage() {
       return;
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setErrorMessage('');
     setSubmitting(true);
     try {
@@ -143,12 +172,14 @@ export default function EntrarPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        submittingRef.current = false;
         setErrorMessage(data.message || 'Falha ao autenticar com Google.');
         setSubmitting(false);
         return;
       }
       await routerRef.current.push(nextUrlRef.current);
     } catch {
+      submittingRef.current = false;
       setErrorMessage('Erro ao comunicar com o servidor durante o login com Google.');
       setSubmitting(false);
     }
@@ -206,6 +237,8 @@ export default function EntrarPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setErrorMessage('');
     setSubmitting(true);
 
@@ -223,6 +256,7 @@ export default function EntrarPage() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        submittingRef.current = false;
         setErrorMessage(data.message || 'Não foi possível concluir o acesso. Verifique os dados informados.');
         setSubmitting(false);
         return;
@@ -230,6 +264,7 @@ export default function EntrarPage() {
 
       await router.push(nextUrl);
     } catch {
+      submittingRef.current = false;
       setErrorMessage('Sem conexão com o servidor. Tente novamente em instantes.');
       setSubmitting(false);
     }
@@ -384,6 +419,7 @@ export default function EntrarPage() {
             hidden={!isGoogleHostVisible}
             className={googleHostClassName}
             aria-busy={googleStatus === 'loading' || submitting}
+            {...(submitting ? { inert: true } : {})}
           />
 
           {googleStatus === 'loading' && (

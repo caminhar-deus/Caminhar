@@ -130,8 +130,8 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
   - **CSS crítico inline** gerado por `extractCriticalCSS()` e **cacheado em nível de módulo** (`cachedCriticalCSS`) — executado apenas na primeira requisição SSR e reaproveitado nas demais.
   - **Preconnect** para domínios essenciais: `fonts.googleapis.com`, `fonts.gstatic.com`, `www.youtube.com`, `img.youtube.com`, `open.spotify.com`, `i.scdn.co`.
   - **DNS prefetch** para os mesmos domínios de fontes, YouTube e Spotify.
-  - **Google Fonts** com `font-display: swap`: Inter (400–700) e Montserrat (400–700) — evita FOIT.
-  - **Content Security Policy (CSP)** restritiva: `default-src 'self'`, scripts de YouTube/Spotify (com `'unsafe-eval' 'unsafe-inline'`, necessários ao Next.js), estilos de Google Fonts, imagens de `data:`/`https:`/`blob:`, frames de YouTube/Spotify, `object-src 'none'`, `upgrade-insecure-requests`.
+  - **Google Fonts** com `font-display: swap`: Inter (400–700) e Playfair Display (400–700, normal/itálico) — evita FOIT.
+  - **Referrer Policy & Content Security Policy (CSP):** `<meta name="referrer" content="strict-origin-when-cross-origin" />` alinhada a `next.config.js` e CSP restritiva: `default-src 'self'`, scripts de YouTube, Spotify e Sign in with Google (`https://accounts.google.com/gsi/client`, além de `'unsafe-eval' 'unsafe-inline'` para o Next.js), estilos de Google Fonts e `https://accounts.google.com/gsi/style`, imagens de `data:`/`https:`/`blob:`, frames de YouTube, Spotify e `https://accounts.google.com/gsi/`, `connect-src 'self' https: https://accounts.google.com/gsi/`, `object-src 'none'`, `upgrade-insecure-requests`.
   - **Permissions Policy** restritiva (geolocation, câmera, microfone, pagamento, USB, accelerometer, magnetometer bloqueados; `gyroscope=(self)`).
   - **Meta tags PWA**: `theme-color` adaptável (light `#2c3e50` / dark `#1a252f`), `apple-mobile-web-app-capable`, `apple-mobile-web-app-title`, `msapplication-*` (tooltip, starturl, navbutton-color).
   - Link canônico base e favicon.
@@ -207,6 +207,14 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
   - Envio via `fetch('/api/auth/login', …)` e, no sucesso, `router.push(resolveNext(router.query))`.
   - Campo de senha com botão mostrar/ocultar (`EyeIcon` inline), `aria-invalid`/`aria-describedby` ligados às mensagens de erro e `aria-busy` no submit; inputs desabilitados durante o carregamento; `noValidate` no `<form>` (a validação é a própria).
 - **Observação:** arquivo **criado em 03/10/2026** (commit `73dbc86`, depois ajustado em 04/10/2026 por `5beabc7`) — ambos posteriores à análise de 23/09/2026, data do cabeçalho deste documento; ver "Histórico de Mudanças Relevantes".
+
+---
+
+### Área do Visitante e Fluxo Google (pós-08/10/2026 — ADR-0037 / ADR-0042)
+
+- **`/pages/entrar.js`:** página pública de login/cadastro do visitante e botão oficial Sign in with Google (`https://accounts.google.com/gsi/client`, `ux_mode: 'popup'`). Usa `utils/resolve-next` para redirecionamento pós-login, deriva `googleStatus` sincronamente (`loading` ou `unconfigured`) para evitar flash do divisor `"ou"`, aplica timeout de `10 s` no carregamento do SDK com botão de retry, bloqueia submissão dupla concorrente via `submittingRef` e aplica `inert` no contêiner do botão Google durante `submitting`. Spec em `design-system/pages/customer.md` (CSS Module `pages/styles/CustomerPages.module.css`).
+- **`/pages/minha-conta.js`:** painel do visitante autenticado (`GET/PUT /api/customer/auth` e `GET /api/customer/orders`), exibindo perfil, endereço padrão, compras internas (Modalidade B), status de pagamento e rastreamento via `lib/payment/payment-status-messages.js`.
+- **`/pages/checkout/[id].js`:** checkout transparente para compra direta com Mercado Pago (PIX, débito condicional via `NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD`, crédito e boleto), exigindo sessão prévia em `/entrar` (`?next=/checkout/<id>`).
 
 ---
 
@@ -408,6 +416,12 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - Método DELETE protegido por `withAuth`.
   - Verificação adicional de admin: `req.user.username` deve ser `admin` ou `process.env.ADMIN_USERNAME`.
   - Executa `DELETE FROM posts WHERE slug LIKE 'post-carga-%'` e retorna `{ message, changes: rowCount }`.
+
+### APIs de Visitante e Checkout (pós-08/10/2026 — ADR-0037 / ADR-0042)
+
+- **`/pages/api/customer/auth.js`:** sessão (`GET`, rate limit `120 req/min` em `api:customer:session`), atualização de perfil (`PUT`, rate limit `30 req/min` em `api:customer:profile`, retorna `404` + limpeza de cookie se conta não existir) e autenticação/cadastro (`POST` `register`/`login`/`logout`/`google`, rate limit `20 req/min` em `api:customer:auth`, verificação JWKS `RS256` local via `lib/auth/google-id-token.js` e `ALLOW_GOOGLE_DEV_BYPASS` bloqueado em produção). Define `Cache-Control: no-store, private`.
+- **`/pages/api/customer/orders.js`:** consulta de compras do visitante autenticado e reconciliação ativa com Mercado Pago (`GET`, rate limit `60 req/min` em `api:customer:orders`, isolamento anti-IDOR por `session.customerId`, autenticação e rate limit protegidos por `try/catch` e header `Cache-Control: no-store, private`).
+- **`/pages/api/checkout.js`:** criação e consulta de pagamento interno (`POST`/`GET`, protegido por `getAuthenticatedCustomer` e `Cache-Control: no-store, private` nas respostas).
 
 ---
 
@@ -851,6 +865,12 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **Propósito:** Estilos CSS Module da página de demonstração do Design System.
 - **Características:** header com gradiente azul (`primary-500` → `primary-700`), seções com card/sombra, classes de paleta de cores (`primary50`...`primary900`, `secondary50`...`secondary700`, `success/error/warning/info`), componentes de demonstração (`demoStack`, `demoBox`), lista de documentação e footer escuro. Responsivo para 768px. Todos os valores usam CSS Custom Properties.
 
+### `/pages/styles/CustomerPages.module.css`
+
+- **Caminho:** `/pages/styles/CustomerPages.module.css`
+- **Arquivos acionados/relacionados:** importado por `pages/entrar.js`, `pages/minha-conta.js` e `pages/checkout/[id].js` (`design-system/pages/customer.md`).
+- **Propósito:** estilos do portal de visitante e checkout transparente usando exclusivamente tokens de `variables.css` (validado pelo guard `tests/unit/tests-hygiene/css-tokens.test.js`), com estado `.googleButtonHostBusy` e foco duplo acessível.
+
 ---
 
 ## Resumo Quantitativo
@@ -885,3 +905,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **08/10/2026:** Reconciliação das contagens com o repositório — o total voltou a ser conferido com `find pages -type f` e passou de **42 para 46 arquivos** (a frase "42 arquivos" das entradas de 01/08 e 23/09 acima descreve o estado daquelas datas, e continua sendo o retrato delas). Quatro entradas posteriores à análise de 23/09 não estavam refletidas nem na árvore nem nas seções e foram acrescentadas: **`pages/login.js`** + **`pages/styles/Login.module.css`** (criados em `73dbc86`, 03/10/2026, ajustados em `5beabc7`, 04/10/2026), **`pages/api/ip-diagnostico.js`** (`8fa3944`, 05/10/2026, admin-only na raiz da API) e **`pages/api/uploads/[...path].js`** — este já constava na árvore mas faltava no "Resumo Quantitativo", e **ainda não está commitado** (arquivo novo no working tree; `git log --diff-filter=A` não retorna nada para ele). Os blocos "Visão Geral", árvore, seção 3 (agora "15 endpoints em `admin/` + `ip-diagnostico.js`") e a tabela de resumo foram ajustados; a diferença entre "10 endpoints de API pública" e os 11 arquivos `.js` na raiz de `pages/api/` é justamente o `ip-diagnostico.js`.
 - **09/10/2026:** A resolução do diretório de uploads — `path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'))` — foi extraída de quatro handlers para o novo módulo `lib/infra/storage.js`, eliminando a duplicação. Quatro endpoints passaram a importar a resolução única em vez de expressá-la inline: **`uploads/[...path].js`** (as funções locais `uploadsRoot()` e `legacyUploadsRoot()` foram removidas e agora vêm do módulo), **`upload-image.js`**, **`placeholder-image.js`** (o array `uploadDirs` inline virou `uploadRoots()`, preservando a ordem ativo→legado) e **`admin/integrity.js`**. Nenhuma lógica de runtime mudou: ordem de resolução das raízes, cache de 5 minutos do `placeholder-image.js` e a proteção contra path traversal em `resolveInside()` foram preservados. O motivo da extração foi eliminar os 12 avisos `Dynamic filesystem access causes tracing of the whole project` do Turbopack (Next.js 16), buildando limpo. Os avisos restantes foram marcados com `/*turbopackIgnore: true*/`, que declara o acesso intencional em vez de mascará-lo.
 - **16/10/2026:** Reconciliação com o commit `524074c` (motivo e contexto em [`ADR-0010`](adr/0010-admin-como-cargo-e-validacao-de-nome.md) e [`ADR-0011`](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md)). O ponto de atenção `await await` em `admin/users.js` foi resolvido — o `await` duplicado nas três chamadas de `logActivity` foi removido. `admin/users.js`: `role` ficou obrigatório no create (saiu o `.default('admin')`) e passou a ser verificado contra a tabela `roles` por `roleExists()` em POST e PUT (400 nomeando o cargo inexistente). `admin/roles.js`: `permissions` validado contra a lista oficial via `superRefine` (400 nomeando a permissão inválida). `musicas.js`: `limit` ganhou `.max(100)`, alinhando o teto às demais rotas paginadas. As seis rotas públicas com 400 de paginação/parâmetros (`dicas`, `musicas`, `posts`, `products`, `settings`, `videos`) passaram a importar `INVALID_PAGINATION_MESSAGE`/`INVALID_PARAMS_MESSAGE` de `lib/api/helpers.js` (definição e detalhe em [`PROJECT_lib.md`](PROJECT_lib.md) §1.2). `login.js`: `refresh_token`/`refresh_token_expires_in` saíram do body de `?response=body`. O wrapper de `requestId` e a política 503/500 do `createAdminHandler` afetam todas as respostas admin e ficam documentados em [`PROJECT_lib.md`](PROJECT_lib.md) §1.1, não neste documento.
+- **27/11/2026:** Sincronização da descrição de `/pages/_document.js` (remoção da menção obsoleta a Montserrat, inclusão de Playfair Display, `<meta name="referrer" content="strict-origin-when-cross-origin" />` e origens GIS na CSP incluindo `connect-src`) e adição das rotas/páginas de visitante e pagamento (`/entrar`, `/minha-conta`, `/checkout/[id]`, `/api/customer/auth`, `/api/customer/orders`, `/api/checkout` e `CustomerPages.module.css`, preservando o recorte histórico de contagens de 08/10/2026 no resumo).

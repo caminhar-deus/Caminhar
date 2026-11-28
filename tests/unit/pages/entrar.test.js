@@ -296,4 +296,114 @@ describe('Página de Acesso do Visitante (pages/entrar.js)', () => {
       });
     }
   });
+
+  it('não exibe divisor "ou" já na renderização síncrona inicial sem NEXT_PUBLIC_GOOGLE_CLIENT_ID', () => {
+    const { container } = render(<EntrarPage />);
+
+    expect(screen.queryByText('ou')).not.toBeInTheDocument();
+    const host = container.querySelector('div[aria-busy]');
+    expect(host).not.toBeNull();
+    expect(host.hidden).toBe(true);
+  });
+
+  it('dispara timeout de 10s ao carregar script GSI preso e permite tentar novamente', async () => {
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'google-client-id-123.apps.googleusercontent.com';
+    jest.useFakeTimers();
+
+    try {
+      render(<EntrarPage />);
+      expect(document.querySelector('script[data-google-gsi="true"]')).not.toBeNull();
+
+      await act(async () => {
+        jest.advanceTimersByTime(10000);
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+
+    const retryButton = await screen.findByRole('button', { name: 'Tentar novamente com Google' });
+    expect(retryButton).toBeInTheDocument();
+    expect(document.querySelector('script[data-google-gsi="true"]')).toBeNull();
+
+    fireEvent.click(retryButton);
+    await mockGsiAndLoad();
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Tentar novamente com Google' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('marca o container Google como inert e ignora callbacks/submits concorrentes durante envio', async () => {
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'google-client-id-123.apps.googleusercontent.com';
+
+    let resolvePost;
+    const pendingPost = new Promise((resolve) => {
+      resolvePost = resolve;
+    });
+
+    fetchMock.mockImplementation((url, options) => {
+      if (options?.method === 'POST') {
+        return pendingPost;
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ authenticated: false, customer: null }),
+      });
+    });
+
+    const initializeMock = jest.fn();
+    const { container } = render(<EntrarPage />);
+    await mockGsiAndLoad({ initializeMock, renderButtonMock: jest.fn() });
+    await waitFor(() => expect(initializeMock).toHaveBeenCalled());
+
+    const callback = initializeMock.mock.calls[0][0].callback;
+    const host = container.querySelector('div[aria-busy]');
+
+    act(() => {
+      callback({ credential: 'jwt-1' });
+    });
+
+    expect(host).toHaveAttribute('aria-busy', 'true');
+    expect(host.inert || host.hasAttribute('inert')).toBe(true);
+
+    // Segunda chamada Google concorrente e submit de formulário devem ser ignorados
+    act(() => {
+      callback({ credential: 'jwt-2' });
+    });
+    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
+    fireEvent.submit(form);
+
+    const postCallsDuringFlight = fetchMock.mock.calls.filter(
+      ([, opts]) => opts?.method === 'POST'
+    );
+    expect(postCallsDuringFlight).toHaveLength(1);
+
+    await act(async () => {
+      resolvePost({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Token recusado.' }),
+      });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Token recusado.');
+    });
+    expect(host).toHaveAttribute('aria-busy', 'false');
+    expect(Boolean(host.inert) || host.hasAttribute('inert')).toBe(false);
+
+    // Após erro, nova submissão volta a ser aceita
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ customer: { id: 1 } }),
+    });
+    await act(async () => {
+      await callback({ credential: 'jwt-retry' });
+    });
+    const postCallsAfterReset = fetchMock.mock.calls.filter(
+      ([, opts]) => opts?.method === 'POST'
+    );
+    expect(postCallsAfterReset).toHaveLength(2);
+  });
 });

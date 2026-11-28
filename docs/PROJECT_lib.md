@@ -15,6 +15,7 @@
 2. [Subpasta `lib/auth/`](#2-subpasta-libauth)
    - [2.1 `lib/auth/auth.js`](#21-libauthauthjs)
    - [2.2 `lib/auth/google-id-token.js`](#22-libauthgoogle-id-tokenjs)
+   - [2.3 `lib/auth/customer-auth.js`](#23-libauthcustomer-authjs)
 3. [Subpasta `lib/cache/`](#3-subpasta-libcache)
    - [3.1 `lib/cache/cache.js`](#31-libcachecachejs)
 4. [Subpasta `lib/crud/`](#4-subpasta-libcrud)
@@ -30,6 +31,7 @@
    - [5.8 `lib/domain/settings.js`](#58-libdomainsettingsjs)
    - [5.9 `lib/domain/shared-pagination.js`](#59-libdomainshared-paginationjs)
    - [5.10 `lib/domain/videos.js`](#510-libdomainvideosjs)
+   - [5.11 `lib/domain/customers.js`](#511-libdomaincustomersjs)
 6. [Subpasta `lib/infra/`](#6-subpasta-libinfra)
    - [6.1 `lib/infra/db.js`](#61-libinfradbjs)
    - [6.2 `lib/infra/logger.js`](#62-libinfraloggerjs)
@@ -195,6 +197,24 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 - **Cache JWKS:** em memória por processo, respeita `Cache-Control: max-age` (ignorando `s-maxage`) dentro do intervalo `[5 min, 24 h]` (`clamp` de `max-age=0` para `5 min`; fallback `1 h`), com expiração *lazy* (sem `setInterval` para não prender workers Jest).
 - **Single-flight e rotação de `kid`:** requisições simultâneas compartilham `inflightFetch`; quando surge `kid` ausente no cache válido, dispara no máximo 1 atualização forçada respeitando cooldown de `60 s` (preservado mesmo após falha upstream) e evitando refetch duplo após busca recente.
 - **Validação fail-closed e códigos de erro:** exige `GOOGLE_CLIENT_ID` (ou fallback `NEXT_PUBLIC_GOOGLE_CLIENT_ID` com aviso via `logger.warn` sem expor valores quando divergirem) antes de consultar o JWKS; valida `aud` escalar estrito (ou `azp` correspondente quando array), `iss` (`https://accounts.google.com` ou `accounts.google.com`), `exp` finito e não expirado, `email_verified` (`true`/`'true'`) e tipos estritamente `string` em `kid`, `sub`, `email` e `name`. Falhas de rede/timeout/HTTP/JSON/JWKS lançam `GOOGLE_UPSTREAM_UNAVAILABLE` (HTTP `503` em `pages/api/customer/auth.js`).
+
+### 2.3 `lib/auth/customer-auth.js`
+
+**Localização:** `/lib/auth/customer-auth.js`
+
+**Propósito:** Gestão de sessão JWT e cookie `HttpOnly` (`customerToken`) exclusiva de visitantes/compradores do site público, isolada da autenticação administrativa de `lib/auth/auth.js`.
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `generateCustomerToken(customer)` | Assina JWT `HS256` (`algorithm: 'HS256'`, TTL `24h`) com `customerId`, `email`, `name` e `scope: 'customer'` |
+| `verifyCustomerToken(token)` | Verifica JWT com `algorithms: ['HS256']` e exige `decoded.scope === 'customer'`, rejeitando tokens de operador |
+| `setCustomerAuthCookie(res, token)` | Define cookie `customerToken` (`HttpOnly; Path=/; SameSite=Lax; Max-Age=86400`, com `Secure` em produção) |
+| `clearCustomerAuthCookie(res)` | Expira o cookie `customerToken` (`Max-Age=0`) |
+| `getAuthenticatedCustomer(req)` | Lê cookies via `parseCookie` resiliente a `URIError` (pares corrompidos preservam valor bruto sem derrubar cookies válidos) e valida `customerToken` |
+
+**Observações:** exige `JWT_SECRET` fora de `development`/`test` (fail-closed na carga do módulo).
 
 ---
 
@@ -445,6 +465,22 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 **Observações:** `deleteVideo` não aceita `options` (inconsistente com `updateVideo` e os demais módulos). `reorderVideos` é o único módulo de domínio com função de reordenação — `musicas`, `posts` e `products` não possuem (ver UPGRADE 2.5).
 
+### 5.11 `lib/domain/customers.js`
+
+**Localização:** `/lib/domain/customers.js`
+
+**Propósito:** Camada de domínio dos visitantes/compradores (`customers`), incluindo cadastro/login com senha (`bcryptjs`), vínculo OIDC com Google e atualização de perfil/endereço padrão (`address_json`).
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `registerCustomer({ name, email, password, phone })` | Valida unicidade do e-mail, gera hash bcrypt e cria registro em `customers` (`EMAIL_ALREADY_REGISTERED` em conflito) |
+| `authenticateCustomer({ email, password })` | Autentica credenciais locais por e-mail/senha (`bcryptjs.compare`) e atualiza `last_login_at` |
+| `upsertGoogleCustomer({ googleSub, email, name })` | Busca por `google_id`, vincula por `LOWER(email)` anulando `password_hash = NULL` com guarda `google_id IS NULL OR google_id = $1` (`GOOGLE_ACCOUNT_CONFLICT` em troca de titularidade) e trata corrida `23505` no `INSERT` reconsultando por `google_id`/`email` |
+| `getCustomerById(id)` | Busca cliente higienizado (sem `password_hash`) e converte `address_json` para `default_address` |
+| `updateCustomerProfile(id, { name, phone, defaultAddress })` | Atualiza perfil e endereço mantendo campos omitidos; retorna `null` se o visitante não existir |
+
 ---
 
 ## 6. Subpasta `lib/infra/`
@@ -633,6 +669,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **API — Helpers** | `api/helpers.js` | Extração de IP e detecção de spoofing |
 | **API — Utilitários** | `api/utils.js` | Parse de imagens |
 | **Autenticação** | `auth/auth.js` | JWT, bcrypt, cookies, refresh tokens, login com rate limit |
+| **Autenticação** | `auth/customer-auth.js` | Sessão JWT (`HS256`, `scope: 'customer'`) e cookie `customerToken` do visitante com `parseCookie` seguro |
 | **Autenticação** | `auth/google-id-token.js` | Verificação local `RS256` de ID tokens do Google via JWKS com cache, single-flight e cooldown (ADR-0042) |
 | **Cache** | `cache/cache.js` | Cache multi-nível (memória + Redis) + rate limit |
 | **CRUD Genérico** | `crud/crud.js` | Operações SQL genéricas parametrizadas com validação de schema |
@@ -646,6 +683,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **Domínio** | `domain/settings.js` | Configurações dinâmicas do sistema |
 | **Domínio** | `domain/shared-pagination.js` | Paginação genérica com busca e SELECT otimizado |
 | **Domínio** | `domain/videos.js` | CRUD de vídeos com reordenação |
+| **Domínio** | `domain/customers.js` | Cadastro, login, vínculo OIDC Google resiliente a `23505` e perfil em `customers` |
 | **Infra** | `infra/db.js` | Pool PostgreSQL + query + transações + health check |
 | **Infra** | `infra/logger.js` | Logger estruturado (níveis, JSON, requestId, transports) |
 | **Infra** | `infra/redis.js` | Cliente Redis Upstash com fallback em memória |
@@ -662,7 +700,7 @@ pages/api/ → lib/domain/*.js → lib/crud/crud.js, lib/infra/db.js, lib/domain
 lib/domain/*.js → lib/crud/crud.js → lib/infra/db.js
 lib/api/*.js → lib/infra/logger.js, lib/infra/db.js, lib/auth/auth.js, lib/cache/cache.js
 pages/api/{uploads/[...path],upload-image,placeholder-image,admin/integrity}.js → lib/infra/storage.js
-pages/api/customer/auth.js → lib/auth/google-id-token.js → lib/infra/logger.js
+pages/api/customer/auth.js → lib/auth/customer-auth.js, lib/auth/google-id-token.js, lib/domain/customers.js, lib/cache/cache.js, lib/infra/logger.js
 lib/cache/cache.js → lib/infra/redis.js, lib/infra/logger.js
 ```
 

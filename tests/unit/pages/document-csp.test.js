@@ -52,5 +52,12 @@ describe('Documento HTML base — CSP para Google Identity Services (pages/_docu
     expect(directives['script-src']).toContain('https://accounts.google.com/gsi/client');
     expect(directives['style-src']).toContain('https://accounts.google.com/gsi/style');
     expect(directives['frame-src']).toContain('https://accounts.google.com/gsi/');
+    expect(directives['connect-src']).toContain('https://accounts.google.com/gsi/');
+
+    const referrerMeta = elements.find(
+      (el) => el.type === 'meta' && el.props?.name === 'referrer'
+    );
+    expect(referrerMeta).toBeDefined();
+    expect(referrerMeta.props.content).toBe('strict-origin-when-cross-origin');
   });
 });

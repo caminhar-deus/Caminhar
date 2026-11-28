@@ -291,4 +291,37 @@ describeIf('Clientes (customers) — Integração com PostgreSQL Real', () => {
     );
     expect(remainingTokens.rows[0].cnt).toBe(0);
   });
+
+  it('recupera-se de concorrência real via pool.query em Promise.all sem 23505 nem duplicação', async () => {
+    const concurrentSub = `concurrent-google-${Date.now()}`;
+    const concurrentEmail = `concurrent.${Date.now()}@exemplo.com`;
+    mockDbQuery = (text, params) => pool.query(text, params);
+
+    try {
+      const [first, second] = await Promise.all([
+        upsertGoogleCustomer({
+          googleSub: concurrentSub,
+          email: concurrentEmail,
+          name: 'Visitante Concorrente',
+        }),
+        upsertGoogleCustomer({
+          googleSub: concurrentSub,
+          email: concurrentEmail,
+          name: 'Visitante Concorrente',
+        }),
+      ]);
+
+      expect(first.id).toBe(second.id);
+      expect(first.email).toBe(concurrentEmail);
+
+      const countRes = await pool.query(
+        'SELECT COUNT(*)::int AS cnt FROM customers WHERE google_id = $1',
+        [concurrentSub]
+      );
+      expect(countRes.rows[0].cnt).toBe(1);
+    } finally {
+      mockDbQuery = (text, params) => tx.query(text, params);
+      await pool.query('DELETE FROM customers WHERE google_id = $1', [concurrentSub]);
+    }
+  });
 });

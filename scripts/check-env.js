@@ -68,6 +68,40 @@ export function validateMercadoPagoEnv(env = process.env) {
   return warnings;
 }
 
+/**
+ * Valida a coerência da configuração de OAuth do Google entre backend e frontend.
+ * Nunca inclui valores literais dos Client IDs nas mensagens retornadas.
+ */
+export function validateGoogleEnv(env = process.env) {
+  const warnings = [];
+  const serverClientId = String(env.GOOGLE_CLIENT_ID || '').trim();
+  const publicClientId = String(env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim();
+  const devBypass = String(env.ALLOW_GOOGLE_DEV_BYPASS || '').trim();
+  const nodeEnv = String(env.NODE_ENV || '').trim();
+
+  if (serverClientId && publicClientId && serverClientId !== publicClientId) {
+    warnings.push(
+      'GOOGLE_CLIENT_ID e NEXT_PUBLIC_GOOGLE_CLIENT_ID possuem valores diferentes; o login com Google pode falhar com GOOGLE_AUDIENCE_MISMATCH.'
+    );
+  } else if (serverClientId && !publicClientId) {
+    warnings.push(
+      'GOOGLE_CLIENT_ID está definida sem NEXT_PUBLIC_GOOGLE_CLIENT_ID; o botão "Continuar com o Google" permanecerá oculto na interface pública.'
+    );
+  } else if (!serverClientId && publicClientId) {
+    warnings.push(
+      'NEXT_PUBLIC_GOOGLE_CLIENT_ID está definida sem GOOGLE_CLIENT_ID; o botão "Continuar com o Google" aparecerá na interface pública, mas o backend rejeitará o login com GOOGLE_NOT_CONFIGURED.'
+    );
+  }
+
+  if (nodeEnv === 'production' && devBypass === 'true') {
+    warnings.push(
+      'ALLOW_GOOGLE_DEV_BYPASS está ativo com NODE_ENV=production; o verificador local sempre exige JWKS em produção, mas essa variável não deve permanecer definida.'
+    );
+  }
+
+  return warnings;
+}
+
 const REQUIRED_VARS = [
   'DATABASE_URL', // Necessário para conexão com PostgreSQL
   'JWT_SECRET'    // Necessário para segurança da autenticação
@@ -105,18 +139,8 @@ function checkEnv() {
     console.log('\x1b[32m%s\x1b[0m', '✅ Todas as variáveis de ambiente verificadas estão definidas.');
   }
 
-  const googleServerClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-  const googlePublicClientId = String(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim();
-  if (googleServerClientId && googlePublicClientId && googleServerClientId !== googlePublicClientId) {
-    console.warn(
-      '\x1b[33m%s\x1b[0m',
-      '⚠️  Aviso: GOOGLE_CLIENT_ID e NEXT_PUBLIC_GOOGLE_CLIENT_ID possuem valores diferentes; o login com Google pode falhar com GOOGLE_AUDIENCE_MISMATCH.'
-    );
-  } else if (googleServerClientId && !googlePublicClientId) {
-    console.warn(
-      '\x1b[33m%s\x1b[0m',
-      '⚠️  Aviso: GOOGLE_CLIENT_ID está definida sem NEXT_PUBLIC_GOOGLE_CLIENT_ID; o botão "Continuar com o Google" permanecerá oculto na interface pública.'
-    );
+  for (const googleWarning of validateGoogleEnv(process.env)) {
+    console.warn('\x1b[33m%s\x1b[0m', `⚠️  Aviso: ${googleWarning}`);
   }
 
   for (const mpWarning of validateMercadoPagoEnv(process.env)) {

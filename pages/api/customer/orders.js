@@ -6,27 +6,29 @@ import { getClientIP } from '../../../lib/api/helpers.js';
 import { logger } from '../../../lib/infra/logger.js';
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store, private');
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
   }
 
-  const session = getAuthenticatedCustomer(req);
-  if (!session) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Faça login para visualizar suas compras.',
-    });
-  }
-
-  const ip = getClientIP(req);
-  if (await checkRateLimit(ip, 'api:customer:orders', 60, 60000)) {
-    return res.status(429).json({
-      error: 'Too Many Requests',
-      message: 'Muitas consultas em sequência. Aguarde um instante e tente novamente.',
-    });
-  }
-
   try {
+    const session = getAuthenticatedCustomer(req);
+    if (!session) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Faça login para visualizar suas compras.',
+      });
+    }
+
+    const ip = getClientIP(req);
+    if (await checkRateLimit(ip, 'api:customer:orders', 60, 60000)) {
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Muitas consultas em sequência. Aguarde um instante e tente novamente.',
+      });
+    }
+
     const shouldSync = req.query?.sync !== '0';
 
     if (req.query?.orderId !== undefined) {

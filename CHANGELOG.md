@@ -9,6 +9,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Segurança
+
+- **Endurecimento completo da autenticação do visitante e integração com o Google (27/11/2026 — `MG-11` a `MG-15`):**
+  - **`lib/auth/customer-auth.js`:** `parseCookie()` agora ignora nomes vazios e protege `decodeURIComponent` por par em `try/catch` (preservando o valor bruto em caso de `URIError` sem derrubar cookies válidos nem causar `HTTP 500`); `generateCustomerToken()` e `verifyCustomerToken()` fixam explicitamente o algoritmo `HS256` (`algorithm: 'HS256'` / `{ algorithms: ['HS256'] }`).
+  - **`pages/api/customer/orders.js`:** adicionou cabeçalho `Cache-Control: no-store, private` e moveu `getAuthenticatedCustomer(req)` e `checkRateLimit()` para dentro do bloco `try/catch`.
+  - **`pages/api/customer/auth.js`:** definiu `Cache-Control: no-store, private` em toda resposta, adicionou rate limit no `GET` (`120 req/min`, chave `api:customer:session`), padronizou retorno `404` com limpeza de cookie em `PUT` quando `updateCustomerProfile` devolve `null`, e eliminou o log duplicado (`warn` + `error`) mantendo apenas `logger.error` para códigos de `GOOGLE_CONFIG_ERROR_CODES`.
+  - **`lib/domain/customers.js`:** `upsertGoogleCustomer()` extraiu helpers internos (`touchGoogleCustomerLogin`, `linkGoogleAccountByEmail`) e passou a capturar `23505` no `INSERT` concorrente, recuperando-se por `google_id` ou por `LOWER(email)` com preservação da guarda anti-sequestro (`GOOGLE_ACCOUNT_CONFLICT` → `409`).
+  - **`pages/entrar.js` e `pages/_document.js`:** `googleStatus` agora inicia sincronamente em `'loading'` ou `'unconfigured'` (zero flash de `"ou"` no SSR/primeiro render), o carregador do SDK GIS ganhou timeout de `10 s` com limpeza completa de listeners/timer, `submittingRef` bloqueia disparos concorrentes de login Google/formulário e o contêiner do botão Google recebe `inert` durante `submitting`; `pages/_document.js` alinhou `<meta name="referrer" content="strict-origin-when-cross-origin" />` e explicitou `https://accounts.google.com/gsi/` em `connect-src`.
+  - **`scripts/check-env.js`:** extraída e exportada `validateGoogleEnv(env)` (paridade sem vazamento de IDs e alerta para `ALLOW_GOOGLE_DEV_BYPASS=true` em produção), coberta por `tests/unit/scripts/check-env.test.js`.
+  - **Documentação e arquitetura:** sincronizados `docs/ARQUITETURA_SITE_PUBLICO.md` (§5.1), `docs/adr/0042-google-id-token-local-jwks-verification.md` (Runbook #3), inventários `docs/PROJECT_{pages,lib,scripts,raiz}.md` e Ciclo 4 de `docs/melhoria_google.md`.
+
 ### Adicionado
 
 - **Decisões de produto e preflight de virada HTTPS do Mercado Pago (26/11/2026, [ADR-0045](docs/adr/0045-mercadopago-refund-expiration-debit-flag-and-go-live.md)):**

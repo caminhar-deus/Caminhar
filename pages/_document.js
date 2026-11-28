@@ -50,7 +50,7 @@ export default function Document() {
 
         {/* Meta tags de segurança */}
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="referrer" content="origin-when-cross-origin" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
         
         {/* Content Security Policy (ajuste conforme necessário) */}
         <meta 
@@ -62,7 +62,7 @@ export default function Document() {
             font-src 'self' https://fonts.gstatic.com;
             img-src 'self' data: https: blob: https://img.youtube.com https://i.scdn.co https://*.googleusercontent.com;
             media-src 'self' https: blob:;
-            connect-src 'self' https:;
+            connect-src 'self' https: https://accounts.google.com/gsi/;
             frame-src 'self' https://www.youtube.com https://open.spotify.com https://*.youtube.com https://*.mercadopago.com https://*.mercadolibre.com https://accounts.google.com/gsi/;
             object-src 'none';
             base-uri 'self';

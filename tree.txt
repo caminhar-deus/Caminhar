@@ -482,61 +482,66 @@
 │   │   │       └── index.html
 │   │   ├── login.js.html
 │   │   ├── pages
-│   │   │   └── api
-│   │   │       ├── admin
-│   │   │       │   ├── audit.js.html
-│   │   │       │   ├── backups.js.html
-│   │   │       │   ├── cache.js.html
-│   │   │       │   ├── categories.js.html
-│   │   │       │   ├── dicas.js.html
-│   │   │       │   ├── fetch-ml.js.html
-│   │   │       │   ├── fetch-spotify.js.html
-│   │   │       │   ├── fetch-youtube.js.html
-│   │   │       │   ├── index.html
-│   │   │       │   ├── integrity.js.html
-│   │   │       │   ├── internal-products.js.html
-│   │   │       │   ├── musicas.js.html
-│   │   │       │   ├── orders.js.html
-│   │   │       │   ├── posts.js.html
-│   │   │       │   ├── rate-limit.js.html
-│   │   │       │   ├── roles.js.html
-│   │   │       │   ├── stats.js.html
-│   │   │       │   ├── users.js.html
-│   │   │       │   └── videos.js.html
-│   │   │       ├── auth
-│   │   │       │   ├── check.js.html
-│   │   │       │   ├── index.html
-│   │   │       │   ├── login.js.html
-│   │   │       │   ├── logout.js.html
-│   │   │       │   └── refresh.js.html
-│   │   │       ├── checkout.js.html
-│   │   │       ├── cleanup-test-data.js.html
-│   │   │       ├── customer
-│   │   │       │   ├── auth.js.html
-│   │   │       │   ├── index.html
-│   │   │       │   └── orders.js.html
-│   │   │       ├── dicas.js.html
-│   │   │       ├── helper
-│   │   │       │   ├── index.html
-│   │   │       │   └── pagination.js.html
-│   │   │       ├── index.html
-│   │   │       ├── ip-diagnostico.js.html
-│   │   │       ├── musicas.js.html
-│   │   │       ├── placeholder-image.js.html
-│   │   │       ├── posts.js.html
-│   │   │       ├── products.js.html
-│   │   │       ├── settings.js.html
-│   │   │       ├── status.js.html
-│   │   │       ├── upload-image.js.html
-│   │   │       ├── uploads
-│   │   │       │   ├── [...path].js.html
-│   │   │       │   └── index.html
-│   │   │       ├── videos.js.html
-│   │   │       └── webhooks
-│   │   │           ├── index.html
-│   │   │           └── mercadopago.js.html
+│   │   │   ├── api
+│   │   │   │   ├── admin
+│   │   │   │   │   ├── audit.js.html
+│   │   │   │   │   ├── backups.js.html
+│   │   │   │   │   ├── cache.js.html
+│   │   │   │   │   ├── categories.js.html
+│   │   │   │   │   ├── dicas.js.html
+│   │   │   │   │   ├── fetch-ml.js.html
+│   │   │   │   │   ├── fetch-spotify.js.html
+│   │   │   │   │   ├── fetch-youtube.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── integrity.js.html
+│   │   │   │   │   ├── internal-products.js.html
+│   │   │   │   │   ├── musicas.js.html
+│   │   │   │   │   ├── orders.js.html
+│   │   │   │   │   ├── posts.js.html
+│   │   │   │   │   ├── rate-limit.js.html
+│   │   │   │   │   ├── roles.js.html
+│   │   │   │   │   ├── stats.js.html
+│   │   │   │   │   ├── users.js.html
+│   │   │   │   │   └── videos.js.html
+│   │   │   │   ├── auth
+│   │   │   │   │   ├── check.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── login.js.html
+│   │   │   │   │   ├── logout.js.html
+│   │   │   │   │   └── refresh.js.html
+│   │   │   │   ├── checkout.js.html
+│   │   │   │   ├── cleanup-test-data.js.html
+│   │   │   │   ├── customer
+│   │   │   │   │   ├── auth.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── orders.js.html
+│   │   │   │   ├── dicas.js.html
+│   │   │   │   ├── helper
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── pagination.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── ip-diagnostico.js.html
+│   │   │   │   ├── musicas.js.html
+│   │   │   │   ├── placeholder-image.js.html
+│   │   │   │   ├── posts.js.html
+│   │   │   │   ├── products.js.html
+│   │   │   │   ├── settings.js.html
+│   │   │   │   ├── status.js.html
+│   │   │   │   ├── upload-image.js.html
+│   │   │   │   ├── uploads
+│   │   │   │   │   ├── [...path].js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── videos.js.html
+│   │   │   │   └── webhooks
+│   │   │   │       ├── index.html
+│   │   │   │       └── mercadopago.js.html
+│   │   │   ├── entrar.js.html
+│   │   │   └── index.html
 │   │   ├── prettify.css
 │   │   ├── prettify.js
+│   │   ├── scripts
+│   │   │   ├── check-env.js.html
+│   │   │   └── index.html
 │   │   ├── sort-arrow-sprite.png
 │   │   ├── sorter.js
 │   │   └── utils
@@ -607,61 +612,66 @@
 │   │       └── index.html
 │   ├── login.js.html
 │   ├── pages
-│   │   └── api
-│   │       ├── admin
-│   │       │   ├── audit.js.html
-│   │       │   ├── backups.js.html
-│   │       │   ├── cache.js.html
-│   │       │   ├── categories.js.html
-│   │       │   ├── dicas.js.html
-│   │       │   ├── fetch-ml.js.html
-│   │       │   ├── fetch-spotify.js.html
-│   │       │   ├── fetch-youtube.js.html
-│   │       │   ├── index.html
-│   │       │   ├── integrity.js.html
-│   │       │   ├── internal-products.js.html
-│   │       │   ├── musicas.js.html
-│   │       │   ├── orders.js.html
-│   │       │   ├── posts.js.html
-│   │       │   ├── rate-limit.js.html
-│   │       │   ├── roles.js.html
-│   │       │   ├── stats.js.html
-│   │       │   ├── users.js.html
-│   │       │   └── videos.js.html
-│   │       ├── auth
-│   │       │   ├── check.js.html
-│   │       │   ├── index.html
-│   │       │   ├── login.js.html
-│   │       │   ├── logout.js.html
-│   │       │   └── refresh.js.html
-│   │       ├── checkout.js.html
-│   │       ├── cleanup-test-data.js.html
-│   │       ├── customer
-│   │       │   ├── auth.js.html
-│   │       │   ├── index.html
-│   │       │   └── orders.js.html
-│   │       ├── dicas.js.html
-│   │       ├── helper
-│   │       │   ├── index.html
-│   │       │   └── pagination.js.html
-│   │       ├── index.html
-│   │       ├── ip-diagnostico.js.html
-│   │       ├── musicas.js.html
-│   │       ├── placeholder-image.js.html
-│   │       ├── posts.js.html
-│   │       ├── products.js.html
-│   │       ├── settings.js.html
-│   │       ├── status.js.html
-│   │       ├── upload-image.js.html
-│   │       ├── uploads
-│   │       │   ├── [...path].js.html
-│   │       │   └── index.html
-│   │       ├── videos.js.html
-│   │       └── webhooks
-│   │           ├── index.html
-│   │           └── mercadopago.js.html
+│   │   ├── api
+│   │   │   ├── admin
+│   │   │   │   ├── audit.js.html
+│   │   │   │   ├── backups.js.html
+│   │   │   │   ├── cache.js.html
+│   │   │   │   ├── categories.js.html
+│   │   │   │   ├── dicas.js.html
+│   │   │   │   ├── fetch-ml.js.html
+│   │   │   │   ├── fetch-spotify.js.html
+│   │   │   │   ├── fetch-youtube.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── integrity.js.html
+│   │   │   │   ├── internal-products.js.html
+│   │   │   │   ├── musicas.js.html
+│   │   │   │   ├── orders.js.html
+│   │   │   │   ├── posts.js.html
+│   │   │   │   ├── rate-limit.js.html
+│   │   │   │   ├── roles.js.html
+│   │   │   │   ├── stats.js.html
+│   │   │   │   ├── users.js.html
+│   │   │   │   └── videos.js.html
+│   │   │   ├── auth
+│   │   │   │   ├── check.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── login.js.html
+│   │   │   │   ├── logout.js.html
+│   │   │   │   └── refresh.js.html
+│   │   │   ├── checkout.js.html
+│   │   │   ├── cleanup-test-data.js.html
+│   │   │   ├── customer
+│   │   │   │   ├── auth.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── orders.js.html
+│   │   │   ├── dicas.js.html
+│   │   │   ├── helper
+│   │   │   │   ├── index.html
+│   │   │   │   └── pagination.js.html
+│   │   │   ├── index.html
+│   │   │   ├── ip-diagnostico.js.html
+│   │   │   ├── musicas.js.html
+│   │   │   ├── placeholder-image.js.html
+│   │   │   ├── posts.js.html
+│   │   │   ├── products.js.html
+│   │   │   ├── settings.js.html
+│   │   │   ├── status.js.html
+│   │   │   ├── upload-image.js.html
+│   │   │   ├── uploads
+│   │   │   │   ├── [...path].js.html
+│   │   │   │   └── index.html
+│   │   │   ├── videos.js.html
+│   │   │   └── webhooks
+│   │   │       ├── index.html
+│   │   │       └── mercadopago.js.html
+│   │   ├── entrar.js.html
+│   │   └── index.html
 │   ├── prettify.css
 │   ├── prettify.js
+│   ├── scripts
+│   │   ├── check-env.js.html
+│   │   └── index.html
 │   ├── sort-arrow-sprite.png
 │   ├── sorter.js
 │   └── utils
@@ -1626,4 +1636,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-225 directories, 1402 files
+227 directories, 1410 files

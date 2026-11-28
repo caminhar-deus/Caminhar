@@ -84,7 +84,16 @@ async function verifyGoogleCredential(payload) {
 
 export default async function handler(req, res) {
   try {
+    res.setHeader('Cache-Control', 'no-store, private');
+
     if (req.method === 'GET') {
+      const ip = getClientIP(req);
+      if (await checkRateLimit(ip, 'api:customer:session', 120, 60000)) {
+        return res.status(429).json({
+          error: 'Too Many Requests',
+          message: 'Muitas consultas em sequência. Aguarde um instante e tente novamente.',
+        });
+      }
       const session = getAuthenticatedCustomer(req);
       if (!session) {
         return res.status(200).json({ authenticated: false, customer: null });
@@ -118,6 +127,10 @@ export default async function handler(req, res) {
         });
       }
       const updated = await updateCustomerProfile(session.customerId, validation.data);
+      if (!updated) {
+        clearCustomerAuthCookie(res);
+        return res.status(404).json({ error: 'Not Found', message: 'Conta não encontrada.' });
+      }
       return res.status(200).json({ customer: updated });
     }
 
@@ -200,9 +213,10 @@ export default async function handler(req, res) {
         googleProfile = await verifyGoogleCredential(validation.data);
       } catch (err) {
         const reason = err?.code || err?.message || err?.name || 'UnknownError';
-        logger.warn('CustomerAuth', 'Falha na autenticação Google:', reason);
         if (GOOGLE_CONFIG_ERROR_CODES.has(reason)) {
           logger.error('CustomerAuth', 'Erro de configuração na autenticação Google:', reason);
+        } else {
+          logger.warn('CustomerAuth', 'Falha na autenticação Google:', reason);
         }
         if (err?.code === 'GOOGLE_UPSTREAM_UNAVAILABLE') {
           return res.status(503).json({

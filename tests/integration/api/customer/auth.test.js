@@ -118,6 +118,42 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
     });
   });
 
+  describe('GET e PUT - Cabeçalhos de cache, Rate Limit e conta inexistente', () => {
+    it('GET deve definir Cache-Control no-store, private e retornar 429 quando rate limit bloquear', async () => {
+      const { req: okReq, res: okRes } = createMocks({ method: 'GET' });
+      await handler(okReq, okRes);
+      expect(okRes._getStatusCode()).toBe(200);
+      expect(okRes._getHeaders()['cache-control']).toBe('no-store, private');
+
+      getAuthenticatedCustomer.mockClear();
+      checkRateLimit.mockResolvedValueOnce(true);
+      const { req: rlReq, res: rlRes } = createMocks({
+        method: 'GET',
+        socket: { remoteAddress: '198.51.100.77' },
+      });
+      await handler(rlReq, rlRes);
+
+      expect(rlRes._getStatusCode()).toBe(429);
+      expect(rlRes._getHeaders()['cache-control']).toBe('no-store, private');
+      expect(getAuthenticatedCustomer).not.toHaveBeenCalled();
+    });
+
+    it('PUT deve definir Cache-Control no-store, private, limpar cookie e retornar 404 quando visitante não existir', async () => {
+      getAuthenticatedCustomer.mockReturnValueOnce({ customerId: 999 });
+      updateCustomerProfile.mockResolvedValueOnce(null);
+
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { name: 'Visitante Removido' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(404);
+      expect(res._getHeaders()['cache-control']).toBe('no-store, private');
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(res);
+    });
+  });
+
   describe('POST - Registro, Login e Logout', () => {
     it('action=register: deve registrar novo visitante e setar cookie de auth', async () => {
       registerCustomer.mockResolvedValueOnce({
@@ -435,6 +471,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
         expect(data.message).not.toContain('Verifique a configuração');
         expect(noCallFetch).not.toHaveBeenCalled();
         expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(warnSpy).not.toHaveBeenCalled();
         expect(errorSpy).toHaveBeenCalledWith(
           'CustomerAuth',
           'Erro de configuração na autenticação Google:',
@@ -468,11 +505,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
           expect(res._getStatusCode()).toBe(401);
           expect(upsertGoogleCustomer).not.toHaveBeenCalled();
-          expect(warnSpy).toHaveBeenCalledWith(
-            'CustomerAuth',
-            'Falha na autenticação Google:',
-            'GOOGLE_NOT_CONFIGURED'
-          );
+          expect(warnSpy).not.toHaveBeenCalled();
           expect(errorSpy).toHaveBeenCalledWith(
             'CustomerAuth',
             'Erro de configuração na autenticação Google:',
@@ -566,6 +599,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
         const data = JSON.parse(res._getData());
         expect(data.message).not.toContain('Verifique a configuração');
         expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(warnSpy).not.toHaveBeenCalled();
         expect(errorSpy).toHaveBeenCalledWith(
           'CustomerAuth',
           'Erro de configuração na autenticação Google:',

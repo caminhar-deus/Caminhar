@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { validateMercadoPagoEnv } from '../../../scripts/check-env.js';
+import { validateMercadoPagoEnv, validateGoogleEnv } from '../../../scripts/check-env.js';
 
 describe('validateMercadoPagoEnv() — scripts/check-env.js', () => {
   it('retorna lista vazia quando credenciais estão consistentes ou ausentes fora de produção', () => {
@@ -73,5 +73,58 @@ describe('validateMercadoPagoEnv() — scripts/check-env.js', () => {
     });
     expect(debitMismatchWarnings).toHaveLength(1);
     expect(debitMismatchWarnings[0]).toMatch(/MP_ENABLE_DEBIT_CARD e NEXT_PUBLIC_MP_ENABLE_DEBIT_CARD estão divergentes/);
+  });
+});
+
+describe('validateGoogleEnv() — scripts/check-env.js', () => {
+  it('retorna lista vazia quando variáveis Google estão ausentes ou idênticas', () => {
+    expect(validateGoogleEnv({ NODE_ENV: 'production' })).toEqual([]);
+    expect(
+      validateGoogleEnv({
+        NODE_ENV: 'production',
+        GOOGLE_CLIENT_ID: '123-abc.apps.googleusercontent.com',
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: '123-abc.apps.googleusercontent.com',
+      })
+    ).toEqual([]);
+  });
+
+  it('alerta quando GOOGLE_CLIENT_ID e NEXT_PUBLIC_GOOGLE_CLIENT_ID divergem sem expor seus valores', () => {
+    const serverSecretId = '999-server-only.apps.googleusercontent.com';
+    const publicId = '111-public-other.apps.googleusercontent.com';
+    const warnings = validateGoogleEnv({
+      NODE_ENV: 'production',
+      GOOGLE_CLIENT_ID: serverSecretId,
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: publicId,
+    });
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/GOOGLE_AUDIENCE_MISMATCH/);
+    expect(warnings[0]).not.toContain(serverSecretId);
+    expect(warnings[0]).not.toContain(publicId);
+  });
+
+  it('alerta quando apenas uma das variáveis do Google OAuth está configurada', () => {
+    const serverOnly = validateGoogleEnv({
+      GOOGLE_CLIENT_ID: '123.apps.googleusercontent.com',
+    });
+    expect(serverOnly).toHaveLength(1);
+    expect(serverOnly[0]).toMatch(/NEXT_PUBLIC_GOOGLE_CLIENT_ID/);
+
+    const publicOnly = validateGoogleEnv({
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: '123.apps.googleusercontent.com',
+    });
+    expect(publicOnly).toHaveLength(1);
+    expect(publicOnly[0]).toMatch(/GOOGLE_NOT_CONFIGURED/);
+  });
+
+  it('alerta quando ALLOW_GOOGLE_DEV_BYPASS=true está definido em NODE_ENV=production', () => {
+    const warnings = validateGoogleEnv({
+      NODE_ENV: 'production',
+      ALLOW_GOOGLE_DEV_BYPASS: 'true',
+    });
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/ALLOW_GOOGLE_DEV_BYPASS/);
+    expect(warnings[0]).toMatch(/NODE_ENV=production/);
   });
 });

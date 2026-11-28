@@ -178,5 +178,21 @@ describe('API Visitante/Cliente - Meus Pedidos (/api/customer/orders)', () => {
     });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(429);
+    expect(res._getHeaders()['cache-control']).toBe('no-store, private');
+  });
+
+  it('deve definir Cache-Control no-store e capturar falha inesperada em getAuthenticatedCustomer retornando 500 seguro', async () => {
+    getAuthenticatedCustomer.mockImplementationOnce(() => {
+      throw new Error('DB/cookie parser crash');
+    });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(500);
+    expect(res._getHeaders()['cache-control']).toBe('no-store, private');
+    const data = JSON.parse(res._getData());
+    expect(data.message).toBe('Erro ao carregar o histórico de compras.');
+    expect(data.message).not.toContain('DB/cookie parser crash');
   });
 });

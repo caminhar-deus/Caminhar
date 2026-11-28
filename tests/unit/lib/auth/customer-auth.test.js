@@ -1,4 +1,5 @@
 import { describe, it, expect, jest } from '@jest/globals';
+import jwt from 'jsonwebtoken';
 import {
   generateCustomerToken,
   verifyCustomerToken,
@@ -67,8 +68,44 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
     expect(getAuthenticatedCustomer(null)).toBeNull();
 
     const token = generateCustomerToken(sampleCustomer);
-    const req = { headers: { cookie: `sem_igual; outro=1; customerToken=${encodeURIComponent(token)}` } };
+    const req = {
+      headers: {
+        cookie: `sem_igual; outro=1; quebrado=%E0%A4%A; =semNome; customerToken=${encodeURIComponent(token)}`,
+      },
+    };
     expect(getAuthenticatedCustomer(req)?.customerId).toBe(77);
+
+    const brokenTokenReq = { headers: { cookie: 'customerToken=%E0%A4%A' } };
+    expect(getAuthenticatedCustomer(brokenTokenReq)).toBeNull();
+  });
+
+  it('deve assinar explicitamente com HS256 e rejeitar tokens assinados com outro algoritmo (ex.: HS384)', async () => {
+    const prevEnv = process.env.NODE_ENV;
+    const prevSecret = process.env.JWT_SECRET;
+
+    try {
+      process.env.NODE_ENV = 'test';
+      process.env.JWT_SECRET = 'explicit-hs256-test-secret';
+      jest.resetModules();
+
+      const authMod = await import('../../../../lib/auth/customer-auth.js');
+      const token = authMod.generateCustomerToken(sampleCustomer);
+      const decodedComplete = jwt.decode(token, { complete: true });
+      expect(decodedComplete?.header?.alg).toBe('HS256');
+      expect(authMod.verifyCustomerToken(token)?.customerId).toBe(77);
+
+      const hs384Token = jwt.sign(
+        { customerId: 77, email: sampleCustomer.email, name: sampleCustomer.name, scope: 'customer' },
+        'explicit-hs256-test-secret',
+        { algorithm: 'HS384' }
+      );
+      expect(authMod.verifyCustomerToken(hs384Token)).toBeNull();
+    } finally {
+      process.env.NODE_ENV = prevEnv;
+      if (prevSecret === undefined) delete process.env.JWT_SECRET;
+      else process.env.JWT_SECRET = prevSecret;
+      jest.resetModules();
+    }
   });
 
   it('deve exigir JWT_SECRET em produção (fail-closed) e adicionar Secure no cookie quando NODE_ENV=production', async () => {
