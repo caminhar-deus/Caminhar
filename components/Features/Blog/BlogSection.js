@@ -31,7 +31,13 @@ export default function BlogSection({ limit }) {
   const total = responseData?.total || 0;
 
   if (loading) {
-    return <div className={styles.section}><div className={styles.container} style={{textAlign: 'center'}}>Carregando reflexões...</div></div>;
+    return (
+      <div className={styles.section}>
+        <div className={`${styles.container} ${styles.loadingContainer}`}>
+          Carregando reflexões...
+        </div>
+      </div>
+    );
   }
 
   if (posts.length === 0) {
@@ -55,17 +61,8 @@ export default function BlogSection({ limit }) {
         {/* O total REAL da resposta decide o link: com o limite pedido à API,
             `posts.length` nunca ultrapassa `limit` (armadilha do F2.1). */}
         {limit && total > posts.length && (
-          <div style={{ textAlign: 'center', marginTop: 'var(--spacing-10)' }}>
-            <Link href="/blog" style={{
-              display: 'inline-block',
-              padding: 'var(--spacing-3) var(--spacing-6)',
-              backgroundColor: 'var(--color-bg-secondary)',
-              color: 'var(--color-text-primary)',
-              textDecoration: 'none',
-              borderRadius: 'var(--border-radius-md)',
-              fontWeight: 'var(--font-weight-medium)',
-              transition: 'var(--transition-all)'
-            }}>
+          <div className={styles.viewAllWrapper}>
+            <Link href="/blog" className={styles.viewAllLink}>
               Ver todas as postagens
             </Link>
           </div>

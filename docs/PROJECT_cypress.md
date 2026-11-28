@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^16.1.0`). A estrutura conta com **6 arquivos de teste**, **31 cenários** distribuídos em 6 páginas/sistemas, e suporte com `fixtures/` e `support/`.
+A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^16.1.0`). A estrutura conta com **7 arquivos de teste**, **35 cenários** distribuídos em 7 frentes/sistemas públicos e administrativos, e suporte com `fixtures/` e `support/`.
 
 A configuração global do Cypress está em `cypress.config.js` (na raiz do projeto), e os scripts de execução estão definidos no `package.json`.
 
@@ -13,16 +13,17 @@ A configuração global do Cypress está em `cypress.config.js` (na raiz do proj
 ```
 cypress/
 ├── e2e/
-│   ├── image_zoom.cy.js   (12 cenários) — Zoom de imagem (lightbox)
-│   ├── checkout.cy.js      (6 cenários)  — Checkout transparente e Minha Conta
-│   ├── home.cy.js          (4 cenários)  — Página inicial
-│   ├── blog.cy.js          (3 cenários)  — Listagem do blog
-│   ├── post.cy.js          (3 cenários)  — Post individual
-│   └── navigation.cy.js    (3 cenários)  — Navegação entre páginas
+│   ├── image_zoom.cy.js             (12 cenários) — Zoom de imagem (lightbox)
+│   ├── checkout.cy.js               (6 cenários)  — Checkout transparente e Minha Conta
+│   ├── design_responsive_a11y.cy.js (4 cenários)  — Design system, responsividade (4 viewports) e acessibilidade (PR-03)
+│   ├── home.cy.js                   (4 cenários)  — Página inicial
+│   ├── blog.cy.js                   (3 cenários)  — Listagem do blog
+│   ├── post.cy.js                   (3 cenários)  — Post individual
+│   └── navigation.cy.js             (3 cenários)  — Navegação entre páginas
 ├── fixtures/
 │   └── posts.json
 ├── support/
-│   ├── commands.js          (8 comandos customizados)
+│   ├── commands.js                  (7 comandos customizados)
 │   └── e2e.js
 ├── videos/                  (artefato de execução — fora do Git, ver `.gitignore`)
 └── screenshots/             (artefato de execução em falha — fora do Git, ver `.gitignore`)
@@ -297,6 +298,23 @@ Testa a jornada pública de compra interna (Modalidade B — Checkout Transparen
 
 ---
 
+### `/cypress/e2e/design_responsive_a11y.cy.js`
+
+**Localização:** `cypress/e2e/design_responsive_a11y.cy.js` — 4 cenários (301 linhas)
+
+**Propósito:**
+Executa a validação visual, responsiva nos 4 viewports obrigatórios (`375×812`, `768×1024`, `1024×768`, `1440×900`), navegação/alvos de toque e acessibilidade (`PR-03`), integrada ao `npm run test:e2e:isolated` (`.github/workflows/e2e.yml`).
+
+**Cenários:**
+1. Home (`/`), cabeçalho público (`a[href="/entrar"]` com altura ≥ 40px), ordem protegida das 5 abas com `"Em Desenvolvimento"` desabilitada e aba `Produtos Religiosos` sem overflow horizontal nos 4 viewports (com barra de filtros alinhada em linha única no desktop `1440×900`)
+2. Artigo público (`/blog/mulher-virtuosa`) acessível nos 4 viewports com `skip-link`, `<main id="main-content">`, hierarquia `h1` → `h2`, alvos de toque `≥ 44px` nos 3 botões de compartilhamento e lightbox de zoom operado por `<button data-testid="image-zoom-container">` + tecla `Esc`
+3. Visitante (`/entrar`), `/login?reason=inactivity` e `/404` nos 4 viewports, validando guard `@media (prefers-reduced-motion: reduce)` nas folhas de estilo carregadas, foco duplo em `#customer-email` (`outline` + `box-shadow`), `skip-link` e alvo `≥ 44px` no link de retorno da página 404
+4. Painel Administrativo (`/admin`) validando empilhamento vertical de `.statColumns` (`Pagamento` acima de `Andamento`) em `375×812` e fluxo de busca + botão `"Limpar busca"` em `Gestão de Vendas` sem overflow horizontal
+
+**Observação:** Utiliza `cy.intercept()` para sessão de visitante, catálogo de produtos, verificação auth/stats do `/admin` e listagens de `Gestão de Vendas`, mantendo o artigo `/blog/mulher-virtuosa` sobre o post fixture semeado pelo `scripts/e2e-isolated.js`. A execução ao vivo desta spec aguarda ambiente com runtime Docker (`npm run test:e2e:isolated`) ou execução na CI (`.github/workflows/e2e.yml`).
+
+---
+
 ## Diretórios de Artefatos
 
 ### `/cypress/screenshots/`
@@ -316,6 +334,7 @@ Testa a jornada pública de compra interna (Modalidade B — Checkout Transparen
 **Arquivos gerados a cada execução:**
 - `blog.cy.js.mp4`
 - `checkout.cy.js.mp4`
+- `design_responsive_a11y.cy.js.mp4`
 - `home.cy.js.mp4`
 - `image_zoom.cy.js.mp4`
 - `navigation.cy.js.mp4`
@@ -331,13 +350,13 @@ Testa a jornada pública de compra interna (Modalidade B — Checkout Transparen
 
 | Métrica | Valor |
 |---------|-------|
-| Total de arquivos de teste | 6 |
-| Total de cenários (`it`) | 31 |
-| Total de grupos de teste (`describe`/`context`) | 10 |
-| Total de comandos customizados | 8 |
+| Total de arquivos de teste | 7 |
+| Total de cenários (`it`) | 35 |
+| Total de grupos de teste (`describe`/`context`) | 11 |
+| Total de comandos customizados | 7 |
 | Arquivos de suporte | 2 (`commands.js`, `e2e.js`) |
 | Arquivos de fixture | 1 (`posts.json`) |
-| Total de linhas (todos os testes) | ~350 |
+| Total de linhas (todos os testes) | 812 |
 | Diretórios de artefatos | 2 (`videos/`, `screenshots/` — gerados por execução e fora do Git) |
 
 ---

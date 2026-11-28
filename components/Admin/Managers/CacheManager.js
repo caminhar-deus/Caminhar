@@ -111,7 +111,7 @@ export default function AdminCacheManager() {
       </Modal>
 
       {cacheMetrics && (
-        <div className={styles.sectionBlock} style={{ marginTop: 'var(--spacing-6)', marginBottom: 0 }}>
+        <div className={`${styles.sectionBlock} ${styles.metricsSection}`}>
           <h3 className={styles.sectionSubtitle}>
             <AppIcon name="chart" size={18} />
             <span>Status do Cache Redis</span>

@@ -60,7 +60,8 @@ tests/
     ├── hooks/                        #   Hooks React
     ├── lib/                          #   Bibliotecas
     ├── pages/                        #   Páginas (API routes)
-    └── scripts/                      #   Scripts utilitários
+    ├── scripts/                      #   Scripts utilitários
+    └── tests-hygiene/                #   Higiene de testes, configs e Design System (CSS tokens)
 ```
 
 ---
@@ -545,6 +546,15 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 
 > **Por que o primeiro teste de `load-tests/` só apareceu em 19/10/2026:** até então nada em `load-tests/` era exercitado por jest, e a Fase 1 do item AD mexe justamente na função que até 20/10/2026 perdia thresholds em silêncio — sem o teste, a correção poderia reintroduzir a mesma falha sem ninguém perceber. **O teste foi reescrito junto com a correção** (a caracterização do descarte virou a do merge) e **verificado por mutação**: reverter o `getProfile` para a semântica antiga reprova exatamente os 2 casos de merge, e restaurar o verde.
 
+### 5.16 Higiene de Testes e Design System (`/tests/unit/tests-hygiene/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `css-tokens.test.js` | Guarda permanente do Design System com **11 invariantes** sobre **45** arquivos `.css` do repositório: valida todos os tokens `var(--*)` contra `pages/styles/variables.css` ou definições locais; aplica política global contra regressão de `style={{` em `pages/` (exceto `pages/api/`) e `components/` com baseline congelada para `18` arquivos dinâmicos e lista de `11` arquivos em zero obrigatório (`AdminSales`, `CacheManager`, `BlogSection`, `PostCard`, `MusicCard`, `Testimonials`, `VideoCard`, `StateMessages`, `checkout/[id]`, `blog/[slug]` e `404`); garante contraste WCAG AA (`≥ 4,5:1`) em `ProductCard.module.css`, `Blog.module.css` e `AdminDashboard.js`; proíbe `outline: none`/`0` em `:focus`/`:focus-visible`; exige restauração de foco no mesmo arquivo para `outline: none` base; garante par de foco duplo (`outline` + `box-shadow: var(--color-focus-ring)`) em todos os `.css`; bloqueia `color: var(--color-text-tertiary)` em textos informativos e controles ativos fora de `::placeholder`, `:disabled`, ícones decorativos listados, fundo escuro e âncoras vigiadas pelo canário do bench; e exige guard global `@media (prefers-reduced-motion: reduce)` em `pages/styles/globals.css`. |
+| `console-no-global-assignment.test.js` | Garante ausência de sobrescrita global persistente de `console.*` fora dos helpers controlados de teste. |
+| `jest-config.test.js` | Valida consistência de `jest.config.js`, `jest.config.base.js` e `jest.config.db.js`. |
+| `package-lock-sync.test.js` | Garante sincronismo entre dependências declaradas em `package.json` e `package-lock.json`. |
+
 ---
 
 ## 6. Resumo Quantitativo
@@ -580,3 +590,5 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 > **Acréscimos pós-19/11/2026 (camada Google/visitante e SEO, atualizados até 28/11/2026):** passaram a compor a suíte ativa do repositório, sem alterar o recount histórico da tabela acima: `tests/unit/lib/auth/google-id-token.test.js`, `tests/unit/lib/auth/customer-auth.test.js`, `tests/unit/lib/domain/customers.test.js`, `tests/integration/domain/customers.db.test.js`, `tests/integration/api/customer/auth.test.js`, `tests/integration/api/customer/orders.test.js`, `tests/unit/pages/entrar.test.js`, `tests/unit/pages/minha-conta.test.js`, `tests/unit/pages/document-csp.test.js`, `tests/unit/scripts/check-env.test.js` e `tests/unit/next-sitemap.config.test.js` (suítes ativas totais conferidas via `npm run test:ci`).
 >
 > **Acréscimos pós-19/11/2026 (camada Mercado Pago / Gestão de Vendas e diagnóstico de CI, atualizados até 28/11/2026):** compõem igualmente a suíte ativa: `tests/unit/lib/payment/{mercadopago,payment-status-messages,reconcile-orders}.test.js`, `tests/unit/lib/domain/orders.test.js`, `tests/unit/components/Admin/AdminSales.test.js`, `tests/unit/pages/checkout.test.js`, `tests/integration/api/{checkout,webhooks/mercadopago,admin/orders,admin/internal-products}.test.js`, `tests/integration/domain/orders.db.test.js` (validada no PostgreSQL real via CI Run `#181` em `27/11/2026`), além das suítes de scripts e carga listadas nas seções 5.13 e 5.15 (`verify-mp-webhook.test.js`, `expire-abandoned-orders.test.js`, `check-mp-production-readiness.test.js`, `check-github-actions.test.js` e `orchestrator-parity.test.js`). Contagem física total conferida em `28/11/2026`: **294 arquivos `.js` em `tests/`**, sendo **261 arquivos `*.test.js`** (`185` em `tests/unit/`, `73` em `tests/integration/` — dos quais `12` são `*.db.test.js` — mais `3` em `tests/examples/` e `tests/mocks/`).
+>
+> **Acréscimo de 28/11/2026 (Design System / Ciclo 2):** a guarda estática `tests/unit/tests-hygiene/css-tokens.test.js` foi ampliada de `7` para **11 invariantes** cobrindo **45** arquivos `.css` (baseline de `style={{` reduzida para `18` arquivos dinâmicos e lista explícita de `11` arquivos em zero obrigatório, além do bloqueio contra `--color-text-tertiary` indevido), e foram atualizadas as suítes `tests/unit/components/Admin/AdminSales.test.js`, `tests/unit/components/Features/Music/MusicGallery.test.js`, `tests/unit/components/Features/Video/VideoGallery.test.js`, `tests/unit/pages/404.test.js` e `tests/unit/pages/blog.slug.test.js`. A contagem física em `tests/` permanece **294 arquivos `.js`** (**261 `*.test.js`**), pois a nova spec responsiva/a11y (`design_responsive_a11y.cy.js`) integra `cypress/e2e/` (ver `docs/PROJECT_cypress.md`).

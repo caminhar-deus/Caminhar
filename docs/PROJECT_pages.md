@@ -40,6 +40,7 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 
 ```text
 /pages
+├── 404.js                      # Página 404 canônica (/404)
 ├── _app.js                     # App wrapper global (providers, Toaster, router events)
 ├── _document.js                # Documento HTML customizado (SEO, CSP, CSS crítico)
 ├── index.js                    # Home pública
@@ -105,6 +106,7 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
     ├── Home.module.css         # CSS Module da home
     ├── Login.module.css        # CSS Module da página de login
     ├── DesignSystem.module.css # CSS Module da vitrine
+    ├── NotFound.module.css     # CSS Module da página 404
     └── CustomerPages.module.css # CSS Module de /entrar, /minha-conta e /checkout/[id]
 ```
 
@@ -199,13 +201,14 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
   - `pages/styles/DesignSystem.module.css` — CSS Module da página.
 - **Propósito:** Página de demonstração e documentação visual do Design System da aplicação.
 - **Funcionalidades:**
+  - SEO marcado com `<meta name="robots" content="noindex, nofollow" />` (fora do sitemap público).
   - Exibe a paleta de cores: primária (Azul Serenidade), secundária (Dourado Luz) e cores de feedback (sucesso, erro, aviso, info).
-  - Demonstra todos os componentes UI: Button (6 variantes, 4 tamanhos, 3 estados), Input (4 variações, incluindo erro e com ícone), Select, TextArea (com contador de caracteres).
-  - Cards em 3 variantes (default, elevated, outlined) + interativo + com header/footer + com mídia (usa placeholder externo `via.placeholder.com`).
+  - Demonstra todos os componentes UI: Button (6 variantes, 4 tamanhos, 3 estados), Input (4 variações, incluindo erro e com ícone `AppIcon`), Select, TextArea (com contador de caracteres).
+  - Cards em 3 variantes (default, elevated, outlined) + interativo + com header/footer + com mídia.
   - Badges (8 variantes + Counter + Dot com pulse), Alerts (4 variantes), Spinners (5 variantes + Container).
   - Modal demonstrativo e Toast de notificação.
   - Componentes de layout: Stack (vertical/horizontal) e Grid Responsivo.
-  - Seção de documentação textual do que compõe o Design System (tokens, componentes, hooks `useTheme`).
+  - Utiliza ícones vetoriais `AppIcon` (`components/UI/icons.js`, substituindo emojis decorativos desde 28/11/2026) e mantém referência funcional ao catálogo de tokens e componentes.
 
 ### `/pages/login.js`
 
@@ -220,6 +223,18 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
   - Envio via `fetch('/api/auth/login', …)` e, no sucesso, `router.push(resolveNext(router.query))`.
   - Campo de senha com botão mostrar/ocultar (`EyeIcon` inline), `aria-invalid`/`aria-describedby` ligados às mensagens de erro e `aria-busy` no submit; inputs desabilitados durante o carregamento; `noValidate` no `<form>` (a validação é a própria).
 - **Observação:** arquivo **criado em 03/10/2026** (commit `73dbc86`, depois ajustado em 04/10/2026 por `5beabc7`) — ambos posteriores à análise de 23/09/2026, data do cabeçalho deste documento; ver "Histórico de Mudanças Relevantes".
+
+### `/pages/404.js`
+
+- **Caminho:** `/pages/404.js`
+- **Arquivos acionados/relacionados:**
+  - `pages/styles/NotFound.module.css` — CSS Module exclusivo da página 404 (substituiu os estilos inline em 28/11/2026).
+  - `lib/seo/config.js` — `siteConfig.name`.
+- **Propósito:** Página canônica de erro 404 do Pages Router (criada em 02/11/2026).
+- **Funcionalidades:**
+  - Renderizada estaticamente para rotas inexistentes ou respostas SSR com `{ notFound: true }`.
+  - SEO marcado com `<meta name="robots" content="noindex, follow" />`.
+  - Acessibilidade com `<a href="#main-content" className="skip-link">`, `<main id="main-content">` e botão de retorno para `/` (`.homeLink`) com área mínima de toque (`min-height: 44px`), `--border-radius-lg` e foco duplo `:focus-visible`.
 
 ---
 
@@ -803,7 +818,7 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 
 - **Caminho:** `/pages/blog/[slug].js`
 - **Arquivos acionados/relacionados:**
-  - `pages/blog/Blog.module.css` — CSS Module compartilhado do blog.
+  - `pages/blog/Blog.module.css` — CSS Module compartilhado do blog (migrado de estilos inline em 28/11/2026 — `DS-04`).
   - `lib/infra/db.js` — `query()` (query SSR direta ao banco).
   - `next/head` e `next/link` — SEO e navegação.
   - `public/default-og-image.jpg` — imagem OG padrão quando o post não tem imagem.
@@ -811,8 +826,9 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **Funcionalidades:**
   - `getServerSideProps` com query direta ao banco (`SELECT * FROM posts WHERE slug = $1 AND published = true`), retornando `notFound: true` se não existir ou em erro.
   - **SEO completo** com Open Graph (`og:type=article`, `og:url`, `og:title`, `og:description`, `og:image`, `og:site_name`, `og:locale`, `article:published_time`) e Twitter Cards — URLs absolutas usando `SITE_URL` com fallback para localhost.
-  - **Lightbox de imagem:** zoom ao clicar, fechamento com tecla `Esc`, foco automático ao abrir, `role="dialog"`, `aria-modal="true"`, `aria-label`.
-  - **Compartilhamento:** botões estáticos para Facebook e WhatsApp; botão Instagram/Copiar Link que usa `navigator.share` com fallback para `navigator.clipboard`.
+  - **Acessibilidade e estrutura (`DS-04`):** link `<a href="#main-content" className="skip-link">`, contêiner `<main id="main-content">`, data de publicação em `--color-text-secondary` e seção de compartilhamento estruturada com `<h2>`.
+  - **Lightbox de imagem:** zoom acionado por `<button type="button">` (`className={styles.imageZoomButton}`, foco visível duplo), fechamento com tecla `Esc`, foco automático ao abrir, `role="dialog"`, `aria-modal="true"`, `aria-label`.
+  - **Compartilhamento:** botões para Facebook, WhatsApp e Instagram/Copiar Link (que usa `navigator.share` com fallback para `navigator.clipboard`) estilizados via `.shareButton` + `.shareFacebook`/`.shareWhatsapp`/`.shareInstagram` (`min-height: 44px` e contraste AA `≥ 4,5:1`).
   - Renderiza o conteúdo com `white-space: pre-wrap`.
   - Link de voltar para a home.
 
@@ -823,7 +839,7 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
   - Importado por `pages/blog/index.js` e `pages/blog/[slug].js`.
   - Consome CSS Custom Properties de `pages/styles/variables.css` (via `globals.css`).
 - **Propósito:** Estilos CSS Module compartilhados entre as páginas do blog.
-- **Estilos definidos:** `.container` (min-height 100vh, background `--color-bg-secondary`), `.header` (texto centralizado), `.title` (2.5rem), `.subtitle` (1.1rem), `.grid` (grid responsivo `minmax(300px, 1fr)` com gap 2rem, max-width 1200px) e media query para 768px.
+- **Estilos definidos:** listagem (`.container` com background `--color-bg-secondary`, `.header`, `.title`, `.subtitle`, `.grid` responsiva `minmax(300px, 1fr)`), detalhe do artigo (`.postHeader`, `.postTitle`, `.postDate` em `--color-text-secondary`, `.imageZoomButton` com foco duplo `:focus-visible`, `.postImage`, `.postContent`, `.shareSection`, `.shareTitle`, `.shareActions`, `.shareButton` com `min-height: 44px` e variantes AA `.shareFacebook`/`.shareWhatsapp`/`.shareInstagram`) e media query em `768px` (incluindo `.title` e `.postTitle`).
 
 ---
 
@@ -854,6 +870,8 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
   - Reset (`box-sizing`, `margin`, `padding` em `*`).
   - `html, body` com `font-family: var(--font-family-body)`, background `var(--color-bg-secondary)`, texto `var(--color-text-primary)`, `overflow-y: auto`.
   - `body.modal-open { overflow: hidden; }` — **lock de scroll** para modais (gerenciado pelo componente Modal).
+  - `.skip-link` / `.skip-link:focus` com anel duplo visível (`outline: 2px solid var(--color-focus-primary)` + `box-shadow: var(--color-focus-ring)`).
+  - Guard global `@media (prefers-reduced-motion: reduce)` desligando animações, transições e rolagem suave.
   - Links herdam cor e perdem sublinhado.
 
 ### `/pages/styles/Home.module.css`
@@ -870,9 +888,9 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **Caminho:** `/pages/styles/Login.module.css`
 - **Arquivos acionados/relacionados:**
   - Importado por `pages/login.js` — **único consumidor** (confirmado por grep no repositório).
-  - Consome CSS Custom Properties de `variables.css` (89 ocorrências de `var(--…)`).
+  - Consome CSS Custom Properties de `variables.css`.
 - **Propósito:** Estilos CSS Module da página de login (`/login`).
-- **Características:** 306 linhas, 22 seletores de topo (`.page`, `.card`, `.header`, `.title`, `.subtitle`, `.form`, `.field`, `.label`, `.input`, `.inputWrap`, `.hasToggle`, `.toggle`, `.inputInvalid`, `.fieldError`, `.errorSummary`, `.summaryList`, `.forgotRow`, `.link`, `.footer`, `.loadingStatus`, `.requiredNote`, `.eyebrow`), responsivo em `@media (min-width: 640px)` e com `@media (prefers-reduced-motion: reduce)` desligando as animações.
+- **Características:** 318 linhas, 22 seletores de topo (`.page`, `.card`, `.header`, `.title`, `.subtitle`, `.form`, `.field`, `.label`, `.input` com `--border-radius-lg` e foco `border-color: var(--color-primary-500)`, `.inputWrap`, `.hasToggle`, `.toggle`, `.inputInvalid` com `var(--color-error-halo)`, `.fieldError`, `.errorSummary`, `.summaryList`, `.forgotRow`, `.link`, `.footer`, `.loadingStatus`, `.requiredNote`, `.eyebrow`), responsivo em `@media (min-width: 640px)` e com `@media (prefers-reduced-motion: reduce)` desligando as animações.
 - **Observação:** criado em **03/10/2026** junto com `pages/login.js` (commit `73dbc86`; ajustado em `5beabc7`, 04/10/2026); fora da análise de 23/09/2026.
 
 ### `/pages/styles/DesignSystem.module.css`
@@ -884,11 +902,17 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **Propósito:** Estilos CSS Module da página de demonstração do Design System.
 - **Características:** header com gradiente azul (`primary-500` → `primary-700`), seções com card/sombra, classes de paleta de cores (`primary50`...`primary900`, `secondary50`...`secondary700`, `success/error/warning/info`), componentes de demonstração (`demoStack`, `demoBox`), lista de documentação e footer escuro. Responsivo para 768px. Todos os valores usam CSS Custom Properties.
 
+### `/pages/styles/NotFound.module.css`
+
+- **Caminho:** `/pages/styles/NotFound.module.css`
+- **Arquivos acionados/relacionados:** importado por `pages/404.js` (`70` linhas).
+- **Propósito:** estilos exclusivos da página 404 canônica usando apenas tokens de `variables.css` (substituindo estilos inline em 28/11/2026), com `.main`, `.card`, `.code`, `.title`, `.message` (`--color-text-secondary`) e `.homeLink` (`min-height: 44px`, `--border-radius-lg` e foco duplo `:focus-visible`).
+
 ### `/pages/styles/CustomerPages.module.css`
 
 - **Caminho:** `/pages/styles/CustomerPages.module.css`
 - **Arquivos acionados/relacionados:** importado por `pages/entrar.js`, `pages/minha-conta.js` e `pages/checkout/[id].js` (`design-system/pages/customer.md`).
-- **Propósito:** estilos do portal de visitante e checkout transparente usando exclusivamente tokens de `variables.css` (validado pelo guard `tests/unit/tests-hygiene/css-tokens.test.js`), com estado `.googleButtonHostBusy` e foco duplo acessível.
+- **Propósito:** estilos do portal de visitante e checkout transparente usando exclusivamente tokens de `variables.css` (`525` linhas, validado pelo guard `tests/unit/tests-hygiene/css-tokens.test.js`), com estado `.googleButtonHostBusy`, controles unificados em `--border-radius-lg`, `.divider` em `--color-text-secondary`, `border-color: var(--color-primary-500)` no foco e foco duplo acessível.
 
 ---
 
@@ -927,3 +951,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **27/11/2026:** Sincronização da descrição de `/pages/_document.js` (remoção da menção obsoleta a Montserrat, inclusão de Playfair Display, `<meta name="referrer" content="strict-origin-when-cross-origin" />` e origens GIS na CSP incluindo `connect-src`) e adição das rotas/páginas de visitante e pagamento (`/entrar`, `/minha-conta`, `/checkout/[id]`, `/api/customer/auth`, `/api/customer/orders`, `/api/checkout` e `CustomerPages.module.css`, preservando o recorte histórico de contagens de 08/10/2026 no resumo).
 - **28/11/2026:** Inclusão dos arquivos da área do visitante e checkout diretamente na árvore de diretórios do topo, além da resiliência a `429`/`5xx` em `GET /api/customer/auth` nas páginas `/minha-conta` e `/checkout/[id]`, `Cache-Control: no-store, private` em `/api/checkout` e ativação completa de `customer_refresh_tokens` em `/api/customer/auth` (`ADR-0046`).
 - **28/11/2026 (Mercado Pago / Vendas Internas):** Sincronização documental das rotas `/pages/api/webhooks/mercadopago.js`, `/pages/api/admin/orders.js` e `/pages/api/admin/internal-products.js` na árvore e seções correspondentes, além do detalhamento de rate limit, idempotência, anti-replay, flag `MP_ENABLE_DEBIT_CARD`, estorno opt-in e expiração em `/api/checkout.js` (`ADR-0044` / `ADR-0045`).
+- **28/11/2026 (Design System / Ciclo 2):** Inclusão de `pages/404.js` e `pages/styles/NotFound.module.css` na árvore e seções 1/7 (substituição de estilos inline, `skip-link` e `noindex, follow`), atualização de `pages/design-system.js` (`AppIcon` e `noindex, nofollow`), `pages/blog/[slug].js` e `pages/blog/Blog.module.css` (migração de estilos inline, zoom via `<button>`, `skip-link`, `h1`→`h2` e contraste AA nos botões sociais — `DS-04`), `globals.css` (`.skip-link:focus` + `prefers-reduced-motion`), `Login.module.css` (`--border-radius-lg` + `var(--color-error-halo)`) e `CustomerPages.module.css` (raios `--border-radius-lg`, `border-color: var(--color-primary-500)` no foco e `.divider` em `--color-text-secondary`). Contagem física conferida via `find pages -type f`: **58 arquivos** no diretório.

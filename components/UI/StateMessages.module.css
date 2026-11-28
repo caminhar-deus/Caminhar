@@ -1,0 +1,31 @@
+/* StateMessages - Estilos padronizados para estados de erro, vazio e carregamento */
+.stateMessage {
+  text-align: center;
+  padding: var(--spacing-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+
+.error {
+  color: var(--color-error-700);
+}
+
+.empty {
+  color: var(--color-text-secondary);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.loadingContainer {
+  text-align: center;
+  padding: var(--spacing-10);
+}
+
+.loadingText {
+  margin-top: var(--spacing-2);
+  color: var(--color-text-secondary);
+}

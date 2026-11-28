@@ -181,7 +181,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   padding: var(--spacing-1);
   margin-right: var(--spacing-1);
   border-radius: var(--border-radius-sm);
@@ -191,7 +191,7 @@
 }
 
 .clearButton:hover {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-primary);
 }
 
 /* Search Input */
@@ -254,6 +254,6 @@
 .noOptions {
   padding: var(--spacing-2_5) var(--spacing-3);
   font-size: var(--font-size-sm);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-align: center;
 }

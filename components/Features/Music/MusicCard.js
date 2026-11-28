@@ -31,7 +31,8 @@ export default function MusicCard({ musica }) {
               title={`Player do Spotify para ${musica.titulo}`}
               provider="spotify"
               placeholderText=""
-              style={{ aspectRatio: 'auto', height: '152px' }}
+              aspectRatio="auto"
+              className={styles.spotifyIframe}
               data-testid="embed-iframe"
             />
           ) : (

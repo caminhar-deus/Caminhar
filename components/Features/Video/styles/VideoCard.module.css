@@ -1,5 +1,29 @@
 /* VideoCard Styles (spec design-system/pages/home.md §3) */
 
+.card {
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-transform);
+  height: 100%;
+}
+
+.videoTitle {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.videoDescription {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Link externo "Assistir no YouTube" — rodapé do cartão, abaixo da descrição.
  * margin-top: auto cola no fundo (o `.content` do BaseCard é flex column). */
 .watchLink {

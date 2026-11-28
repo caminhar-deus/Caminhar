@@ -1,6 +1,6 @@
 # Área do Visitante (`/entrar`, `/minha-conta`, `/checkout/[id]`) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-28 (unificação dos raios de `.backLink`, `.modeTabButton`, `.input`, `.select` e `.paymentMethodOption` em `--border-radius-lg` e foco com `border-color: var(--color-primary-500)`. Anteriores: 2026-11-26 — ADR-0045; 2026-11-19 — ADR-0037 e ADR-0042).
+> Última atualização: 2026-11-28 (unificação dos raios de `.backLink`, `.modeTabButton`, `.input`, `.select` e `.paymentMethodOption` em `--border-radius-lg`, foco com `border-color: var(--color-primary-500)` e `.divider` em `--color-text-secondary`. Anteriores: 2026-11-26 — ADR-0045; 2026-11-19 — ADR-0037 e ADR-0042).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules (`pages/styles/CustomerPages.module.css`) + variáveis CSS (`pages/styles/variables.css`, sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex avulso.
 
 > Escopo: rotas públicas dedicadas à conta do visitante (`pages/entrar.js`, `pages/minha-conta.js`) e ao checkout transparente de venda interna (`pages/checkout/[id].js`), isoladas da rota administrativa `/login`.
@@ -20,7 +20,7 @@
 - **Alternância de modo (`.modeTabs`):** `role="tablist"` com 2 abas (`Já tenho conta` / `Criar conta`) em `.modeTabButton` / `.modeTabButtonActive` (`min-height: 44px`, ativo em `--color-primary-50`, `--color-primary-700`, borda `--color-primary-600`, foco duplo azul).
 - **Ação primária:** `<Button variant="primary" size="lg" fullWidth loading={submitting}>`.
 - **Sign in with Google (GIS — `accounts.google.com/gsi/client`):**
-  - Separador `.divider` (`"ou"`) exibido quando `googleStatus !== 'unconfigured'`.
+  - Separador `.divider` (`"ou"`, em `--color-text-secondary` para contraste AA) exibido quando `googleStatus !== 'unconfigured'`.
   - Contêiner `.googleSection` centralizado; `.googleButtonHost` (`min-height: 44px`, largura `100%`) recebe o botão oficial renderizado por `google.accounts.id.renderButton` com largura calculada por `resolveGoogleButtonWidth` no intervalo `200px–400px` (fallback `200px–360px` conforme `window.innerWidth`, ou `320px`).
   - Estado carregando/submissão: `.googleButtonHostDisabled` (`pointer-events: none; opacity: var(--opacity-50)`) e texto `.googleLoadingText` (`role="status"`).
   - Quando não configurado ou em erro: host oculto via `.googleButtonHostHidden`; em erro de carregamento do script, exibe aviso com botão de retry `.googleButton` (`min-height: 44px`, foco duplo azul).

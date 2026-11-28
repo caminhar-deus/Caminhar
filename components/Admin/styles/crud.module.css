@@ -276,7 +276,7 @@
 }
 
 .mutedText {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 

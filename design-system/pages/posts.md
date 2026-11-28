@@ -1,6 +1,6 @@
 # Posts & Categorias — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-28 (documentação das páginas públicas `/blog` e `/blog/[slug]` em `pages/blog/Blog.module.css`, correção WCAG AA e remoção da nota obsoleta sobre `npm run lint`. Anterior: 2026-10-27 — ADR-0024 — CRUD completo de categorias de posts; chips display-only restaurados).
+> Última atualização: 2026-11-28 (correção de `--color-text-tertiary` para `--color-text-secondary` em `.categoryEmpty`, remoção de estilos inline de `BlogSection`/`PostCard` e documentação de `/blog` e `/blog/[slug]`. Anterior: 2026-10-27 — ADR-0024).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Tokens: sempre a variável, nunca hex. Idioma da interface: pt-BR.
 
 > Escopo: (a) chips de categoria no `PostCard` público; (b) campo de atribuição de categorias no formulário de post do painel; (c) CRUD de categorias dentro da aba "Posts/Artigos" do painel. Não altera lógica de negócio nem permissões (reuso de `Posts/Artigos`).
@@ -104,7 +104,7 @@ Adicionar (dentro do bloco "PostCard Styles"):
 - `validate` (custom) não precisa validar categorias.
 - Mapeamento na edição: ao carregar post para edição, preencher `category_ids` a partir de `post.categories` (ids). O fixer trata no `handleEdit`/hook conforme o payload da API.
 - Layout do grupo: `display: flex; flex-wrap: wrap; gap: var(--spacing-2)`; cada checkbox-label `display: inline-flex; align-items: center; gap: var(--spacing-2); min-height: 32px; padding: var(--spacing-1) var(--spacing-2); cursor: pointer;`. Borda/erro: container com borda `--color-error-500` + halo vermelho quando `error` (par do MASTER §7 Campo, sem `outline` fora de foco).
-- Estado vazio (0 categorias cadastradas): renderizar texto auxiliar `Nenhuma categoria cadastrada. Crie na aba "Categorias".` em `--color-text-tertiary`, 12px, em vez da lista. Não esconder o campo.
+- Estado vazio (0 categorias cadastradas): renderizar texto auxiliar `Nenhuma categoria cadastrada. Crie na aba "Categorias".` em `--color-text-secondary`, 12px, em vez da lista. Não esconder o campo.
 - Labels visíveis acima do grupo (MASTER §3/§8): `<label>` associado ao grupo via `htmlFor` no primeiro checkbox ou `aria-labelledby` no container.
 
 ---

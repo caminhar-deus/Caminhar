@@ -40,7 +40,7 @@ O **Caminhar com Deus** é uma aplicação web desenvolvida com Next.js (Pages R
 - **SEO completo** com Open Graph, Twitter Cards e Schema.org JSON-LD
 - **Cache** com Redis (Upstash) + fallback em memória local
 - **Backup automatizado** do PostgreSQL com criptografia AES-256-GCM e compressão gzip
-- **Testes automatizados** com **261** arquivos de teste Jest (`185` unitários e `73` de integração — incluindo `12` `*.db.test.js` com PostgreSQL real via Testcontainers — além de `3` exemplos/mocks), **6** specs Cypress (**31** cenários E2E) e **38** arquivos de testes de carga (**31** scripts k6 + `7` helpers)
+- **Testes automatizados** com **261** arquivos de teste Jest (`185` unitários e `73` de integração — incluindo `12` `*.db.test.js` com PostgreSQL real via Testcontainers — além de `3` exemplos/mocks), **7** specs Cypress (**35** cenários E2E) e **38** arquivos de testes de carga (**31** scripts k6 + `7` helpers)
 - **CI/CD** com GitHub Actions (4 arquivos de workflow em `.github/workflows/`: lint/cobertura em `pull_request`, `push` para `main` e `workflow_dispatch`, E2E isolado do Cypress em `push` para `main` e `workflow_dispatch`, testes de carga e o reutilizável `test-base.yml`)
 - **Middlewares de proteção:** Rate limiting, DDoS, Content Security Policy, CORS
 
@@ -188,7 +188,7 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md)
 
-**6 arquivos de teste**, **31 cenários**, distribuídos em páginas/sistemas públicos, checkout e conta do visitante:
+**7 arquivos de teste**, **35 cenários**, distribuídos em páginas/sistemas públicos, checkout, conta do visitante e validação responsiva/acessibilidade:
 
 | Arquivo | Cenários | Funcionalidade |
 |---------|:--------:|----------------|
@@ -198,10 +198,11 @@ Componentes React organizados em 6 categorias:
 | `navigation.cy.js` | 3 | Navegação entre páginas e acesso admin não autenticado |
 | `image_zoom.cy.js` | 12 | Zoom de imagem (lightbox): fluxo principal, casos de borda, responsividade, acessibilidade |
 | `checkout.cy.js` | 6 | Checkout transparente Mercado Pago (PIX, cartão de crédito, recusa/boleto) e Minha Conta |
+| `design_responsive_a11y.cy.js` | 4 | Design system, responsividade (`375×812`, `768×1024`, `1024×768`, `1440×900`), foco duplo e acessibilidade |
 
-**Suporte:** 8 comandos customizados (`cy.login`, `cy.createPost`, `cy.viewportMobile/Tablet`, lightbox helpers), 1 fixture (`posts.json`)
+**Suporte:** 7 comandos customizados (`cy.login`, `cy.viewportMobile/Tablet`, lightbox helpers), 1 fixture (`posts.json`)
 
-**Execução:** localmente via `npm run test:e2e` (contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`) ou `npm run cypress:open` para o modo interativo. A opção **isolada**, `npm run test:e2e:isolated` (`scripts/e2e-isolated.js`), sobe um Postgres descartável via Testcontainers, migra, semeia 4 posts, reaproveita `.next/BUILD_ID` ou compila, serve com `next start` e roda o Cypress propagando o exit code (**31 cenários em 6 specs**, sem tocar o banco de desenvolvimento). No CI, o workflow `.github/workflows/e2e.yml` roda esse comando em `push` para `main` e via `workflow_dispatch` (**sem `pull_request`**, por decisão deliberada de coletar flakiness real antes de cobrir todo PR), subindo `cypress/videos` e `cypress/screenshots` como artefato mesmo em falha (`if: always()`). Detalhes em [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md) (seção "Execução Isolada").
+**Execução:** localmente via `npm run test:e2e` (contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`) ou `npm run cypress:open` para o modo interativo. A opção **isolada**, `npm run test:e2e:isolated` (`scripts/e2e-isolated.js`), sobe um Postgres descartável via Testcontainers, migra, semeia 4 posts, reaproveita `.next/BUILD_ID` ou compila, serve com `next start` e roda o Cypress propagando o exit code (**35 cenários em 7 specs**, sem tocar o banco de desenvolvimento). No CI, o workflow `.github/workflows/e2e.yml` roda esse comando em `push` para `main` e via `workflow_dispatch` (**sem `pull_request`**, por decisão deliberada de coletar flakiness real antes de cobrir todo PR), subindo `cypress/videos` e `cypress/screenshots` como artefato mesmo em falha (`if: always()`). Detalhes em [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md) (seção "Execução Isolada").
 
 ---
 

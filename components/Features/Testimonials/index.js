@@ -91,7 +91,7 @@ export default function Testimonials() {
         </p>
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1200px', margin: '0 auto' }}>
+      <div className={styles.carouselWrapper}>
         {hasCarousel && canScrollLeft && (
           <button onClick={() => scroll('left')} className={`${styles['nav-button']} ${styles['left']}`} aria-label="Anterior" aria-controls="testimonials-carousel">
             ❮

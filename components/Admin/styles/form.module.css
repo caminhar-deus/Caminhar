@@ -79,7 +79,7 @@
 .formHint {
   display: block;
   margin-top: var(--spacing-1);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 

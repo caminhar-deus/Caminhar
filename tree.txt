@@ -123,6 +123,7 @@
 │       ├── Spinner.js
 │       ├── Spinner.module.css
 │       ├── StateMessages.js
+│       ├── StateMessages.module.css
 │       ├── TextArea.js
 │       ├── TextArea.module.css
 │       ├── Toast.js
@@ -692,6 +693,7 @@
 │   ├── e2e
 │   │   ├── blog.cy.js
 │   │   ├── checkout.cy.js
+│   │   ├── design_responsive_a11y.cy.js
 │   │   ├── home.cy.js
 │   │   ├── image_zoom.cy.js
 │   │   ├── navigation.cy.js
@@ -703,7 +705,6 @@
 │   │   ├── commands.js
 │   │   └── e2e.js
 │   └── videos
-│       └── checkout.cy.js.mp4
 ├── cypress.config.js
 ├── data
 │   └── backups
@@ -1648,4 +1649,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-229 directories, 1420 files
+229 directories, 1421 files

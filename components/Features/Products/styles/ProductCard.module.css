@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -30,7 +30,7 @@
 .noImage {
   padding: var(--spacing-5);
   text-align: center;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   height: 100%;
   display: flex;
   align-items: center;

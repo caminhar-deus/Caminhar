@@ -1,23 +1,19 @@
 import React from 'react';
 import { Spinner } from '@/components/UI';
+import styles from './StateMessages.module.css';
 
 /**
  * Componentes padronizados para estados de loading, erro e vazio.
- * Garantem consistência visual em todos os componentes do projeto.
+ * Garantem consistência visual e contraste WCAG AA em todos os componentes.
  */
-
-const containerStyle = {
-  textAlign: 'center',
-  padding: 'var(--spacing-10)',
-};
 
 const VARIANT_CONFIG = {
   error: {
-    color: 'var(--color-error-500)',
+    variantClass: styles.error,
     hasIcon: true,
   },
   empty: {
-    color: 'var(--color-text-secondary)',
+    variantClass: styles.empty,
     hasIcon: false,
   },
 };
@@ -30,10 +26,18 @@ function StateMessage({ variant = 'error', message }) {
   if (!message) return null;
   const config = VARIANT_CONFIG[variant] || VARIANT_CONFIG.error;
   return (
-    <div style={{ ...containerStyle, color: config.color, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--spacing-2)' }}>
+    <div className={`${styles.stateMessage} ${config.variantClass}`}>
       {config.hasIcon && (
-        <svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
-          <path d="M12 8v5m0 3h.01M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          width="18"
+          height="18"
+          aria-hidden="true"
+          focusable="false"
+          className={styles.icon}
+        >
+          <path d="M12 8v5m0 3h.01M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )}
       {message}
@@ -63,9 +67,9 @@ export function EmptyMessage({ message }) {
  */
 export function LoadingMessage({ text = 'Carregando...' }) {
   return (
-    <div style={containerStyle}>
+    <div className={styles.loadingContainer}>
       <Spinner size="sm" variant="dots" />
-      <div style={{ marginTop: 'var(--spacing-2)' }}>{text}</div>
+      <div className={styles.loadingText}>{text}</div>
     </div>
   );
 }

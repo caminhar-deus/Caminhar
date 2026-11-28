@@ -263,7 +263,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/cypress.config.js`
 
-**Arquivos acionados/relacionados:** `cypress/support/e2e.js` (`supportFile` — comandos customizados e setup dos testes E2E); `package.json` (scripts `cypress:open`, `cypress:run`, `test:e2e`, `test:e2e:record`, `precypress:run`); `scripts/warm-routes.js` (pré-aquecimento executado antes de `cypress:run`); `cypress/e2e/` (os 5 specs de teste).
+**Arquivos acionados/relacionados:** `cypress/support/e2e.js` (`supportFile` — comandos customizados e setup dos testes E2E); `package.json` (scripts `cypress:open`, `cypress:run`, `test:e2e`, `test:e2e:record`, `precypress:run`); `scripts/warm-routes.js` (pré-aquecimento executado antes de `cypress:run`); `cypress/e2e/` (os 7 specs de teste).
 
 **Resumo:** Configuração do Cypress 16 para testes E2E (46 linhas). Define `projectId: 'kddcrf'` (necessário para o `--record` do Cypress Cloud), timeouts (comandos 10s, requisições 10s, carregamento de página 30s), retries (2 em modo `run`/CI, 0 em modo `open`), viewport 1280×720 e, no bloco `e2e`: `baseUrl: http://localhost:3000`, gravação de vídeo, screenshot automático em falha, `allowCypressEnv: false` (bloqueia acesso inseguro a `Cypress.env()` no navegador), `supportFile: cypress/support/e2e.js` e `setupNodeEvents` vazio (sem plugins registrados).
 

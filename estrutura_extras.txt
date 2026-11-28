@@ -201,6 +201,7 @@ components/Features/Music/MusicCard.js → components/Features/Music/styles/Musi
 components/Features/Music/MusicCard.js → components/UI/index.js
 components/Features/Music/MusicCard.js → components/UI/icons.js
 components/Features/Music/MusicCard.js → lib/media/spotify.js
+components/UI/StateMessages.js → components/UI/StateMessages.module.css
 components/UI/StateMessages.js → components/UI/index.js
 components/Features/Products/ProductList.js → components/UI/StateMessages.js
 components/Features/Products/ProductList.js → components/Features/Products/ProductCard.js

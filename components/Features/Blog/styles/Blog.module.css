@@ -122,6 +122,48 @@
   box-shadow: var(--color-focus-ring);
 }
 
+.loadingContainer {
+  text-align: center;
+}
+
+.viewAllWrapper {
+  text-align: center;
+  margin-top: var(--spacing-10);
+}
+
+.viewAllLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--spacing-3) var(--spacing-6);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  text-decoration: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-all);
+}
+
+.viewAllLink:hover {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-border-default);
+}
+
+.viewAllLink:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.cardMediaImage {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
 @media (max-width: 768px) {
   .section {
     padding: var(--spacing-12) var(--spacing-4);

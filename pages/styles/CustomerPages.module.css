@@ -194,7 +194,7 @@
   align-items: center;
   gap: var(--spacing-3);
   margin: var(--spacing-5) 0;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 

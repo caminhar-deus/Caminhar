@@ -10,6 +10,8 @@
  *   em todos os `.css` do repositório (com exceções de erro/variante auditadas).
  * - Garante que nenhum `outline: none`/`0` em seletor base fique sem restauração
  *   de foco no mesmo arquivo.
+ * - Bloqueia regressões de `--color-text-tertiary` fora de placeholders, estados
+ *   desabilitados, ícones puramente decorativos e fundo escuro.
  * - Valida contraste WCAG AA (>= 4,5:1) nos botões de marketplace, botões de
  *   compartilhamento do blog e nas 8 barras do gráfico em `AdminDashboard.js`.
  */
@@ -50,14 +52,8 @@ const BASELINE_STYLE_INLINE = {
   'components/Admin/AdminRolesTab.js': 1,
   'components/Admin/CrudForm.js': 1,
   'components/Admin/CrudTable.js': 4,
-  'components/Admin/Managers/CacheManager.js': 1,
   'components/Admin/fields/ExternalDataButton.js': 1,
-  'components/Features/Blog/BlogSection.js': 3,
-  'components/Features/Blog/PostCard.js': 1,
-  'components/Features/Music/MusicCard.js': 1,
   'components/Features/Products/ProductCard.js': 1,
-  'components/Features/Testimonials/index.js': 1,
-  'components/Features/Video/VideoCard.js': 3,
   'components/Layout/Grid.js': 2,
   'components/Layout/Sidebar.js': 2,
   'components/Performance/ImageOptimized.js': 3,
@@ -65,7 +61,6 @@ const BASELINE_STYLE_INLINE = {
   'components/UI/Button.js': 1,
   'components/UI/Input.js': 1,
   'components/UI/Select.js': 1,
-  'components/UI/StateMessages.js': 3,
   'components/UI/TextArea.js': 1,
   'components/UI/Toast.js': 1,
 };
@@ -94,6 +89,28 @@ const EXCECOES_FOCO_DUPLO = new Map([
 const EXCECOES_BASE_OUTLINE_NONE = new Set([
   'components/UI/Select.module.css|.searchInput',
 ]);
+
+/**
+ * Usos explicitamente permitidos de `color: var(--color-text-tertiary)` fora de
+ * `::placeholder` e `:disabled` (ícones puramente decorativos, texto sobre fundo
+ * escuro com contraste >= 4,5:1 ou âncoras vigiadas pelo canário do bench).
+ */
+const EXCECOES_TEXT_TERTIARY = new Set([
+  'components/Admin/styles/AdminSales.module.css|.searchIcon',
+  'components/Admin/styles/crud.module.css|.searchIcon',
+  'components/Admin/styles/crud.module.css|.dragHandleCell',
+  'components/Admin/styles/misc.module.css|.dashedEmptyIcon',
+  'components/Features/Music/styles/MusicGallery.module.css|.noResultsIcon',
+  'components/Features/Video/styles/VideoGallery.module.css|.noResultsIcon',
+  'components/UI/Select.module.css|.arrow',
+  'pages/styles/DesignSystem.module.css|.footer',
+  'components/UI/Input.module.css|.leftAddon',
+  'components/UI/Input.module.css|.rightAddon',
+  'components/UI/BaseCard.module.css|.headerSubtitle',
+]);
+
+const RE_SELETOR_TERTIARY_PERMITIDO =
+  /::placeholder\b|:disabled\b|\.pageButtonDisabled\b|\.soldOutButton\b|\.optionDisabled\b|\.disabled\s+\.arrow\b|\.placeholder\b/;
 
 function caminhoRelativo(caminhoAbsoluto) {
   return path.relative(RAIZ_PROJETO, caminhoAbsoluto).split(path.sep).join('/');
@@ -305,6 +322,22 @@ function verificarContrasteClasseCss(conteudoCss, seletores, tokensGlobais, fund
   }
 }
 
+function detectarTextoTerciarioIndevido(conteudoCss, arquivoRelativo) {
+  if (arquivoRelativo === 'pages/styles/variables.css') return [];
+  const violacoes = [];
+
+  for (const bloco of extrairBlocosCss(conteudoCss)) {
+    if (!/(?:^|[;\s])color\s*:\s*var\(--color-text-tertiary\b/.test(bloco.corpo)) continue;
+
+    for (const parte of bloco.seletor.split(',').map((s) => s.trim()).filter(Boolean)) {
+      if (RE_SELETOR_TERTIARY_PERMITIDO.test(parte)) continue;
+      if (EXCECOES_TEXT_TERTIARY.has(`${arquivoRelativo}|${parte}`)) continue;
+      violacoes.push({ arquivo: arquivoRelativo, seletor: parte });
+    }
+  }
+  return violacoes;
+}
+
 describe('Higiene de CSS e Design System', () => {
   const variablesPath = path.join(RAIZ_PROJETO, 'pages/styles/variables.css');
   const variablesCss = fs.readFileSync(variablesPath, 'utf8');
@@ -312,7 +345,7 @@ describe('Higiene de CSS e Design System', () => {
 
   it('garante que todos os tokens var(--*) em todos os arquivos .css existem em variables.css ou localmente', () => {
     const arquivosCss = listarArquivosCss();
-    expect(arquivosCss.length).toBeGreaterThanOrEqual(44);
+    expect(arquivosCss.length).toBeGreaterThanOrEqual(45);
 
     const todasViolacoes = [];
     for (const arquivoAbs of arquivosCss) {
@@ -343,6 +376,13 @@ describe('Higiene de CSS e Design System', () => {
 
     const arquivosZeroObrigatorio = [
       'components/Admin/AdminSales.js',
+      'components/Admin/Managers/CacheManager.js',
+      'components/Features/Blog/BlogSection.js',
+      'components/Features/Blog/PostCard.js',
+      'components/Features/Music/MusicCard.js',
+      'components/Features/Testimonials/index.js',
+      'components/Features/Video/VideoCard.js',
+      'components/UI/StateMessages.js',
       'pages/checkout/[id].js',
       'pages/blog/[slug].js',
       'pages/404.js',
@@ -410,7 +450,7 @@ describe('Higiene de CSS e Design System', () => {
 
   it('proíbe outline: none ou outline: 0 dentro de seletores :focus / :focus-visible em todos os .css', () => {
     const arquivosCss = listarArquivosCss();
-    expect(arquivosCss.length).toBeGreaterThanOrEqual(44);
+    expect(arquivosCss.length).toBeGreaterThanOrEqual(45);
 
     const violacoes = [];
     for (const arquivoAbs of arquivosCss) {
@@ -458,7 +498,7 @@ describe('Higiene de CSS e Design System', () => {
 
   it('garante par de foco duplo (outline + halo) em TODOS os arquivos .css do repositório', () => {
     const arquivosCss = listarArquivosCss();
-    expect(arquivosCss.length).toBeGreaterThanOrEqual(44);
+    expect(arquivosCss.length).toBeGreaterThanOrEqual(45);
 
     const violacoes = [];
     let totalBlocosFocus = 0;
@@ -483,6 +523,31 @@ describe('Higiene de CSS e Design System', () => {
         temHalo: false,
       },
     ]);
+  });
+
+  it('proíbe --color-text-tertiary em textos informativos e controles ativos fora de placeholders/desabilitados', () => {
+    const arquivosCss = listarArquivosCss();
+    const violacoes = [];
+
+    for (const arquivoAbs of arquivosCss) {
+      const rel = caminhoRelativo(arquivoAbs);
+      const conteudo = fs.readFileSync(arquivoAbs, 'utf8');
+      violacoes.push(...detectarTextoTerciarioIndevido(conteudo, rel));
+    }
+
+    expect(violacoes).toEqual([]);
+
+    // Sanidade do detector
+    expect(
+      detectarTextoTerciarioIndevido('.legenda { color: var(--color-text-tertiary); }', 'exemplo.module.css')
+    ).toEqual([{ arquivo: 'exemplo.module.css', seletor: '.legenda' }]);
+
+    expect(
+      detectarTextoTerciarioIndevido(
+        '.campo::placeholder { color: var(--color-text-tertiary); }\n.btn:disabled { color: var(--color-text-tertiary); }',
+        'exemplo.module.css'
+      )
+    ).toEqual([]);
   });
 
   it('garante guard global prefers-reduced-motion: reduce em pages/styles/globals.css', () => {

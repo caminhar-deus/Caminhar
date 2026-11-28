@@ -107,7 +107,7 @@
 .categoryHint {
   margin: 0;
   font-size: var(--font-size-xs); /* 12px */
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .categoryError {

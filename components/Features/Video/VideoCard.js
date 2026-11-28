@@ -38,27 +38,13 @@ export default function VideoCard({ video }) {
           aspectRatio="16/9"
         />
       }
-      style={{
-        borderRadius: 'var(--border-radius-xl)',
-        boxShadow: 'var(--shadow-card)',
-        transition: 'var(--transition-transform)',
-        height: '100%',
-      }}
+      className={styles.card}
     >
-      <h3 style={{ margin: '0 0 var(--spacing-2) 0', fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' }}>
+      <h3 className={styles.videoTitle}>
         {video.titulo}
       </h3>
       {video.descricao && (
-        <p style={{ 
-          margin: 0, 
-          color: 'var(--color-text-secondary)', 
-          fontSize: 'var(--font-size-sm)', 
-          lineHeight: 'var(--line-height-normal)',
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden'
-        }}>
+        <p className={styles.videoDescription}>
           {video.descricao}
         </p>
       )}

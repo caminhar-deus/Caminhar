@@ -13,7 +13,7 @@ export default function PostCard({ post, readMoreText = 'Ler mais →' }) {
           loading="lazy"
           width={400}
           height={225}
-          style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block' }}
+          className={styles.cardMediaImage}
         />
       }
     >

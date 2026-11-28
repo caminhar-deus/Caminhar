@@ -245,7 +245,7 @@
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wider);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-2) 0;
   padding: 0 var(--spacing-3);
 }

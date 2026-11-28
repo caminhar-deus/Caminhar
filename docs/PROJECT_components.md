@@ -2,7 +2,7 @@
 
 > **Data:** 23/09/2026  
 > **Última atualização completa:** 23/09/2026  
-> **Último acréscimo pontual:** 28/11/2026 — inclusão de `AdminSales.js` e `AdminSales.module.css` (Gestão de Vendas — Modalidade B) e atualização de `AdminProducts.js` (`modality=external`).
+> **Último acréscimo pontual:** 28/11/2026 — inclusão de `AdminSales.js` e `AdminSales.module.css` (Gestão de Vendas — Modalidade B), atualização de `AdminProducts.js` (`modality=external`) e sincronização do Ciclo 2 de Design System (`StateMessages.module.css`, `VideoCard.module.css`, `AdminDashboard`, `CacheManager`, `adminPosts.module.css`, `Pagination.module.css`, galerias irmãs e higiene global de estilos inline/`--color-text-tertiary`).
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo, com base na análise atual do código.
 
 ---
@@ -52,7 +52,7 @@ Todos delegam ao `AdminCrudBase`, configurando campos, colunas e validação.
 
 **AdminProducts.js** (`AdminProducts.js`) — Gestão de Produtos (Modalidade A — links externos de marketplace, 217 linhas). Filtra estritamente `modality=external`, exige `link` obrigatório no schema Zod, possui botão `"Puxar Dados"` (Mercado Livre/Amazon/Shopee) e campo `image_url` com múltiplas URLs (uma por linha para carrossel).
 
-**AdminSales.js** (`AdminSales.js`) — Aba #6 **Gestão de Vendas** (Modalidade B — venda interna com Checkout Transparente do Mercado Pago, `ADR-0037` / `ADR-0044` / `ADR-0045`, 913 linhas). Organizada em 2 subabas horizontais (`Pedidos` e `Produtos Internos` via `AdminCrudBase`), traz busca server-side, 3 filtros (`status de pagamento` com os 8 estados, `status do pedido` e `meio de pagamento` em pt-BR), selos semânticos separados, pré-carregamento da contagem da subaba `Pedidos`, botões `"Sincronizar MP"`, `"Expirar vencidos"` (`action: 'expire_abandoned'`) e `"Exportar CSV"`, guarda unificada de HTTP `401` (`ADR-0043`) e modal `"Gerenciar Pedido"` exibindo meio/bandeira real (`formatGatewayPaymentDetail`), alerta visual de `needs_manual_refund` e checkbox opt-in explícito para estorno automático via Orders API (`refund_payment: true`).
+**AdminSales.js** (`AdminSales.js`) — Aba #6 **Gestão de Vendas** (Modalidade B — venda interna com Checkout Transparente do Mercado Pago, `ADR-0037` / `ADR-0044` / `ADR-0045`, 931 linhas). Organizada em 2 subabas horizontais (`Pedidos` e `Produtos Internos` via `AdminCrudBase`), traz busca server-side com wrapper de lupa (`AppIcon name="search"`) e botão `"Limpar busca"` (`AppIcon name="close"`), 3 filtros (`status de pagamento` com os 8 estados, `status do pedido` e `meio de pagamento` em pt-BR), selos semânticos separados, pré-carregamento da contagem da subaba `Pedidos`, botões `"Sincronizar MP"`, `"Expirar vencidos"` (`action: 'expire_abandoned'`) e `"Exportar CSV"`, guarda unificada de HTTP `401` (`ADR-0043`) e modal `"Gerenciar Pedido"` exibindo meio/bandeira real (`formatGatewayPaymentDetail`), alerta visual de `needs_manual_refund` e checkbox opt-in explícito para estorno automático via Orders API (`refund_payment: true`).
 
 **AdminDicas.js** (`AdminDicas.js`) — Gestão de Dicas no painel administrativo (alimenta o bloco público "Dicas do Dia"). Delega ao `AdminCrudBase`. Documentação JSDoc detalhada. 123 linhas.
 
@@ -66,7 +66,7 @@ Todos delegam ao `AdminCrudBase`, configurando campos, colunas e validação.
 
 ### 1.4 Dashboard e Auditoria
 
-**AdminDashboard.js** (`AdminDashboard.js`) — Painel de visão geral. Cards de estatísticas com cache em `sessionStorage` (30s), gráfico de barras CSS, filtro por permissões do usuário, tratamento de resposta não-JSON. 213 linhas.
+**AdminDashboard.js** (`AdminDashboard.js`) — Painel de visão geral com 8 cartões interativos e 8 barras horizontais na Distribuição de Conteúdo com contraste WCAG AA (`Dicas` em `--color-secondary-800`, empilhamento de `.statColumns` em `≤ 480px`), cache em `sessionStorage` (30s), filtro por permissões do usuário e tratamento de resposta não-JSON. 318 linhas.
 
 **AdminAudit.js** (`AdminAudit.js`) — Histórico global de auditoria. Busca local, filtro por data (datetime-local), paginação server-side (50 itens/página), exportação CSV, tratamento de sessão expirada (401). 179 linhas.
 
@@ -97,7 +97,7 @@ Adaptadores que delegam para os componentes base da UI, mantendo a API específi
 
 **BackupManager.js** (`Managers/BackupManager.js`) — Gerenciamento de backups. Exibe último backup, criação manual com modal de confirmação. 152 linhas.
 
-**CacheManager.js** (`Managers/CacheManager.js`) — Gerenciamento de cache Redis. Limpeza com confirmação, métricas de status (conexão, erros, fallbacks). 143 linhas.
+**CacheManager.js** (`Managers/CacheManager.js`) — Gerenciamento de cache Redis. Limpeza com confirmação, métricas de status (conexão, erros, fallbacks), sem estilos inline estáticos (usa classes de `misc.module.css`). 147 linhas.
 
 ### 1.9 Barrel e Estilos
 
@@ -108,13 +108,14 @@ Adaptadores que delegam para os componentes base da UI, mantendo a API específi
 | Arquivo | Propósito |
 |---------|-----------|
 | `login.module.css` | Estilos do formulário de login e painel admin (`withAdminAuth.js`). |
-| `dashboard.module.css` | Cards de estatística, gráfico de barras, grid responsivo (`AdminDashboard.js`). |
+| `dashboard.module.css` | Cards de estatística (`.statCardWide`, `.statColumns` com empilhamento em `≤ 480px`), gráfico de barras AA, grid responsivo (`AdminDashboard.js`). |
 | `crud.module.css` | Tabela, formulário, botões de ação, paginação, status badges, skeleton loading, form Actions (`AdminCrudBase.js`, `AdminMusicas.js`). |
-| `AdminSales.module.css` | Estilos da aba Gestão de Vendas (`AdminSales.js`, 282 linhas): subabas horizontais, cabeçalho e ações (`Sincronizar MP`, `Expirar vencidos`, `Exportar CSV`), filtros, selos semânticos, alerta `.modalWarningBox` (`needs_manual_refund`) e bloco `.refundOptionBox`. |
+| `adminPosts.module.css` | Estilos de categorias/formulário em `AdminPosts` (116 linhas, incluindo `.categoryHint` em `--color-text-secondary`). |
+| `AdminSales.module.css` | Estilos da aba Gestão de Vendas (`AdminSales.js`, 335 linhas): subabas horizontais (`.subTabButton` `--border-radius-lg`), busca com lupa e botão limpar (`.searchWrapper`, `.clearSearchButton`), filtros e foco com `border-color: var(--color-primary-500)`, cabeçalho e ações (`Sincronizar MP`, `Expirar vencidos`, `Exportar CSV`), selos semânticos, alerta `.modalWarningBox` (`needs_manual_refund`, `--border-radius-lg`) e bloco `.refundOptionBox`. |
 | `tabs.module.css` | Abas, painel de abas, indicador ativo, ícones (`AdminUsers.js`). |
 | `permissions.module.css` | Checkboxes de permissões, grid de permissões, badges (`AdminRolesTab.js`). |
 | `form.module.css` | Grupos de formulário, inputs, preview de vídeo/URL (`ToggleField.js`, `UrlField.js`, `ImageUploadField.js`). |
-| `misc.module.css` | Botões compartilhados, sub navegação, placeholders, mensagens de erro/sucesso, estados vazios, preview, textarea, embed Spotify. |
+| `misc.module.css` | Botões compartilhados, sub navegação, placeholders, mensagens de erro/sucesso, estados vazios, preview, textarea, embed Spotify e estados de `CacheManager`. |
 
 ---
 
@@ -126,11 +127,11 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ### 2.1 Blog
 
-**BlogSection.js** (`Blog/BlogSection.js`) — Seção pública de listagem de posts. Consome `/api/posts?response=v1`, parâmetro `limit`, adaptação de formato de resposta (com fallbacks), cache 1 min. 78 linhas.
+**BlogSection.js** (`Blog/BlogSection.js`) — Seção pública de listagem de posts. Consome `/api/posts?response=v1`, parâmetro `limit`, adaptação de formato de resposta (com fallbacks), link `"Ver todas as postagens"` padronizado em `Blog.module.css` (sem `style={{` estático, `min-height: 44px`, `--border-radius-lg` e foco duplo), cache 1 min. 72 linhas.
 
-**PostCard.js** (`Blog/PostCard.js`) — Card de post usando `BaseCard`. Imagem, categorias, data, link com `aria-label`. 52 linhas.
+**PostCard.js** (`Blog/PostCard.js`) — Card de post usando `BaseCard`, sem estilos inline estáticos. Imagem, categorias, data, link com `aria-label`. 50 linhas.
 
-**Blog.module.css** (`Blog/styles/`) — Grid responsivo, categorias, título, excerpt, footer.
+**Blog.module.css** (`Blog/styles/`) — Grid responsivo, categorias, título, excerpt, footer, link `"Ver todas as postagens"`.
 
 ### 2.2 ContentTabs
 
@@ -140,19 +141,19 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ### 2.3 Music
 
-**MusicGallery.js** (`Music/MusicGallery.js`) — Galeria de músicas. Busca com debounce (300ms), ordenação, paginação (6 itens/página), adaptação de formato de resposta. 193 linhas.
+**MusicGallery.js** (`Music/MusicGallery.js`) — Galeria de músicas. Busca com debounce (300ms), ordenação, paginação (6 itens/página) com rolagem suave ao topo na troca explícita de página, adaptação de formato de resposta. 204 linhas.
 
-**MusicCard.js** (`Music/MusicCard.js`) — Card com player Spotify via `LazyIframe`. Botão "Ouvir no Spotify". 63 linhas.
+**MusicCard.js** (`Music/MusicCard.js`) — Card com player Spotify via `LazyIframe`, sem estilos inline estáticos. Botão "Ouvir no Spotify". 62 linhas.
 
 **MusicCard.module.css / MusicGallery.module.css** (`Music/styles/`) — Grid 3 colunas, search, sort, pagination, responsivo.
 
 ### 2.4 Video
 
-**VideoGallery.js** (`Video/VideoGallery.js`) — Galeria de vídeos. Busca com debounce, ordenação (4 opções), paginação, botão "Tentar novamente" (refetch). 175 linhas.
+**VideoGallery.js** (`Video/VideoGallery.js`) — Galeria de vídeos. Busca com debounce, ordenação (4 opções), paginação com rolagem suave ao topo na troca explícita de página, botão "Tentar novamente" (refetch). 183 linhas.
 
-**VideoCard.js** (`Video/VideoCard.js`) — Card com player YouTube via `LazyIframe`. Thumbnail personalizada ou padrão, descrição truncada (3 linhas). 53 linhas.
+**VideoCard.js** (`Video/VideoCard.js`) — Card com player YouTube via `LazyIframe` e estilos migrados para `VideoCard.module.css` (sem `style={{` estático). Thumbnail personalizada ou padrão, descrição truncada (3 linhas). 78 linhas.
 
-**VideoGallery.module.css** (`Video/styles/`) — Grid, search, sort, pagination, responsivo.
+**VideoCard.module.css / VideoGallery.module.css** (`Video/styles/`) — Cartão de vídeo (`VideoCard.module.css`, 58 linhas), grid, search, sort, pagination, responsivo.
 
 ### 2.5 Products
 
@@ -160,15 +161,13 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 **ProductCard.js** (`Products/ProductCard.js`) — Card com carrossel de imagens, lightbox, link de compra. Otimizado com `React.memo`, Schema.org Product. 171 linhas.
 
-**ProductCard.module.css** (`Products/styles/`) — Card media, navegação, lightbox, links de loja.
+**ProductCard.module.css** (`Products/styles/`) — Card media, navegação, lightbox, links de loja, botão esgotado e textos auxiliares em `--color-text-secondary`.
 
 **ProductList.module.css** (`Products/styles/`) — Hover/foco dos botões de filtro e paginação (`.filterButton`, `.pageButton`, `.pageButtonActive`).
 
-**styles.js** (`Products/styles.js`) — Estilos compartilhados JS (`inputStyle`, `buttonBaseStyle`).
-
 ### 2.6 Testimonials (Dicas do Dia)
 
-**index.js** (`Testimonials/index.js`) — Seção "Dicas do Dia". Carrossel ou grid, navegação com setas, paginação, scroll detection com debounce; exibe apenas os dados retornados pela API `/api/dicas` e oculta a seção quando não há dicas cadastradas. 157 linhas.
+**index.js** (`Testimonials/index.js`) — Seção "Dicas do Dia", sem estilos inline estáticos. Carrossel ou grid, navegação com setas, paginação, scroll detection com debounce; exibe apenas os dados retornados pela API `/api/dicas` e oculta a seção quando não há dicas cadastradas. 142 linhas.
 
 **Testimonials.module.css** (`Testimonials/`) — Estilos da seção, cards, navegação, hover effects, responsivo.
 
@@ -176,10 +175,11 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 | Componente | Arquivo | Propósito |
 |------------|---------|-----------|
-| Blog | `Blog/styles/Blog.module.css` | Grid responsivo, categorias, título, excerpt, footer. |
+| Blog | `Blog/styles/Blog.module.css` | Grid responsivo, categorias, título, excerpt, footer, CTA "Ver todas as postagens". |
 | ContentTabs | `ContentTabs/styles/ContentTabs.module.css` | Estilos de abas, container com `min-height: 600px` para evitar layout shift, responsivo. |
 | MusicCard | `Music/styles/MusicCard.module.css` | Estilos do card de música. |
 | MusicGallery | `Music/styles/MusicGallery.module.css` | Grid 3 colunas, search, sort, pagination, responsivo. |
+| VideoCard | `Video/styles/VideoCard.module.css` | Estilos do card de vídeo (altura, título, descrição e link externo "Assistir no YouTube"). |
 | VideoGallery | `Video/styles/VideoGallery.module.css` | Grid, search, sort, pagination, responsivo. |
 | ProductCard | `Products/styles/ProductCard.module.css` | Card media, navegação, lightbox, links de loja. |
 | ProductList | `Products/styles/ProductList.module.css` | Hover/foco dos botões de filtro e paginação (`.filterButton`, `.pageButton`, `.pageButtonActive`). |
@@ -187,7 +187,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ### 2.8 Estilos JS Compartilhados
 
-**styles.js** (`Products/styles.js`) — Estilos compartilhados JS (`inputStyle`, `buttonBaseStyle`). Define tokens de paddingLeft permitidos para evitar injeção de CSS. Usado por `ProductCard.js` e `ProductList.js`.
+**`Products/styles.js` [removido em ADR-0036]:** arquivo legado sem consumidores removido durante a migração completa das galerias e controles de filtros para CSS Modules (`ProductCard.module.css` / `ProductList.module.css`).
 
 ---
 
@@ -359,7 +359,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 **Localização:** `UI/StateMessages.js`
 
-**Propósito:** Estados padronizados: `LoadingMessage` (spinner dots), `ErrorMessage` (❌), `EmptyMessage`. 69 linhas.
+**Propósito:** Estados padronizados (`LoadingMessage` com spinner dots, `ErrorMessage` com ícone SVG acessível e contraste AA em `--color-error-700`, `EmptyMessage` em `--color-text-secondary`), estilizados exclusivamente via `UI/StateMessages.module.css` (sem `style={{` estático). 77 linhas.
 
 ### 6.12 icons.js
 
@@ -383,8 +383,10 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 | Button | `UI/Button.module.css` |
 | Input | `UI/Input.module.css` |
 | Modal | `UI/Modal.module.css` |
+| Pagination | `UI/Pagination.module.css` (inclui `.totalInfo` em `--color-text-secondary`) |
 | Select | `UI/Select.module.css` |
 | Spinner | `UI/Spinner.module.css` |
+| StateMessages | `UI/StateMessages.module.css` (31 linhas; `.error` em `--color-error-700`, contraste `5,94:1` AA) |
 | TextArea | `UI/TextArea.module.css` |
 | Toast | `UI/Toast.module.css` |
 
@@ -400,4 +402,4 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 - Todos os módulos CSS foram documentados individualmente neste documento.
 - As contagens de linhas foram verificadas via `wc -l` e corrigidas quando necessário.
 - O arquivo `criticalCSSRaw.js` usa extensão `.js` para evitar conflitos com o Turbopack do Next.js.
-- `Products/styles.js` implementa validação de tokens de paddingLeft para evitar injeção de CSS.
+- `Products/styles.js` foi removido em `ADR-0036`; todos os filtros e cartões de produtos utilizam CSS Modules e tokens de `variables.css`.
