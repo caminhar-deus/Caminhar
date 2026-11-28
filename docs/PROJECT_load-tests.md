@@ -23,18 +23,18 @@
 
 Documentação detalhada de todos os arquivos da pasta `load-tests/`, descrevendo o que cada um faz, seu propósito, estrutura, arquivos acionados/relacionados e endpoints utilizados. Os scripts estão organizados em 4 subpastas: `helpers/`, `performance/`, `functional/` e `security/`.
 
-A pasta `load-tests/` contém **37 arquivos** (30 scripts de teste k6 + 7 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
+A pasta `load-tests/` contém **38 arquivos** (**31 scripts** de teste k6 + 7 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
 
 | Subpasta | Qtd | Descrição |
 |----------|-----|-----------|
 | **helpers/** | 7 | Módulos compartilhados (auth, config, network, profiles, report, resource-test-runner, sleep) |
 | **performance/** | 17 | Testes de carga, stress, performance e fluxos combinados |
 | **functional/** | 9 | Testes funcionais e de validação |
-| **security/** | 4 | Testes de segurança (rate limit, spoofing, DDoS, login negativo) |
+| **security/** | 5 | Testes de segurança (rate limit, spoofing, DDoS, login negativo, checkout/webhook Mercado Pago) |
 
 **Arquivos fora da pasta** que integram o ecossistema de load tests:
 - `load-tests.yml` — Workflow CI/CD do GitHub Actions (em `.github/workflows/`)
-- `scripts/run-all-load-tests-sequentially.js` — Orquestrador que executa todos os 30 scripts
+- `scripts/run-all-load-tests-sequentially.js` — Orquestrador que executa todos os 31 scripts
 - `scripts/lib/k6-output-parser.js` — Módulo novo (08/10/2026) de parsing da saída do k6 para o relatório de falhas do orquestrador (checks reprovados, thresholds violados, erros de console)
 - `scripts/run-load-tests.sh` — Wrapper bash do orquestrador
 - `scripts/clean-load-test-posts.js` — Limpeza de posts de teste no banco
@@ -91,6 +91,7 @@ A pasta `load-tests/` contém **37 arquivos** (30 scripts de teste k6 + 7 módul
     ├── ddos-search-test.js
     ├── ip-spoofing-test.js
     ├── login-negative-test.js
+    ├── mercadopago-security-test.js
     └── rate-limit-test.js
 ```
 
@@ -1250,6 +1251,35 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 
 ---
 
+### `mercadopago-security-test.js`
+
+**Nome do arquivo:** `mercadopago-security-test.js`
+
+**Caminho:** `/load-tests/security/mercadopago-security-test.js`
+
+**Arquivos acionados/relacionados:**
+- `helpers/config.js` — `BASE_URL`
+- `helpers/report.js` — `generateReport()` (`mercadopago_security_test`)
+- `scripts/clear-test-auth-locks.js` — limpeza pós-bateria das chaves `rate_limit:api:public:checkout:*` e `rate_limit:api:webhooks:mercadopago:*`
+- Módulos k6: `k6/http`, `k6` (`check`), `k6/metrics` (`Counter`, `Rate`)
+
+**Resumo:**
+Adicionado em `26/11/2026` ([ADR-0044](adr/0044-mercadopago-hardening-webhook-idempotency-and-modality-isolation.md)) e validado no CI em `27/11/2026` (`Load Tests (k6)` Run `#55`, ID `46011348563`). Verifica sob carga controlada (`10 VUs` com estágios `3s` / `10s` / `2s`) que os endpoints da integração Mercado Pago aplicam validação, autenticação e rate limit sem erros `5xx` nem impacto no banco/gateway:
+
+- **IPs simulados isolados:** `203.0.113.32` (`GET`/`POST /api/checkout`) e `203.0.113.33` (`POST /api/webhooks/mercadopago`) via `X-Forwarded-For`
+- **Cenário 1:** `GET /api/checkout?productId=abc` — espera validação `400` ou rate limit `429` (incrementa `mp_checkout_rate_limit_hits`)
+- **Cenário 2:** `POST /api/checkout` sem sessão de visitante — espera bloqueio `401`
+- **Cenário 3:** `POST /api/webhooks/mercadopago` com assinatura `x-signature` falsa — espera rejeição `401`/`400` ou rate limit `429` (incrementa `mp_webhook_rate_limit_hits`)
+- **Thresholds inline (`options`):** `http_req_duration: ['p(95)<2000']`, `checks: ['rate>0.95']`, `mp_security_errors_500: ['rate==0']`
+- `handleSummary()` — Emite resumo no log e gera relatório JSON `mercadopago_security_test` via `generateReport()`
+
+**Endpoints chamados:**
+- `GET /api/checkout?productId=abc`
+- `POST /api/checkout`
+- `POST /api/webhooks/mercadopago`
+
+---
+
 ## Arquivos Relacionados Fora da Pasta `load-tests/`
 
 ### `load-tests.yml` (CI/CD)
@@ -1258,7 +1288,7 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 
 **O que faz:** Workflow do GitHub Actions que executa a suíte completa de testes de carga em CI.
 
-**Propósito:** Automatizar a execução de todos os 30 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
+**Propósito:** Automatizar a execução de todos os 31 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
 
 **Estrutura do workflow:**
 1. **Schedule:** execução automática diária agendada para as **04:17 UTC** (`cron: '17 4 * * *'` — o minuto 17 é deliberado, para não disputar o pico de todos os crons de minuto 0; o valor do cron foi **mantido**). **A execução observada não começa nesse horário:** nas 15 execuções agendadas medidas (05–19/10/2026) o atraso foi de +4h19 a +7h46, mediana +6h34 — horas, nunca minutos, e nenhuma execução teve pontualidade aceitável. A causa raiz (fila de agendamento do próprio GitHub) **não foi confirmada**, apenas delimitada por essa evidência. **A tabela completa das 15 execuções e o critério de medição estão no comentário do próprio `.github/workflows/load-tests.yml`, que é a fonte deste dado** — não são replicados aqui.
@@ -1704,14 +1734,14 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 
 **O que faz:** Script orquestrador que executa TODOS os scripts de teste de carga (k6) sequencialmente, incluindo verificação de thresholds e agregação de resultados.
 
-**Propósito:** Automatizar a execução de todos os 30 scripts em 4 categorias (performance, functional, security, stress), com verificação de servidor, agregação de resultados e limpeza de dados de teste.
+**Propósito:** Automatizar a execução de todos os **31 scripts** em 4 categorias (performance, functional, security, stress), com verificação de servidor, agregação de resultados e limpeza de dados de teste.
 
 **Estrutura:**
 - **Verificação de servidor** — Requisição HTTP para `BASE_URL` com timeout de 5s
 - **4 categorias:**
   - `🧪 Performance Tests` — 16 scripts
   - `🔍 Functional Tests` — 9 scripts
-  - `🔒 Security Tests` — 4 scripts
+  - `🔒 Security Tests` — 5 scripts (incluindo `mercadopago-security-test.js`, `ADR-0044`)
   - `🔥 Stress Tests` — 1 script (`stress-test-combined`), categoria criada em 14/10/2026 quando o script saiu da Performance para virar o último da bateria (ver "Ordem de execução" abaixo)
 - **Cleanup pós-categoria:**
   - Após performance: `node scripts/clean-load-test-posts.js`
@@ -1824,7 +1854,7 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 **Estrutura:**
 - IPs limpos: `203.0.113.1` (IP fixo do rate-limit-test), `127.0.0.1`, `::1`
 - Remove chaves `rate_limit:{ip}` e `rate_limit:block_count:{ip}` do Redis
-- Remove chaves de cache `api:auth:login:*`
+- Remove chaves de cache/rate limit `api:auth:login:*`, `rate_limit:api:webhooks:mercadopago:*` e `rate_limit:api:public:checkout:*` (`ADR-0044`)
 - Exibe dica para reiniciar servidor se persistirem bloqueios
 
 ---
@@ -1941,9 +1971,9 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 
 3. **Configuração centralizada** — Todos os scripts importam `BASE_URL` de `helpers/config.js` em vez de declarar localmente.
 
-4. **Perfis de carga padronizados** — A maioria dos scripts usa `getProfile()` de `helpers/profiles.js` para definir VUs, duração e thresholds, garantindo consistência. Exceções que definem `options` inline: `performance/musicas-search-test.js`, `performance/authenticated-flow-test.js`, `performance/create-post-flow.js`, `performance/cache-performance-test.js`, `functional/backup-verification-test.js`, `functional/upload-flow-test.js`, `functional/video-validation-test.js` e `security/login-negative-test.js`. Atenção: quando um perfil é usado com `thresholds` explícitos em `overrides`, os thresholds do perfil base são **substituídos por completo** (comportamento de `getProfile()`).
+4. **Perfis de carga padronizados** — A maioria dos scripts usa `getProfile()` de `helpers/profiles.js` para definir VUs, duração e thresholds, garantindo consistência. Exceções que definem `options` inline: `performance/musicas-search-test.js`, `performance/authenticated-flow-test.js`, `performance/create-post-flow.js`, `performance/cache-performance-test.js`, `functional/backup-verification-test.js`, `functional/upload-flow-test.js`, `functional/video-validation-test.js`, `security/login-negative-test.js` e `security/mercadopago-security-test.js`. Atenção: quando um perfil é usado com `thresholds` explícitos em `overrides`, os thresholds do perfil base são **substituídos por completo** (comportamento de `getProfile()`).
 
-5. **Relatórios padronizados** — Todos os 30 scripts da bateria usam `generateReport()` de `helpers/report.js` (direta ou indiretamente via `resource-test-runner.js`) para gerar relatórios JSON em `./reports/k6-summaries/`, com sanitização automática do token JWT. **Até 17/10/2026 isso não era verdade:** 4 scripts (`performance/create-post-flow.js`, `performance/cache-warmup-test.js`, `performance/cache-performance-test.js` e `functional/health-check.js`) não tinham `handleSummary()` e não gravavam relatório nenhum — o que explicava o artifact de 28 arquivos para 30 scripts. O `performance/stress-test-combined.js` é o único que gera também um relatório HTML adicional.
+5. **Relatórios padronizados** — Todos os **31 scripts** da bateria usam `generateReport()` de `helpers/report.js` (direta ou indiretamente via `resource-test-runner.js`) para gerar relatórios JSON em `./reports/k6-summaries/`, com sanitização automática do token JWT. **Até 17/10/2026 isso não era verdade:** 4 scripts (`performance/create-post-flow.js`, `performance/cache-warmup-test.js`, `performance/cache-performance-test.js` e `functional/health-check.js`) não tinham `handleSummary()` e não gravavam relatório nenhum — o que explicava o artifact de 28 arquivos para 30 scripts. O `performance/stress-test-combined.js` é o único que gera também um relatório HTML adicional.
 
 6. **Sleep randomizado** — Os scripts usam `randomSleep()` de `helpers/sleep.js` para simular comportamento real de usuário, com faixas distintas por tipo de operação:
    - Consulta leve (GET pública): 0.5s – 3s
@@ -1973,6 +2003,7 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 | **Settings** | `GET /api/settings` |
 | **Backup** | `GET /api/admin/backups` |
 | **Upload** | `POST /api/upload-image` |
+| **Checkout / Webhook (Mercado Pago)** | `GET/POST /api/checkout`, `POST /api/webhooks/mercadopago` |
 
 ### Thresholds por Perfil
 
@@ -2000,6 +2031,6 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 
 ---
 
-> **Data da análise:** 23/09/2026 (análise anterior: 01/08/2026)
-> **Total de scripts analisados:** 37 arquivos na pasta `load-tests/` (30 scripts k6 + 7 helpers) + 13 arquivos relacionados fora da pasta
+> **Data da análise:** 23/09/2026 (análise anterior: 01/08/2026; **última atualização pontual:** 28/11/2026 — inclusão de `security/mercadopago-security-test.js` e limpeza Redis MP em `scripts/clear-test-auth-locks.js`, `ADR-0044`)
+> **Total de scripts analisados:** **38 arquivos** na pasta `load-tests/` (**31 scripts k6** + **7 helpers**) + 13 arquivos relacionados fora da pasta
 > **Processo:** cada arquivo foi analisado individualmente e validado por releitura (análise → atualização → releitura → validação), conforme processo obrigatório de auditoria

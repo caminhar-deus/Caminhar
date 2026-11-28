@@ -1,7 +1,8 @@
 # Análise de Componentes — `/components`
 
 > **Data:** 23/09/2026  
-> **Última atualização completa:** 23/09/2026
+> **Última atualização completa:** 23/09/2026  
+> **Último acréscimo pontual:** 28/11/2026 — inclusão de `AdminSales.js` e `AdminSales.module.css` (Gestão de Vendas — Modalidade B) e atualização de `AdminProducts.js` (`modality=external`).
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo, com base na análise atual do código.
 
 ---
@@ -49,7 +50,9 @@ Todos delegam ao `AdminCrudBase`, configurando campos, colunas e validação.
 
 **AdminVideos.js** (`AdminVideos.js`) — Gestão de vídeos com integração YouTube. Botão "Puxar Dados", preview com `LazyIframe`, paginação (10 itens/página), capa personalizada opcional. 225 linhas.
 
-**AdminProducts.js** (`AdminProducts.js`) — Gestão de produtos com integração Mercado Livre. Botão "Puxar Dados", campo `image_url` com múltiplas URLs (uma por linha, suporta carrossel), validação Zod. 168 linhas.
+**AdminProducts.js** (`AdminProducts.js`) — Gestão de Produtos (Modalidade A — links externos de marketplace, 217 linhas). Filtra estritamente `modality=external`, exige `link` obrigatório no schema Zod, possui botão `"Puxar Dados"` (Mercado Livre/Amazon/Shopee) e campo `image_url` com múltiplas URLs (uma por linha para carrossel).
+
+**AdminSales.js** (`AdminSales.js`) — Aba #6 **Gestão de Vendas** (Modalidade B — venda interna com Checkout Transparente do Mercado Pago, `ADR-0037` / `ADR-0044` / `ADR-0045`, 913 linhas). Organizada em 2 subabas horizontais (`Pedidos` e `Produtos Internos` via `AdminCrudBase`), traz busca server-side, 3 filtros (`status de pagamento` com os 8 estados, `status do pedido` e `meio de pagamento` em pt-BR), selos semânticos separados, pré-carregamento da contagem da subaba `Pedidos`, botões `"Sincronizar MP"`, `"Expirar vencidos"` (`action: 'expire_abandoned'`) e `"Exportar CSV"`, guarda unificada de HTTP `401` (`ADR-0043`) e modal `"Gerenciar Pedido"` exibindo meio/bandeira real (`formatGatewayPaymentDetail`), alerta visual de `needs_manual_refund` e checkbox opt-in explícito para estorno automático via Orders API (`refund_payment: true`).
 
 **AdminDicas.js** (`AdminDicas.js`) — Gestão de Dicas no painel administrativo (alimenta o bloco público "Dicas do Dia"). Delega ao `AdminCrudBase`. Documentação JSDoc detalhada. 123 linhas.
 
@@ -107,6 +110,7 @@ Adaptadores que delegam para os componentes base da UI, mantendo a API específi
 | `login.module.css` | Estilos do formulário de login e painel admin (`withAdminAuth.js`). |
 | `dashboard.module.css` | Cards de estatística, gráfico de barras, grid responsivo (`AdminDashboard.js`). |
 | `crud.module.css` | Tabela, formulário, botões de ação, paginação, status badges, skeleton loading, form Actions (`AdminCrudBase.js`, `AdminMusicas.js`). |
+| `AdminSales.module.css` | Estilos da aba Gestão de Vendas (`AdminSales.js`, 282 linhas): subabas horizontais, cabeçalho e ações (`Sincronizar MP`, `Expirar vencidos`, `Exportar CSV`), filtros, selos semânticos, alerta `.modalWarningBox` (`needs_manual_refund`) e bloco `.refundOptionBox`. |
 | `tabs.module.css` | Abas, painel de abas, indicador ativo, ícones (`AdminUsers.js`). |
 | `permissions.module.css` | Checkboxes de permissões, grid de permissões, badges (`AdminRolesTab.js`). |
 | `form.module.css` | Grupos de formulário, inputs, preview de vídeo/URL (`ToggleField.js`, `UrlField.js`, `ImageUploadField.js`). |

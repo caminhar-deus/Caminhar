@@ -32,6 +32,7 @@
    - [5.9 `lib/domain/shared-pagination.js`](#59-libdomainshared-paginationjs)
    - [5.10 `lib/domain/videos.js`](#510-libdomainvideosjs)
    - [5.11 `lib/domain/customers.js`](#511-libdomaincustomersjs)
+   - [5.12 `lib/domain/orders.js`](#512-libdomainordersjs)
 6. [Subpasta `lib/infra/`](#6-subpasta-libinfra)
    - [6.1 `lib/infra/db.js`](#61-libinfradbjs)
    - [6.2 `lib/infra/logger.js`](#62-libinfraloggerjs)
@@ -40,9 +41,13 @@
 7. [Subpasta `lib/media/`](#7-subpasta-libmedia)
    - [7.1 `lib/media/spotify.js`](#71-libmediaspotifyjs)
    - [7.2 `lib/media/youtube.js`](#72-libmediayoutubejs)
-8. [Subpasta `lib/seo/config`](#8-subpasta-libseo)
-   - [8.1 `lib/seo/configconfig.js`](#81-libseoconfigjs)
-9. [Resumo Consolidado](#9-resumo-consolidado)
+8. [Subpasta `lib/payment/`](#8-subpasta-libpayment)
+   - [8.1 `lib/payment/mercadopago.js`](#81-libpaymentmercadopagojs)
+   - [8.2 `lib/payment/payment-status-messages.js`](#82-libpaymentpayment-status-messagesjs)
+   - [8.3 `lib/payment/reconcile-orders.js`](#83-libpaymentreconcile-ordersjs)
+9. [Subpasta `lib/seo/`](#9-subpasta-libseo)
+   - [9.1 `lib/seo/config.js`](#91-libseoconfigjs)
+10. [Resumo Consolidado](#10-resumo-consolidado)
 
 ---
 
@@ -379,19 +384,21 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 **Localização:** `/lib/domain/products.js`
 
-**Propósito:** Camada de domínio para operações com produtos — CRUD completo com paginação, filtros e formatação de moeda.
+**Propósito:** Camada de domínio para operações com produtos (Modalidade A `'external'` e Modalidade B `'internal'`) — CRUD completo com paginação, filtros, isolamento por modalidade e formatação de moeda.
 
 **Funções exportadas:**
 
 | Função | Descrição |
 |--------|-----------|
-| `getPaginatedProducts(page, limit, filters)` | Produtos públicos paginados. Filtros: `search` (nome/descrição), `minPrice`, `maxPrice`. Formata `formatted_price` (R$) via `Intl.NumberFormat('pt-BR')` |
-| `getAllProducts(page, limit)` | Todos os produtos paginados (admin). Formata preço igualmente |
-| `createProduct(data)` | Cria produto com cálculo automático de `MAX(position)` + 1 — **fora** de transação (ver UPGRADE 2.2) |
-| `updateProduct(id, data)` | Atualização parcial — só inclui campos fornecidos. Adiciona `updated_at` condicionalmente. Lança `NO_DATA_TO_UPDATE` se vazio |
-| `deleteProduct(id)` | Remove produto por ID |
+| `getPaginatedProducts(page, limit, filters, sort)` | Produtos públicos paginados. Filtros: `search` (nome/descrição), `minPrice`, `maxPrice`, `category`, `modality` (`'internal'`/`'external'`). Suporta `sort` (`default`, `positioned`, `oldest`, `price_asc`, `price_desc`). Formata `formatted_price` (R$) via `Intl.NumberFormat('pt-BR')` |
+| `getProductCategories()` | Lista ordenada de categorias distintas de produtos publicados para o filtro da vitrine |
+| `getAllProducts(page, limit, search, modality)` | Todos os produtos paginados (admin), ordenados por `position ASC, id ASC`, com filtro opcional por `search` e `modality` (`'external'` \| `'internal'`) |
+| `createProduct(data)` | Cria produto com cálculo automático de `MAX(position)` + 1, suportando `modality`, `stock`, `shipping_type` e `shipping_cost` |
+| `updateProduct(id, data, options)` | Atualização parcial com suporte a `options.expectedModality` (isolamento estrito entre Modalidade A e Modalidade B — ADR-0044). Lança `NO_DATA_TO_UPDATE` se vazio |
+| `deleteProduct(id, options)` | Remove produto por ID aplicando filtro `options.expectedModality` quando informado (ADR-0044) |
+| `normalizePrice` | Reexportado de `lib/api/utils.js` para normalização monetária client-safe |
 
-**Observações:** Este módulo **não** utiliza `shared-pagination.js` — a paginação é implementada inline com queries manuais (ver UPGRADE 2.1). `createProduct` não aceita `options` (inconsistente com `createMusica`, `createVideo`, `createPost` — ver UPGRADE 2.2). A formatação de moeda é duplicada entre `getPaginatedProducts` e `getAllProducts` (ver UPGRADE 2.4).
+**Observações:** Este módulo **não** utiliza `shared-pagination.js` — a paginação é implementada inline com queries manuais (ver UPGRADE 2.1). `createProduct` não aceita `options.client` (ver UPGRADE 2.2). A formatação de moeda é duplicada entre `getPaginatedProducts` e `getAllProducts` (ver UPGRADE 2.4).
 
 ---
 
@@ -490,6 +497,31 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 | `consumeCustomerRefreshToken(tokenHash)` | Consome atomicamente refresh token válido (`UPDATE ... SET revoked = true ... RETURNING`) para rotação de uso único |
 | `revokeCustomerRefreshToken(tokenHash)` | Revoga um refresh token específico pelo seu hash SHA-256 |
 | `revokeAllCustomerRefreshTokens(customerId)` | Revoga em lote todos os refresh tokens ativos de um visitante |
+
+---
+
+### 5.12 `lib/domain/orders.js`
+
+**Localização:** `/lib/domain/orders.js`
+
+**Propósito:** Camada de domínio de pedidos internos (Modalidade B — `orders` e `payment_webhook_events`), concentrando reserva atômica de estoque (`SELECT ... FOR UPDATE`), máquina de estados financeiros, reconciliação, processamento idempotente de webhooks, estorno via `/admin` e expiração de checkouts abandonados (`ADR-0037` / `ADR-0039` / `ADR-0044` / `ADR-0045`).
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `calculateShippingCost(product, quantity)` | Calcula o frete do pedido conforme `shipping_type` (`free`, `fixed`, `calculated`) e `shipping_cost` |
+| `createInternalOrder({ customerId, productId, quantity, deliveryAddress, paymentMethod })` | Reserva o produto interno em transação com `SELECT ... FOR UPDATE` (`PRODUCT_NOT_FOUND`, `PRODUCT_NOT_INTERNAL`, `INSUFFICIENT_STOCK`), debita `products.stock` e cria o pedido `awaiting_payment` |
+| `attachOrderPaymentInfo(orderId, paymentResult)` | Associa `mp_payment_id`, `mp_payload` e status inicial ao pedido; em recusa/cancelamento imediato, restaura estoque atomicamente uma única vez (`stock_restored = true`) |
+| `cancelFailedCheckoutOrder(orderId, reason)` | Cancela pedido cujo início no gateway falhou e devolve o estoque reservado em transação única (`FOR UPDATE`) |
+| `getCustomerOrders(customerId)` | Lista pedidos do visitante autenticado (`JOIN products`), normalizando `ticket_url` e `mp_payload` |
+| `getCustomerOrderById(orderId, customerId)` | Retorna um pedido específico pertencente ao visitante (`WHERE o.id = $1 AND o.customer_id = $2`) |
+| `getAdminOrders({ page, limit, search, paymentStatus, orderStatus, paymentMethod })` | Listagem administrativa paginada com filtros por texto, status de pagamento, status do pedido e meio de pagamento |
+| `getAdminOrderById(orderId)` | Consulta detalhada de um pedido com dados do comprador (`customers`) antes de ações administrativas como estorno |
+| `updateAdminOrder(orderId, { orderStatus, trackingCode, refundResult })` | Atualiza rastreio, andamento logístico e/ou consolidação de estorno (`refundResult`), impondo trava `ORDER_CANCELLED_CANNOT_REOPEN`, gravando `needs_manual_refund` quando aplicável e devolvendo estoque uma única vez sob `FOR UPDATE` |
+| `syncOrderPaymentStatus(orderId, paymentDetails)` | Atualiza o pedido a partir da reconciliação ativa (`reconcilePendingOrders`) aplicando a máquina de estados e proteção terminal |
+| `processMercadoPagoWebhookEvent({ eventId, eventType, mpPaymentId, externalReference, paymentStatus, paymentPayload })` | Localiza e trava o pedido **antes** de gravar `event_key` em `payment_webhook_events` (se `!current`, responde `{ orderNotFound: true }` sem queimar `event_key` — HTTP `503` retryable), protege `refunded`/`charged_back` contra downgrade, trata aprovação tardia sobre pedido cancelado e devolve estoque de forma idempotente |
+| `expireAbandonedOrders({ pixMaxAgeMinutes, ticketMaxAgeMinutes, defaultMaxAgeMinutes, limit, dryRun, now, reconcilePayment })` | Varre pedidos `awaiting_payment` além de `date_of_expiration` ou TTL por modalidade (`24h` PIX/cartão; `120h` boleto), reconcilia antes com `reconcilePayment` (impedindo falso cancelamento se já estiver `approved` e falhando fechado em erro de consulta) e restaura estoque sob `FOR UPDATE` |
 
 ---
 
@@ -664,12 +696,71 @@ Utilitários de extração de IDs de plataformas de mídia.
 
 ---
 
-## 8. Subpasta 
+## 8. Subpasta `lib/payment/`
 
-**Estado (ADR-0032):**  removido. De  restam apenas  e  (usados por  e fallback do blog). As funções utilitárias mortas (, , , , , , , ) foram podadas.
+Camada de integração com o Checkout Transparente do Mercado Pago (Orders API `/v1/orders`), validação de assinaturas HMAC v2, formatação/validação de pagamentos e reconciliação ativa.
+
+### 8.1 `lib/payment/mercadopago.js`
+
+**Localização:** `/lib/payment/mercadopago.js`
+
+**Propósito:** Cliente servidor para a Orders API `/v1/orders` do Mercado Pago, consulta autoritativa de status, estorno total e validação criptográfica HMAC-SHA256 v2 de webhooks (`ADR-0038` / `ADR-0040` / `ADR-0044` / `ADR-0045`).
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `mapMercadoPagoStatus(rawStatus, rawDetail)` | Normaliza estados da Orders API (`processed`, `action_required`, `failed`, `canceled`, `refunded`, `charged_back`, etc.) para os estados internos do pedido |
+| `selectPrimaryOrderPayment(orderData)` | Seleciona a tentativa prioritária em `orderData.transactions.payments` (priorizando `processed`/`approved`/`accredited` sobre tentativas anteriores) |
+| `createMercadoPagoPayment(params)` | Cria ordem via `POST https://api.mercadopago.com/v1/orders` (PIX, crédito, débito/pré-pago ou boleto) com `X-Idempotency-Key`, normalização de `ticket_url` e tratamento de HTTP `402` (emula localmente em sandbox quando sem `MP_ACCESS_TOKEN` fora de produção) |
+| `fetchMercadoPagoPaymentDetails(paymentId, { eventType })` | Consulta autoritativa em `GET /v1/orders/{id}` ou `/v1/payments/{id}` retornando `paymentStatus`, `rawStatus`, `mpOrderStatus`, `statusDetail`, `externalReference` e `transactionId` |
+| `verifyMercadoPagoWebhookSignature({ signatureHeader, requestIdHeader, dataId, secret, nowSeconds, maxAgeSeconds })` | Valida manifesto v2 (`id:<lower>;request-id:...;ts:...;`) com `timingSafeEqual` e janela anti-replay padrão de `±900s` (`15 min`) |
+| `refundMercadoPagoOrder(mpOrderId, { orderId, idempotencyKey })` | Solicita estorno total via `POST /v1/orders/{id}/refund` com `X-Idempotency-Key` (emula estorno em pedidos simulados/sandbox locais fora de produção) |
+
+---
+
+### 8.2 `lib/payment/payment-status-messages.js`
+
+**Localização:** `/lib/payment/payment-status-messages.js`
+
+**Propósito:** Regras compartilhadas (client + server) de feedback em pt-BR, validação de documentos, valores mínimos e formatação do detalhamento do gateway.
+
+**Exportações:**
+
+| Exportação | Descrição |
+|------------|-----------|
+| `MIN_PAYMENT_METHOD_AMOUNTS` | Mapa congelado dos valores mínimos por modalidade (`pix: 0.01`, `credit_card: 0.50`, `debit_card: 0.50`, `ticket: 4.00`) |
+| `isDebitCardEnabled(rawFlag)` | Avalia a habilitação comercial de `debit_card` via flag de ambiente (padrão `true`; `'false'` / `'0'` desabilita) |
+| `getPaymentFeedback(order)` | Traduz estado e `status_detail` do pedido para título, descrição, severidade e instruções em pt-BR (para `/checkout/[id]` e `/minha-conta`) |
+| `formatCpfCnpj(rawValue)` | Formata string numérica para máscara de CPF ou CNPJ |
+| `isValidCpfCnpjDigits(rawValue)` | Valida CPF (11 dígitos) e CNPJ (14 dígitos) pelos dois dígitos verificadores (módulo 11), rejeitando sequências repetidas |
+| `normalizeMercadoPagoTicketUrl(rawUrl)` | Converte links Sandbox `/staging/payments/` para `/sandbox/payments/`, preservando links de produção (`/payments/`) |
+| `formatGatewayPaymentDetail(paymentPayload)` | Formata meio e bandeira reais processados no Mercado Pago gravados em `mp_payload` (ex.: `Pré-pago — Elo` para `elo` / `prepaid_card`) |
+
+---
+
+### 8.3 `lib/payment/reconcile-orders.js`
+
+**Localização:** `/lib/payment/reconcile-orders.js`
+
+**Propósito:** Reconciliação ativa *pull* de pedidos transitórios (`pending`, `in_process`, `authorized`) contra a API do Mercado Pago (`ADR-0041` / `ADR-0044`).
+
+**Função exportada:**
+
+| Função | Descrição |
+|--------|-----------|
+| `reconcilePendingOrders(orders, { maxOrders, force, cooldownMs })` | Consulta até `maxOrders` (padrão `5`) pedidos elegíveis usando cooldown em memória (`15s`) e single-flight (`reconcileInflightMap`); permite bypass via `force: true` (`sync=1`/`force=1`), persiste mudanças via `syncOrderPaymentStatus` e invalida `products:*` apenas quando há restauração efetiva de estoque |
+
+---
+
+## 9. Subpasta `lib/seo/`
+
+### 9.1 `lib/seo/config.js`
+
+**Estado (ADR-0032):** `lib/seo/config` enxugado — restam apenas `siteUrl` e `siteConfig` (usados por `pages/blog/index.js` e fallback do blog). As funções utilitárias mortas foram podadas.
 
 
-## 9. Resumo Consolidado
+## 10. Resumo Consolidado
 
 ### Arquivos por contexto/módulo
 
@@ -677,7 +768,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 |--------|---------|---------------------------|
 | **API — Admin** | `api/adminCrudHandler.js` | Factory de handlers CRUD administrativos |
 | **API — Helpers** | `api/helpers.js` | Extração de IP e detecção de spoofing |
-| **API — Utilitários** | `api/utils.js` | Parse de imagens |
+| **API — Utilitários** | `api/utils.js` | Parse de imagens e `normalizePrice` |
 | **Autenticação** | `auth/auth.js` | JWT, bcrypt, cookies, refresh tokens, login com rate limit |
 | **Autenticação** | `auth/customer-auth.js` | Sessão JWT (`HS256`, `1h`, `scope: 'customer'`) e refresh token opaco/hash (`customerRefreshToken`, `30d`, `Strict`) do visitante |
 | **Autenticação** | `auth/google-id-token.js` | Verificação local `RS256` de ID tokens do Google via JWKS com cache, single-flight e cooldown (ADR-0042) |
@@ -688,19 +779,23 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **Domínio** | `domain/musicas.js` | CRUD de músicas |
 | **Domínio** | `domain/permissions.js` | Lista imutável de permissões de cargos |
 | **Domínio** | `domain/posts.js` | CRUD de posts com full-text search |
-| **Domínio** | `domain/products.js` | CRUD de produtos com formatação de moeda |
+| **Domínio** | `domain/products.js` | CRUD de produtos (`external`/`internal`) com isolamento `expectedModality` e formatação de moeda |
 | **Domínio** | `domain/query-schemas.js` | Schemas Zod de query string (paginação e busca) |
 | **Domínio** | `domain/settings.js` | Configurações dinâmicas do sistema |
 | **Domínio** | `domain/shared-pagination.js` | Paginação genérica com busca e SELECT otimizado |
 | **Domínio** | `domain/videos.js` | CRUD de vídeos com reordenação |
 | **Domínio** | `domain/customers.js` | Cadastro, login, vínculo OIDC Google resiliente a `23505`, perfil em `customers` e ciclo em `customer_refresh_tokens` |
+| **Domínio** | `domain/orders.js` | Pedidos internos, reserva `FOR UPDATE`, webhook idempotente, estorno opt-in e expiração (`expireAbandonedOrders`) |
 | **Infra** | `infra/db.js` | Pool PostgreSQL + query + transações + health check |
 | **Infra** | `infra/logger.js` | Logger estruturado (níveis, JSON, requestId, transports) |
 | **Infra** | `infra/redis.js` | Cliente Redis Upstash com fallback em memória |
 | **Infra** | `infra/storage.js` | Resolução única dos diretórios de upload (ativo + legado) |
 | **Mídia** | `media/spotify.js` | Extração de IDs do Spotify |
 | **Mídia** | `media/youtube.js` | Extração de IDs do YouTube |
-| **SEO** | `lib/seo/config.js` | Configurações de SEO (siteUrl/siteConfig). Funções utilitárias podadas em ADR-0032. |
+| **Pagamento** | `payment/mercadopago.js` | Integração Orders API (`/v1/orders`), HMAC v2 anti-replay (`±900s`) e estorno (`refundMercadoPagoOrder`) |
+| **Pagamento** | `payment/payment-status-messages.js` | Mensagens pt-BR, validação CPF/CNPJ módulo 11, flag `debit_card`, normalização `ticket_url` e `formatGatewayPaymentDetail` |
+| **Pagamento** | `payment/reconcile-orders.js` | Reconciliação ativa com cooldown `15s` e deduplicação single-flight |
+| **SEO** | `lib/seo/config.js` | Configurações de SEO (`siteUrl`/`siteConfig`). Funções utilitárias podadas em ADR-0032. |
 
 ### Fluxos de dependência principais
 
@@ -711,6 +806,7 @@ lib/domain/*.js → lib/crud/crud.js → lib/infra/db.js
 lib/api/*.js → lib/infra/logger.js, lib/infra/db.js, lib/auth/auth.js, lib/cache/cache.js
 pages/api/{uploads/[...path],upload-image,placeholder-image,admin/integrity}.js → lib/infra/storage.js
 pages/api/customer/auth.js → lib/auth/customer-auth.js, lib/auth/google-id-token.js, lib/domain/customers.js, lib/cache/cache.js, lib/infra/logger.js
+pages/api/{checkout,webhooks/mercadopago,customer/orders,admin/orders}.js → lib/payment/*.js, lib/domain/orders.js
 lib/cache/cache.js → lib/infra/redis.js, lib/infra/logger.js
 ```
 

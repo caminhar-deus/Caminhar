@@ -34,13 +34,13 @@ O **Caminhar com Deus** é uma aplicação web desenvolvida com Next.js (Pages R
 - **Blog** com artigos e paginação SSR
 - **Seção de Músicas** integrada ao Spotify
 - **Seção de Vídeos** integrada ao YouTube
-- **Seção de Produtos** com links para Mercado Livre, Shopee e Amazon
-- **Painel Administrativo** completo com CRUD reutilizável para todos os recursos
+- **Seção de Produtos** em duas modalidades: links para Mercado Livre, Shopee e Amazon (Modalidade A) e venda interna com Checkout Transparente via Mercado Pago (Modalidade B)
+- **Painel Administrativo** completo com CRUD reutilizável para todos os recursos e Gestão de Vendas
 - **Sistema de Autenticação** com JWT e controle de acesso baseado em papéis (RBAC)
 - **SEO completo** com Open Graph, Twitter Cards e Schema.org JSON-LD
 - **Cache** com Redis (Upstash) + fallback em memória local
 - **Backup automatizado** do PostgreSQL com criptografia AES-256-GCM e compressão gzip
-- **Testes automatizados** com 186 arquivos Jest (unitários e integração), 5 specs Cypress (E2E) e 37 arquivos de testes de carga
+- **Testes automatizados** com **261** arquivos de teste Jest (`185` unitários e `73` de integração — incluindo `12` `*.db.test.js` com PostgreSQL real via Testcontainers — além de `3` exemplos/mocks), **6** specs Cypress (**31** cenários E2E) e **38** arquivos de testes de carga (**31** scripts k6 + `7` helpers)
 - **CI/CD** com GitHub Actions (4 arquivos de workflow em `.github/workflows/`: lint/cobertura em `pull_request`, `push` para `main` e `workflow_dispatch`, E2E isolado do Cypress em `push` para `main` e `workflow_dispatch`, testes de carga e o reutilizável `test-base.yml`)
 - **Middlewares de proteção:** Rate limiting, DDoS, Content Security Policy, CORS
 
@@ -58,7 +58,7 @@ A pasta [`/docs`](/docs) contém documentos detalhados de análise para cada ár
 
 Documentação dos **29 arquivos** na raiz do projeto, agrupados por contexto:
 
-- **Configuração Principal:** `package.json` (66 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
+- **Configuração Principal:** `package.json` (**79** scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
 - **Testes:** `jest.config.js` (thresholds globais: branches 80%, functions 85%, lines/statements 90%, além de limites por diretório), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 - **Qualidade:** `eslint.config.js` (Flat Config), `jsconfig.json` (aliases de importação), `knip.json` (análise de código morto)
 - **CI/CD:** nenhum arquivo de workflow na raiz — os quatro workflows (`test-coverage.yml`, `e2e.yml`, `load-tests.yml` e o reutilizável `test-base.yml`) ficam em `.github/workflows/`, único diretório lido pelo GitHub Actions
@@ -71,7 +71,7 @@ Documentação dos **29 arquivos** na raiz do projeto, agrupados por contexto:
 
 Componentes React organizados em 6 categorias:
 
-1. **Admin** — `AdminCrudBase` (CRUD genérico reutilizável com tabela, formulário dinâmico, Drag & Drop, exportação CSV, validação Zod), `AdminDashboard` (cards de estatísticas com cache), `AdminMusicas` (integração Spotify), `AdminVideos` (integração YouTube com preview lazy), `AdminPosts` (slug automático, imagem de capa obrigatória), `AdminProducts` (integração Mercado Livre), `AdminUsers`/`AdminUsersTab`/`AdminRolesTab`, `AdminAudit` (filtro por data, exportação CSV), `AdminDicas`, `withAdminAuth` (HOC de autenticação), `CacheManager`, `BackupManager`, `IntegrityCheck`, `RateLimitViewer`
+1. **Admin** — `AdminCrudBase` (CRUD genérico reutilizável com tabela, formulário dinâmico, Drag & Drop, exportação CSV, validação Zod), `AdminDashboard` (cards de estatísticas com cache), `AdminMusicas` (integração Spotify), `AdminVideos` (integração YouTube com preview lazy), `AdminPosts` (slug automático, imagem de capa obrigatória), `AdminProducts` (integração Mercado Livre, Modalidade A), `AdminSales` (Gestão de Vendas — pedidos internos, Mercado Pago e Produtos Internos, Modalidade B), `AdminUsers`/`AdminUsersTab`/`AdminRolesTab`, `AdminAudit` (filtro por data, exportação CSV), `AdminDicas`, `withAdminAuth` (HOC de autenticação), `CacheManager`, `BackupManager`, `IntegrityCheck`, `RateLimitViewer`
 2. **Features** — `BlogSection`/`PostCard`, `MusicGallery`/`MusicCard` (player Spotify via LazyIframe), `VideoGallery`/`VideoCard` (player YouTube), `ProductList`/`ProductCard` (carrossel de imagens, lightbox, links ML/Shopee/Amazon), `ContentTabs` (lazy loading com React.lazy), `Testimonials` (carrossel de Dicas do Dia)
 3. **Layout** — `Container` (max-width configurável), `Grid` (1-12 colunas responsivo), `Stack` (vertical/horizontal), `Sidebar` (colapsável com localStorage)
 4. **Performance** — `ImageOptimized` (wrapper next/image com fallback), `LazyIframe` (IntersectionObserver), `PreloadResources`, `CriticalCSS`
@@ -188,7 +188,7 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md)
 
-**5 arquivos de teste**, **25 cenários**, distribuídos em 4 páginas/sistemas:
+**6 arquivos de teste**, **31 cenários**, distribuídos em páginas/sistemas públicos, checkout e conta do visitante:
 
 | Arquivo | Cenários | Funcionalidade |
 |---------|:--------:|----------------|
@@ -197,10 +197,11 @@ Componentes React organizados em 6 categorias:
 | `post.cy.js` | 3 | Post individual (imagem, conteúdo, botões de compartilhamento) |
 | `navigation.cy.js` | 3 | Navegação entre páginas e acesso admin não autenticado |
 | `image_zoom.cy.js` | 12 | Zoom de imagem (lightbox): fluxo principal, casos de borda, responsividade, acessibilidade |
+| `checkout.cy.js` | 6 | Checkout transparente Mercado Pago (PIX, cartão de crédito, recusa/boleto) e Minha Conta |
 
 **Suporte:** 8 comandos customizados (`cy.login`, `cy.createPost`, `cy.viewportMobile/Tablet`, lightbox helpers), 1 fixture (`posts.json`)
 
-**Execução:** localmente via `npm run test:e2e` (contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`) ou `npm run cypress:open` para o modo interativo. A opção **isolada**, `npm run test:e2e:isolated` (`scripts/e2e-isolated.js`), sobe um Postgres descartável via Testcontainers, migra, semeia 4 posts, reaproveita `.next/BUILD_ID` ou compila, serve com `next start` e roda o Cypress propagando o exit code — **25/25 testes em ~36 s** (com `.next` reaproveitado) ou **~44 s** (compilando do zero), sem tocar o banco de desenvolvimento. No CI, o workflow `.github/workflows/e2e.yml` roda esse comando em `push` para `main` e via `workflow_dispatch` (**sem `pull_request`**, por decisão deliberada de coletar flakiness real antes de cobrir todo PR), subindo `cypress/videos` e `cypress/screenshots` como artefato mesmo em falha (`if: always()`). Detalhes em [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md) (seção "Execução Isolada").
+**Execução:** localmente via `npm run test:e2e` (contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`) ou `npm run cypress:open` para o modo interativo. A opção **isolada**, `npm run test:e2e:isolated` (`scripts/e2e-isolated.js`), sobe um Postgres descartável via Testcontainers, migra, semeia 4 posts, reaproveita `.next/BUILD_ID` ou compila, serve com `next start` e roda o Cypress propagando o exit code (**31 cenários em 6 specs**, sem tocar o banco de desenvolvimento). No CI, o workflow `.github/workflows/e2e.yml` roda esse comando em `push` para `main` e via `workflow_dispatch` (**sem `pull_request`**, por decisão deliberada de coletar flakiness real antes de cobrir todo PR), subindo `cypress/videos` e `cypress/screenshots` como artefato mesmo em falha (`if: always()`). Detalhes em [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md) (seção "Execução Isolada").
 
 ---
 
@@ -208,13 +209,13 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_load-tests.md`](/docs/PROJECT_load-tests.md)
 
-**30 scripts k6** organizados em 4 categorias + 7 módulos helpers:
+**31 scripts k6** organizados em 4 categorias + 7 módulos helpers:
 
 | Categoria | Qtd | Descrição |
 |-----------|:---:|-----------|
 | **Funcionais** | 9 | Health check, cache headers, search content, posts tags, cursor pagination, backup verification, video validation, upload flow, recovery test |
 | **Performance** | 16 | Cache warmup/performance, auth flow, create post, pagination, CRUD/carga/filtro/paginação/ordenação de músicas e vídeos |
-| **Segurança** | 4 | Login negativo, rate limit, IP spoofing, DDoS search |
+| **Segurança** | 5 | Login negativo, rate limit, IP spoofing, DDoS search, checkout/webhook Mercado Pago (`mercadopago-security-test.js`) |
 | **Stress** | 1 | Stress test combinado (CRUD de vídeos sob até 100 VUs + monitoramento de memória), executado **por último** desde 14/10/2026 — motivo e pendência em [`docs/PROJECT_load-tests.md`](/docs/PROJECT_load-tests.md) |
 
 **Helpers:** config, auth (login JWT), network (IP aleatório), profiles (7 perfis de carga), report (relatórios JSON sanitizados), sleep (pausa aleatória), resource-test-runner (factory pattern para reduzir duplicação CRUD)
@@ -227,7 +228,7 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_scripts.md`](/docs/PROJECT_scripts.md)
 
-**89 arquivos** em `scripts/` e subpastas, organizados por categoria:
+Inventário detalhado em `docs/PROJECT_scripts.md` (**205** arquivos no diretório `scripts/` incluindo `bench/`):
 
 | Categoria | Qtd | Descrição |
 |-----------|:---:|-----------|
@@ -237,10 +238,10 @@ Componentes React organizados em 6 categorias:
 | Schemas JSON | 4 | Definições de tabelas (dicas, musicas, posts, videos) para `init-table.js` |
 | Inicialização | 4 | `init-table.js`, `init-server.js`, `init-backup.js`, `seed-settings.js` |
 | Limpeza | 10 | Banco (clear-db, clear-musicas, clean-load-test-posts), arquivos (clean-orphaned-images, clean-k6-reports), cache, auth locks |
-| Diagnóstico | 8 | `check-db-status`, `check-env`, `check-server`, `check-sql-injection`, `validate-schema` + 5 em `diagnostics/` |
-| Testes de Carga | 4 | Orquestrador Node.js, shell script, geração de relatório k6 |
+| Diagnóstico | 19 | `check-db-status`, `check-env`, `check-server`, `check-sql-injection`, `validate-schema` + **14** arquivos em `diagnostics/` (`check-github-actions`, `github-actions-helper`, `run-with-log`, `check-model-catalog`, `model-catalog`, `lint-chars`, `lint-workflows`, etc.) |
+| Testes de Carga | 4 | Orquestrador Node.js (`run-all-load-tests-sequentially.js`), shell script, geração de relatório k6 |
 | Testes E2E | 2 | `warm-routes` (pré-aquecimento de rotas do Cypress) e `e2e-isolated` (Cypress contra Postgres descartável via Testcontainers) |
-| Manutenção | 4 | Backup/restore de posts, fix hero key, video thumbnails |
+| Manutenção | 9 | `backup-posts`, `restore-posts`, `clean-k6-videos`, `fix-hero-key`, `video-thumbnails`, `verify-mp-webhook`, `start-webhook-tunnel.sh`, `expire-abandoned-orders`, `check-mp-production-readiness` |
 | Utilitários | 9 | Conexão DB, constants, date-format, load-env, cleanup, init-table-utils |
 
 ---

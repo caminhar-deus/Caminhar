@@ -86,7 +86,11 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 │   │   ├── rate-limit.js       # Gestão de rate limiting (Redis)
 │   │   ├── fetch-youtube.js    # Metadados de vídeo do YouTube (oEmbed)
 │   │   ├── fetch-spotify.js    # Metadados de música do Spotify
-│   │   └── fetch-ml.js         # Dados de produto do Mercado Livre
+│   │   ├── fetch-ml.js         # Dados de produto do Mercado Livre
+│   │   ├── orders.js           # Gestão admin de pedidos internos, estorno opt-in e expiração
+│   │   └── internal-products.js # CRUD admin de produtos internos (Modalidade B)
+│   ├── webhooks/
+│   │   └── mercadopago.js      # Webhook Mercado Pago HMAC-SHA256 v2 (Orders API)
 │   ├── uploads/
 │   │   └── [...path].js        # Serve arquivos de <cwd>/uploads (rewrite de /uploads/*)
 │   └── helper/
@@ -430,7 +434,8 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 
 - **`/pages/api/customer/auth.js`:** sessão (`GET`, rate limit `120 req/min` em `api:customer:session`, reemite `customerToken` `1h` de forma idempotente quando há `customerRefreshToken` válido em `customer_refresh_tokens`), atualização de perfil (`PUT`, rate limit `30 req/min` em `api:customer:profile`, retorna `404` + limpeza dos cookies se conta não existir) e autenticação/cadastro/rotação (`POST` `register`/`login`/`google`/`refresh` sob `20 req/min` em `api:customer:auth`, e `logout` sob `30 req/min` em `api:customer:logout` com revogação do hash no banco e limpeza de ambos os cookies; verificação JWKS `RS256` local via `lib/auth/google-id-token.js` e `ALLOW_GOOGLE_DEV_BYPASS` bloqueado em produção). Define `Cache-Control: no-store, private`. (ADR-0042 / ADR-0046)
 - **`/pages/api/customer/orders.js`:** consulta de compras do visitante autenticado e reconciliação ativa com Mercado Pago (`GET`, rate limit `60 req/min` em `api:customer:orders`, isolamento anti-IDOR por `session.customerId`, autenticação e rate limit protegidos por `try/catch` e header `Cache-Control: no-store, private`).
-- **`/pages/api/checkout.js`:** criação e consulta de pagamento interno (`POST`/`GET`, protegido por `getAuthenticatedCustomer` e `Cache-Control: no-store, private` nas respostas).
+- **`/pages/api/checkout.js`:** criação e consulta de pagamento interno (`GET` com rate limit `60 req/min` restrito a produtos publicados `modality = 'internal'`; `POST` exige `getAuthenticatedCustomer`, rate limit `15 req/min`, validação Zod estrita incluindo CPF/CNPJ módulo 11 e bloqueio de `cardNumber` bruto com gateway ativo, verificação `MP_ENABLE_DEBIT_CARD` → `400` se desabilitada, chave `X-Idempotency-Key` com cache single-flight de `300s` / conflito `409`, reserva transacional `FOR UPDATE` e rollback em falha). Define `Cache-Control: no-store, private` nas respostas (`ADR-0037` / `ADR-0044` / `ADR-0045`).
+- **`/pages/api/webhooks/mercadopago.js`:** recepção assíncrona de notificações `order` e `payment` (`POST`, rate limit `120 req/min` em `api:webhooks:mercadopago`, assinatura HMAC-SHA256 v2 com janela anti-replay `±900s`, consulta autoritativa `fetchMercadoPagoPaymentDetails` em produção/token ignorando metadados não autenticados do corpo, verificação prévia de pedido antes de gravar `event_key` com retorno `HTTP 503` retryable em condição de corrida `!current`, e invalidação seletiva `products:*` apenas em `stockChanged`). (`ADR-0038` / `ADR-0044`)
 
 ---
 
@@ -695,6 +700,11 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
   3. **Scraping HTML** da página (com User-Agent real) — extrai meta tags `og:title`, `og:image`, `og:description`, `product:price:amount` e faz parse de preço.
   - Retorna `{ title, price, images, description }`; registra auditoria.
 
+### Vendas Internas e Produtos Internos (pós-08/10/2026 — ADR-0037 / ADR-0044 / ADR-0045)
+
+- **`/pages/api/admin/orders.js`:** gestão de pedidos internos via `createAdminHandler()` (permissão `'Gestão de Vendas'`, métodos `['GET', 'PUT']`, `rateLimit: { max: 30, window: 60000 }`). O `GET` aplica rate limit `60 req/min` (`api:admin:orders:get`), valida `search` até `200` caracteres, suporta filtros (`paymentStatus`, `orderStatus`, `paymentMethod`) e executa reconciliação ativa (com bypass `?sync=1` e auditoria `SINCRONIZAR PEDIDOS MP`). O `PUT` suporta ação em lote `{ action: 'expire_abandoned' }` (`expireAbandonedOrders` + auditoria `EXPIRAR PEDIDOS ABANDONADOS`), estorno financeiro explícito `{ refund_payment: true }` via `refundMercadoPagoOrder` (`POST /v1/orders/{id}/refund` + auditoria `ESTORNAR E CANCELAR PEDIDO`) e atualização logística/rastreio com trava `ORDER_CANCELLED_CANNOT_REOPEN` (`HTTP 409`) e invalidação de `products:*` quando devolve estoque.
+- **`/pages/api/admin/internal-products.js`:** CRUD e reordenação (`PUT action: 'reorder'`) de produtos internos da Modalidade B via `createAdminHandler()` (permissão `'Gestão de Vendas'`, `rateLimit: { max: 30, window: 60000 }`). Aplica isolamento estrito `modality = 'internal'` no `GET`, `POST`, `PUT` (`expectedModality: 'internal'`), `DELETE` (`expectedModality: 'internal'`) e `reorder`, invalidando `products:*` e gravando auditoria nas mutações.
+
 ---
 
 ## 4. API Autenticação
@@ -916,3 +926,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **16/10/2026:** Reconciliação com o commit `524074c` (motivo e contexto em [`ADR-0010`](adr/0010-admin-como-cargo-e-validacao-de-nome.md) e [`ADR-0011`](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md)). O ponto de atenção `await await` em `admin/users.js` foi resolvido — o `await` duplicado nas três chamadas de `logActivity` foi removido. `admin/users.js`: `role` ficou obrigatório no create (saiu o `.default('admin')`) e passou a ser verificado contra a tabela `roles` por `roleExists()` em POST e PUT (400 nomeando o cargo inexistente). `admin/roles.js`: `permissions` validado contra a lista oficial via `superRefine` (400 nomeando a permissão inválida). `musicas.js`: `limit` ganhou `.max(100)`, alinhando o teto às demais rotas paginadas. As seis rotas públicas com 400 de paginação/parâmetros (`dicas`, `musicas`, `posts`, `products`, `settings`, `videos`) passaram a importar `INVALID_PAGINATION_MESSAGE`/`INVALID_PARAMS_MESSAGE` de `lib/api/helpers.js` (definição e detalhe em [`PROJECT_lib.md`](PROJECT_lib.md) §1.2). `login.js`: `refresh_token`/`refresh_token_expires_in` saíram do body de `?response=body`. O wrapper de `requestId` e a política 503/500 do `createAdminHandler` afetam todas as respostas admin e ficam documentados em [`PROJECT_lib.md`](PROJECT_lib.md) §1.1, não neste documento.
 - **27/11/2026:** Sincronização da descrição de `/pages/_document.js` (remoção da menção obsoleta a Montserrat, inclusão de Playfair Display, `<meta name="referrer" content="strict-origin-when-cross-origin" />` e origens GIS na CSP incluindo `connect-src`) e adição das rotas/páginas de visitante e pagamento (`/entrar`, `/minha-conta`, `/checkout/[id]`, `/api/customer/auth`, `/api/customer/orders`, `/api/checkout` e `CustomerPages.module.css`, preservando o recorte histórico de contagens de 08/10/2026 no resumo).
 - **28/11/2026:** Inclusão dos arquivos da área do visitante e checkout diretamente na árvore de diretórios do topo, além da resiliência a `429`/`5xx` em `GET /api/customer/auth` nas páginas `/minha-conta` e `/checkout/[id]`, `Cache-Control: no-store, private` em `/api/checkout` e ativação completa de `customer_refresh_tokens` em `/api/customer/auth` (`ADR-0046`).
+- **28/11/2026 (Mercado Pago / Vendas Internas):** Sincronização documental das rotas `/pages/api/webhooks/mercadopago.js`, `/pages/api/admin/orders.js` e `/pages/api/admin/internal-products.js` na árvore e seções correspondentes, além do detalhamento de rate limit, idempotência, anti-replay, flag `MP_ENABLE_DEBIT_CARD`, estorno opt-in e expiração em `/api/checkout.js` (`ADR-0044` / `ADR-0045`).

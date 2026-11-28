@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^16.1.0`). A estrutura conta com **6 arquivos de teste**, **29 cenários** distribuídos em 6 páginas/sistemas, e suporte com `fixtures/` e `support/`.
+A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^16.1.0`). A estrutura conta com **6 arquivos de teste**, **31 cenários** distribuídos em 6 páginas/sistemas, e suporte com `fixtures/` e `support/`.
 
 A configuração global do Cypress está em `cypress.config.js` (na raiz do projeto), e os scripts de execução estão definidos no `package.json`.
 
@@ -14,7 +14,7 @@ A configuração global do Cypress está em `cypress.config.js` (na raiz do proj
 cypress/
 ├── e2e/
 │   ├── image_zoom.cy.js   (12 cenários) — Zoom de imagem (lightbox)
-│   ├── checkout.cy.js      (4 cenários)  — Checkout transparente e Minha Conta
+│   ├── checkout.cy.js      (6 cenários)  — Checkout transparente e Minha Conta
 │   ├── home.cy.js          (4 cenários)  — Página inicial
 │   ├── blog.cy.js          (3 cenários)  — Listagem do blog
 │   ├── post.cy.js          (3 cenários)  — Post individual
@@ -280,16 +280,18 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 ### `/cypress/e2e/checkout.cy.js`
 
-**Localização:** `cypress/e2e/checkout.cy.js` — 4 cenários
+**Localização:** `cypress/e2e/checkout.cy.js` — 6 cenários
 
 **Propósito:**
-Testa a jornada pública de compra interna (Modalidade B — Checkout Transparente) em `/checkout/[id]` e a consulta de pedidos em `/minha-conta`, utilizando `cy.intercept()` para simular a API de sessão do cliente, catálogo de checkout, criação de pedido PIX e reconciliação ativa.
+Testa a jornada pública de compra interna (Modalidade B — Checkout Transparente) em `/checkout/[id]` e a consulta de pedidos em `/minha-conta`, utilizando `cy.intercept()` para simular a API de sessão do cliente, catálogo de checkout, criação de pedido (PIX, cartão de crédito via tokenização SDK v2 e boleto normalizado), recusa com troca de meio de pagamento e reconciliação ativa.
 
 **Cenários:**
 1. Redirecionamento de visitante não autenticado de `/checkout/101` para `/entrar?next=%2Fcheckout%2F101`
 2. Carregamento do checkout transparente com endereço padrão preenchido e opções de pagamento (`PIX`, `Cartão de crédito`, `Boleto bancário`)
 3. Finalização de pedido via PIX com CPF válido, exibição do código Copia e Cola e reconciliação ativa pelo botão `"Verificar pagamento agora"`
 4. Exibição do histórico em `/minha-conta` com aviso de separação (`Venda direta`), card do pedido e badges de status (`Pagamento aprovado`, `Pago`)
+5. Conclusão de compra via cartão de crédito com tokenização via SDK v2 e limpeza automática dos dados sensíveis do cartão do estado do navegador (`ADR-0044`)
+6. Exibição de feedback de recusa de cartão permitindo tentar outro meio de pagamento e geração de boleto com URL normalizada (`/sandbox/payments/`, `ADR-0044`)
 
 **Observação:** Usa apenas `cy.intercept()` e seletores semânticos (`#checkout-cep`, `#payer-document`, `role="radiogroup"`), funcionando de forma isolada sem depender de registros extras no seed do `scripts/e2e-isolated.js`.
 
@@ -330,7 +332,7 @@ Testa a jornada pública de compra interna (Modalidade B — Checkout Transparen
 | Métrica | Valor |
 |---------|-------|
 | Total de arquivos de teste | 6 |
-| Total de cenários (`it`) | 29 |
+| Total de cenários (`it`) | 31 |
 | Total de grupos de teste (`describe`/`context`) | 10 |
 | Total de comandos customizados | 8 |
 | Arquivos de suporte | 2 (`commands.js`, `e2e.js`) |
