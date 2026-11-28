@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import '../../mocks/next-setup.js';
 import { useRouter } from 'next/router';
@@ -242,5 +242,36 @@ describe('Página Minha Conta do Visitante (pages/minha-conta.js)', () => {
 
     expect(screen.getByText(/Cartão de débito \(Pré-pago — Elo\)/)).toBeInTheDocument();
     expect(screen.queryByText(/PIX \(PIX\)/)).not.toBeInTheDocument();
+  });
+
+  it('exibe alerta transitório em HTTP 429 ou 500 de GET /api/customer/auth sem redirecionar para /entrar', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ message: 'Muitas consultas em sequência. Aguarde um instante.' }),
+    });
+
+    render(<MinhaContaPage />);
+
+    const rateAlert = await screen.findByRole('alert');
+    expect(rateAlert).toHaveTextContent('Muitas consultas em sequência. Aguarde um instante.');
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error('non-json');
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Atualizar status/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Não foi possível verificar sua sessão no momento. Tente novamente em instantes.'
+      );
+    });
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

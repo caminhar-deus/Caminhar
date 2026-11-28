@@ -359,6 +359,25 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
         })
       ).rejects.toThrow('ECONNREFUSED');
     });
+
+    it('deve repropagar 23505 no INSERT se as reconsultas por google_id e LOWER(email) não encontrarem registro', async () => {
+      const uniqueViolation = Object.assign(new Error('duplicate key value'), { code: '23505' });
+
+      query
+        .mockResolvedValueOnce({ rows: [] }) // bySub
+        .mockResolvedValueOnce({ rows: [] }) // byEmail
+        .mockRejectedValueOnce(uniqueViolation) // INSERT
+        .mockResolvedValueOnce({ rows: [] }) // retryBySub
+        .mockResolvedValueOnce({ rows: [] }); // retryByEmail
+
+      await expect(
+        upsertGoogleCustomer({
+          googleSub: 'sub_missing_after_23505',
+          email: 'missing@gmail.com',
+          name: 'Missing',
+        })
+      ).rejects.toThrow('duplicate key value');
+    });
   });
 
   describe('getCustomerById() e updateCustomerProfile()', () => {

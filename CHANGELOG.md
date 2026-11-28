@@ -11,6 +11,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Segurança
 
+- **Fechamento horizontal de sessão, SEO e testes da conta do visitante (28/11/2026 — Ciclo 5 pós-`e975f207`):**
+  - **`pages/minha-conta.js` e `pages/checkout/[id].js`:** passaram a tratar `429` e `5xx` de `GET /api/customer/auth` exibindo alerta transitório (`role="alert"`) em vez de redirecionar erroneamente o visitante para `/entrar` sob rate limit ou falha temporária.
+  - **`pages/api/checkout.js`:** adicionou cabeçalho `Cache-Control: no-store, private` em toda resposta da rota de checkout.
+  - **`next-sitemap.config.js`:** excluiu explicitamente as rotas `noindex` (`/entrar`, `/minha-conta`, `/checkout`, `/checkout/*`, `/login`) de `exclude` e das políticas `*`, `Googlebot` e `Bingbot` em `robots.txt` (alinhamento validado pela nova suíte `tests/unit/next-sitemap.config.test.js`).
+  - **`scripts/check-env.js` e cobertura de testes:** exportada `checkEnv(env)` para testes unitários sem side-effects, adicionados cenários de token expirado (`customer-auth.test.js`), fallback `23505` (`customers.test.js`), validação do `api:customer:session` (`auth.test.js`), cobertura ampla dos ramos de formulário/script GIS em `pages/entrar.js`, e sincronização completa de `docs/PROJECT_{pages,lib,scripts,raiz,tests}.md`, `docs/ARQUITETURA_SITE_PUBLICO.md` e Ciclo 5 de `docs/melhoria_google.md`.
+
 - **Endurecimento completo da autenticação do visitante e integração com o Google (27/11/2026 — `MG-11` a `MG-15`):**
   - **`lib/auth/customer-auth.js`:** `parseCookie()` agora ignora nomes vazios e protege `decodeURIComponent` por par em `try/catch` (preservando o valor bruto em caso de `URIError` sem derrubar cookies válidos nem causar `HTTP 500`); `generateCustomerToken()` e `verifyCustomerToken()` fixam explicitamente o algoritmo `HS256` (`algorithm: 'HS256'` / `{ algorithms: ['HS256'] }`).
   - **`pages/api/customer/orders.js`:** adicionou cabeçalho `Cache-Control: no-store, private` e moveu `getAuthenticatedCustomer(req)` e `checkRateLimit()` para dentro do bloco `try/catch`.

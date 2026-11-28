@@ -662,4 +662,35 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Cartão de débito/i }));
     expect(screen.getByText(/depende de habilitação comercial do emissor/i)).toBeInTheDocument();
   });
+
+  it('exibe alerta transitório em HTTP 429 ou 500 de GET /api/customer/auth sem redirecionar para /entrar', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ message: 'Muitas consultas em sequência. Aguarde um instante.' }),
+    });
+
+    const { unmount } = render(<CheckoutPage />);
+
+    const rateAlert = await screen.findByRole('alert');
+    expect(rateAlert).toHaveTextContent('Muitas consultas em sequência. Aguarde um instante.');
+    expect(mockReplace).not.toHaveBeenCalled();
+    unmount();
+
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: async () => {
+        throw new Error('invalid json');
+      },
+    });
+
+    render(<CheckoutPage />);
+
+    const serverAlert = await screen.findByRole('alert');
+    expect(serverAlert).toHaveTextContent(
+      'Não foi possível verificar sua sessão no momento. Tente novamente em instantes.'
+    );
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
 });

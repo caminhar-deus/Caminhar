@@ -50,7 +50,14 @@ export default function MinhaContaPage() {
     setError('');
     try {
       const authRes = await fetch('/api/customer/auth');
-      const authData = await authRes.json();
+      const authData = await authRes.json().catch(() => ({}));
+      if (authRes.status === 429 || authRes.status >= 500) {
+        setError(
+          authData?.message ||
+            'Não foi possível verificar sua sessão no momento. Tente novamente em instantes.'
+        );
+        return;
+      }
       if (!authRes.ok || !authData.authenticated) {
         router.replace('/entrar?next=/minha-conta');
         return;
@@ -133,7 +140,11 @@ export default function MinhaContaPage() {
           </div>
 
           {loading && <p>Carregando seus pedidos...</p>}
-          {error && <div className={styles.alertError}>{error}</div>}
+          {error && (
+            <div className={styles.alertError} role="alert">
+              {error}
+            </div>
+          )}
 
           {!loading && !error && orders.length === 0 && (
             <p className={styles.pageSubtitle}>

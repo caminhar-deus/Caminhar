@@ -154,6 +154,8 @@ const checkoutPostSchema = z
   });
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store, private');
+
   try {
     if (req.method === 'GET') {
       const ip = getClientIP(req);

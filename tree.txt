@@ -535,8 +535,12 @@
 │   │   │   │   └── webhooks
 │   │   │   │       ├── index.html
 │   │   │   │       └── mercadopago.js.html
+│   │   │   ├── checkout
+│   │   │   │   ├── [id].js.html
+│   │   │   │   └── index.html
 │   │   │   ├── entrar.js.html
-│   │   │   └── index.html
+│   │   │   ├── index.html
+│   │   │   └── minha-conta.js.html
 │   │   ├── prettify.css
 │   │   ├── prettify.js
 │   │   ├── scripts
@@ -665,8 +669,12 @@
 │   │   │   └── webhooks
 │   │   │       ├── index.html
 │   │   │       └── mercadopago.js.html
+│   │   ├── checkout
+│   │   │   ├── [id].js.html
+│   │   │   └── index.html
 │   │   ├── entrar.js.html
-│   │   └── index.html
+│   │   ├── index.html
+│   │   └── minha-conta.js.html
 │   ├── prettify.css
 │   ├── prettify.js
 │   ├── scripts
@@ -1544,6 +1552,7 @@
 │       │   ├── orchestrator-parity.test.js
 │       │   ├── profiles.test.js
 │       │   └── sort-contract-coverage.test.js
+│       ├── next-sitemap.config.test.js
 │       ├── next.config.test.js
 │       ├── pages
 │       │   ├── 404.test.js
@@ -1636,4 +1645,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-227 directories, 1410 files
+229 directories, 1417 files

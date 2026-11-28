@@ -275,7 +275,7 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 - `_buildSetClause(data, startingIndex)` — Constrói cláusulas SET com placeholders parametrizados
 - `_buildInsertClauseParts(data, startingIndex)` — Constrói campos e placeholders para INSERT
 
-**Tabelas com schema definido:** `musicas`, `posts`, `videos`, `settings`, `images`, `categories`, `tags`, `post_categories`, `post_tags`, `audit_log`, `roles`, `users`, `dicas`, `products`.
+**Tabelas com schema definido:** `musicas`, `posts`, `videos`, `settings`, `images`, `categories`, `tags`, `post_categories`, `post_tags`, `activity_logs`, `roles`, `users`, `dicas`, `products`, `customers`, `orders`.
 
 **Observações:** Toda construção SQL é parametrizada. Nomes de tabelas/colunas são validados contra injeção. `raw()` permite funções SQL sem parametrização (uso consciente). Tabelas não mapeadas no schema operam sem filtro para compatibilidade. O mapa `tableSchemas` centraliza os campos válidos — qualquer alteração de schema no banco deve ser refletida aqui.
 

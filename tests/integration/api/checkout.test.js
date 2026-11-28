@@ -72,6 +72,7 @@ describe('API Checkout (/api/checkout)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
+      expect(res._getHeaders()['cache-control']).toBe('no-store, private');
       const data = JSON.parse(res._getData());
       expect(data.product.id).toBe(25);
       expect(data.product.price).toBe(85);
@@ -182,6 +183,7 @@ describe('API Checkout (/api/checkout)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
+      expect(res._getHeaders()['cache-control']).toBe('no-store, private');
       const data = JSON.parse(res._getData());
       expect(data.order).toBeTruthy();
       expect(data.order.id).toBe(201);

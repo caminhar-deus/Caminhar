@@ -100,6 +100,13 @@ describe('Autenticação do Visitante — lib/auth/customer-auth.js', () => {
         { algorithm: 'HS384' }
       );
       expect(authMod.verifyCustomerToken(hs384Token)).toBeNull();
+
+      const expiredToken = jwt.sign(
+        { customerId: 77, email: sampleCustomer.email, name: sampleCustomer.name, scope: 'customer' },
+        'explicit-hs256-test-secret',
+        { algorithm: 'HS256', expiresIn: -10 }
+      );
+      expect(authMod.verifyCustomerToken(expiredToken)).toBeNull();
     } finally {
       process.env.NODE_ENV = prevEnv;
       if (prevSecret === undefined) delete process.env.JWT_SECRET;

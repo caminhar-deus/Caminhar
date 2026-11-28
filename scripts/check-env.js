@@ -119,11 +119,11 @@ const OPTIONAL_VARS = [
   // 'UPSTASH_REDIS_REST_TOKEN' // Opcional: Descomente se for usar Redis (Upstash)
 ];
 
-function checkEnv() {
+export function checkEnv(env = process.env) {
   console.log('🔍 Verificando variáveis de ambiente...');
 
-  const missingRequired = REQUIRED_VARS.filter(key => !process.env[key]);
-  const missingOptional = OPTIONAL_VARS.filter(key => !process.env[key]);
+  const missingRequired = REQUIRED_VARS.filter(key => !env[key]);
+  const missingOptional = OPTIONAL_VARS.filter(key => !env[key]);
 
   if (missingRequired.length > 0) {
     console.error('\x1b[31m%s\x1b[0m', '❌ Erro Crítico: Variáveis de ambiente obrigatórias não definidas:');
@@ -139,11 +139,11 @@ function checkEnv() {
     console.log('\x1b[32m%s\x1b[0m', '✅ Todas as variáveis de ambiente verificadas estão definidas.');
   }
 
-  for (const googleWarning of validateGoogleEnv(process.env)) {
+  for (const googleWarning of validateGoogleEnv(env)) {
     console.warn('\x1b[33m%s\x1b[0m', `⚠️  Aviso: ${googleWarning}`);
   }
 
-  for (const mpWarning of validateMercadoPagoEnv(process.env)) {
+  for (const mpWarning of validateMercadoPagoEnv(env)) {
     console.warn('\x1b[33m%s\x1b[0m', `⚠️  Aviso: ${mpWarning}`);
   }
 

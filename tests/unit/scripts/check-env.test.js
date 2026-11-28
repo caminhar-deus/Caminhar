@@ -1,5 +1,5 @@
-import { describe, it, expect } from '@jest/globals';
-import { validateMercadoPagoEnv, validateGoogleEnv } from '../../../scripts/check-env.js';
+import { describe, it, expect, jest } from '@jest/globals';
+import { validateMercadoPagoEnv, validateGoogleEnv, checkEnv } from '../../../scripts/check-env.js';
 
 describe('validateMercadoPagoEnv() — scripts/check-env.js', () => {
   it('retorna lista vazia quando credenciais estão consistentes ou ausentes fora de produção', () => {
@@ -126,5 +126,50 @@ describe('validateGoogleEnv() — scripts/check-env.js', () => {
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/ALLOW_GOOGLE_DEV_BYPASS/);
     expect(warnings[0]).toMatch(/NODE_ENV=production/);
+  });
+});
+
+describe('checkEnv() — scripts/check-env.js', () => {
+  it('lança erro quando DATABASE_URL ou JWT_SECRET obrigatórias estão ausentes', () => {
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      expect(() => checkEnv({})).toThrow('Variáveis de ambiente obrigatórias não definidas');
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('emite avisos de paridade Google via console.warn sem expor os Client IDs', () => {
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const serverSecretId = '999-server-env.apps.googleusercontent.com';
+    const publicId = '111-public-env.apps.googleusercontent.com';
+
+    try {
+      expect(() =>
+        checkEnv({
+          DATABASE_URL: 'postgres://user:pass@localhost:5432/caminhar',
+          JWT_SECRET: 'test-secret',
+          GOOGLE_CLIENT_ID: serverSecretId,
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: publicId,
+        })
+      ).not.toThrow();
+
+      const allWarnings = warnSpy.mock.calls.flat().join(' ');
+      expect(allWarnings).toContain('GOOGLE_AUDIENCE_MISMATCH');
+      expect(allWarnings).not.toContain(serverSecretId);
+      expect(allWarnings).not.toContain(publicId);
+    } finally {
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
   });
 });

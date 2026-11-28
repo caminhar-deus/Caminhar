@@ -406,4 +406,97 @@ describe('Página de Acesso do Visitante (pages/entrar.js)', () => {
     );
     expect(postCallsAfterReset).toHaveLength(2);
   });
+
+  it('cobre login convencional, cadastro (action=register), erro 401 e falha de rede no formulário', async () => {
+    render(<EntrarPage />);
+
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'maria@exemplo.com' } });
+    fireEvent.change(screen.getByLabelText(/^Senha/), { target: { value: 'SenhaForte@123' } });
+
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ message: 'E-mail ou senha incorretos.' }),
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou senha incorretos.');
+
+    fetchMock.mockRejectedValueOnce(new Error('network failure'));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sem conexão com o servidor. Tente novamente em instantes.'
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ customer: { id: 12 } }),
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'Criar conta' }));
+    fireEvent.change(screen.getByLabelText('Nome completo'), { target: { value: 'Maria Silva' } });
+    fireEvent.change(screen.getByLabelText(/Telefone/), { target: { value: '11999999999' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar e Continuar' }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/minha-conta');
+    });
+    const lastPostCall = fetchMock.mock.calls.filter(([, opts]) => opts?.method === 'POST').pop();
+    expect(JSON.parse(lastPostCall[1].body)).toEqual({
+      action: 'register',
+      name: 'Maria Silva',
+      email: 'maria@exemplo.com',
+      phone: '11999999999',
+      password: 'SenhaForte@123',
+    });
+  });
+
+  it('trata callback Google sem credential, falha de rede no POST Google, load sem window.google e script pré-existente', async () => {
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'google-client-id-123.apps.googleusercontent.com';
+
+    // Script pré-existente já marcado como loaded deve ser substituído sem duplicar
+    const staleScript = document.createElement('script');
+    staleScript.dataset.googleGsi = 'true';
+    staleScript.dataset.loaded = 'true';
+    document.head.appendChild(staleScript);
+
+    const { unmount } = render(<EntrarPage />);
+    const scriptsAfterMount = document.querySelectorAll('script[data-google-gsi="true"]');
+    expect(scriptsAfterMount).toHaveLength(1);
+    expect(scriptsAfterMount[0]).not.toBe(staleScript);
+
+    // Load sem window.google.accounts.id remove o script e exibe retry
+    await act(async () => {
+      fireEvent(scriptsAfterMount[0], new Event('load'));
+    });
+    const retryBtn = await screen.findByRole('button', { name: 'Tentar novamente com Google' });
+    expect(document.querySelector('script[data-google-gsi="true"]')).toBeNull();
+
+    // Script pré-existente em carregamento (loaded != 'true') é reaproveitado
+    unmount();
+    const pendingScript = document.createElement('script');
+    pendingScript.dataset.googleGsi = 'true';
+    document.head.appendChild(pendingScript);
+
+    const initializeMock = jest.fn();
+    render(<EntrarPage />);
+    expect(document.querySelectorAll('script[data-google-gsi="true"]')).toHaveLength(1);
+    await mockGsiAndLoad({ initializeMock, renderButtonMock: jest.fn() });
+    await waitFor(() => expect(initializeMock).toHaveBeenCalled());
+
+    const callback = initializeMock.mock.calls[0][0].callback;
+    await act(async () => {
+      await callback({});
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Não foi possível obter a credencial do Google. Tente novamente ou use seu e-mail e senha.'
+    );
+
+    fetchMock.mockRejectedValueOnce(new Error('network error'));
+    await act(async () => {
+      await callback({ credential: 'valid-jwt-network-fail' });
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Erro ao comunicar com o servidor durante o login com Google.'
+    );
+    expect(retryBtn).not.toBeInTheDocument();
+  });
 });

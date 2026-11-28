@@ -45,8 +45,16 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 ├── index.js                    # Home pública
 ├── admin.js                    # Painel administrativo
 ├── login.js                    # Página de login geral (/login)
+├── entrar.js                   # Acesso/cadastro de visitante e Sign in with Google (/entrar)
+├── minha-conta.js              # Painel do visitante e compras internas (/minha-conta)
 ├── design-system.js            # Vitrine do Design System
+├── checkout/
+│   └── [id].js                 # Checkout transparente Mercado Pago (/checkout/[id])
 ├── api/
+│   ├── checkout.js             # Criação e consulta de pagamento interno (Modalidade B)
+│   ├── customer/
+│   │   ├── auth.js             # Sessão, cadastro, perfil e login Google do visitante
+│   │   └── orders.js           # Pedidos internos e reconciliação ativa do visitante
 │   ├── posts.js                # Posts: GET público (rota somente leitura)
 │   ├── musicas.js              # Músicas públicas (paginado, busca, ordenação)
 │   ├── videos.js               # Vídeos públicos (paginado, busca, ordenação)
@@ -92,7 +100,8 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
     ├── variables.css           # Design tokens (CSS Custom Properties)
     ├── Home.module.css         # CSS Module da home
     ├── Login.module.css        # CSS Module da página de login
-    └── DesignSystem.module.css # CSS Module da vitrine
+    ├── DesignSystem.module.css # CSS Module da vitrine
+    └── CustomerPages.module.css # CSS Module de /entrar, /minha-conta e /checkout/[id]
 ```
 
 > **Nota:** o CRUD administrativo de produtos não existe como rota separada — é gerenciado pelo endpoint público `/pages/api/products.js` em modo autenticado (sem `?public=true`).
@@ -906,3 +915,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — serve de supor
 - **09/10/2026:** A resolução do diretório de uploads — `path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'))` — foi extraída de quatro handlers para o novo módulo `lib/infra/storage.js`, eliminando a duplicação. Quatro endpoints passaram a importar a resolução única em vez de expressá-la inline: **`uploads/[...path].js`** (as funções locais `uploadsRoot()` e `legacyUploadsRoot()` foram removidas e agora vêm do módulo), **`upload-image.js`**, **`placeholder-image.js`** (o array `uploadDirs` inline virou `uploadRoots()`, preservando a ordem ativo→legado) e **`admin/integrity.js`**. Nenhuma lógica de runtime mudou: ordem de resolução das raízes, cache de 5 minutos do `placeholder-image.js` e a proteção contra path traversal em `resolveInside()` foram preservados. O motivo da extração foi eliminar os 12 avisos `Dynamic filesystem access causes tracing of the whole project` do Turbopack (Next.js 16), buildando limpo. Os avisos restantes foram marcados com `/*turbopackIgnore: true*/`, que declara o acesso intencional em vez de mascará-lo.
 - **16/10/2026:** Reconciliação com o commit `524074c` (motivo e contexto em [`ADR-0010`](adr/0010-admin-como-cargo-e-validacao-de-nome.md) e [`ADR-0011`](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md)). O ponto de atenção `await await` em `admin/users.js` foi resolvido — o `await` duplicado nas três chamadas de `logActivity` foi removido. `admin/users.js`: `role` ficou obrigatório no create (saiu o `.default('admin')`) e passou a ser verificado contra a tabela `roles` por `roleExists()` em POST e PUT (400 nomeando o cargo inexistente). `admin/roles.js`: `permissions` validado contra a lista oficial via `superRefine` (400 nomeando a permissão inválida). `musicas.js`: `limit` ganhou `.max(100)`, alinhando o teto às demais rotas paginadas. As seis rotas públicas com 400 de paginação/parâmetros (`dicas`, `musicas`, `posts`, `products`, `settings`, `videos`) passaram a importar `INVALID_PAGINATION_MESSAGE`/`INVALID_PARAMS_MESSAGE` de `lib/api/helpers.js` (definição e detalhe em [`PROJECT_lib.md`](PROJECT_lib.md) §1.2). `login.js`: `refresh_token`/`refresh_token_expires_in` saíram do body de `?response=body`. O wrapper de `requestId` e a política 503/500 do `createAdminHandler` afetam todas as respostas admin e ficam documentados em [`PROJECT_lib.md`](PROJECT_lib.md) §1.1, não neste documento.
 - **27/11/2026:** Sincronização da descrição de `/pages/_document.js` (remoção da menção obsoleta a Montserrat, inclusão de Playfair Display, `<meta name="referrer" content="strict-origin-when-cross-origin" />` e origens GIS na CSP incluindo `connect-src`) e adição das rotas/páginas de visitante e pagamento (`/entrar`, `/minha-conta`, `/checkout/[id]`, `/api/customer/auth`, `/api/customer/orders`, `/api/checkout` e `CustomerPages.module.css`, preservando o recorte histórico de contagens de 08/10/2026 no resumo).
+- **28/11/2026:** Inclusão dos arquivos da área do visitante e checkout diretamente na árvore de diretórios do topo, além da resiliência a `429`/`5xx` em `GET /api/customer/auth` nas páginas `/minha-conta` e `/checkout/[id]` e `Cache-Control: no-store, private` em `/api/checkout`.

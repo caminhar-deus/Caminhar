@@ -124,6 +124,7 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       await handler(okReq, okRes);
       expect(okRes._getStatusCode()).toBe(200);
       expect(okRes._getHeaders()['cache-control']).toBe('no-store, private');
+      expect(checkRateLimit).toHaveBeenCalledWith(expect.any(String), 'api:customer:session', 120, 60000);
 
       getAuthenticatedCustomer.mockClear();
       checkRateLimit.mockResolvedValueOnce(true);

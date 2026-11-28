@@ -373,7 +373,16 @@ export default function CheckoutPage() {
       setError('');
       try {
         const authRes = await fetch('/api/customer/auth');
-        const authData = await authRes.json();
+        const authData = await authRes.json().catch(() => ({}));
+        if (authRes.status === 429 || authRes.status >= 500) {
+          if (active) {
+            setError(
+              authData?.message ||
+                'Não foi possível verificar sua sessão no momento. Tente novamente em instantes.'
+            );
+          }
+          return;
+        }
         if (!authRes.ok || !authData.authenticated) {
           router.replace(`/entrar?next=${encodeURIComponent(`/checkout/${id}`)}`);
           return;

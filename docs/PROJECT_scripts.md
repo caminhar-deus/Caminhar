@@ -22,7 +22,7 @@ scripts/
 ├── diagnostics/     → diagnósticos pontuais
 ├── lib/             → módulos de biblioteca (parsing de saída do k6)
 ├── maintenance/     → manutenção de dados
-├── migrations/      → migrações de schema (000-022)
+├── migrations/      → migrações de schema (000-023)
 ├── schemas/         → definições JSON de tabelas
 ├── tests/           → testes manuais
 └── utils/           → módulos compartilhados
@@ -254,7 +254,7 @@ máquina e momento.
 
 | Arquivo | Funcionalidade |
 |---------|----------------|
-| `check-env.js` | Valida variáveis obrigatórias (`DATABASE_URL`, `JWT_SECRET`), checa conectividade com o PostgreSQL via `healthCheck()`, exporta `validateGoogleEnv(env)` (paridade sem vazamento entre `GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, além de alerta para `ALLOW_GOOGLE_DEV_BYPASS=true` em `production`) e `validateMercadoPagoEnv(env)` (paridade Mercado Pago/sandbox/`debit_card`), com execução CLI protegida por `isDirectExecution` e `@next/env` (`loadEnvConfig`). |
+| `check-env.js` | Valida variáveis obrigatórias (`DATABASE_URL`, `JWT_SECRET`), checa conectividade com o PostgreSQL via `healthCheck()`, exporta `checkEnv(env)`, `validateGoogleEnv(env)` (paridade sem vazamento entre `GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, além de alerta para `ALLOW_GOOGLE_DEV_BYPASS=true` em `production`) e `validateMercadoPagoEnv(env)` (paridade Mercado Pago/sandbox/`debit_card`), com execução CLI protegida por `isDirectExecution` e `@next/env` (`loadEnvConfig`). |
 | `check-db-status.js` | Verifica conexão com o banco (versão PostgreSQL via `SELECT version()`) e conta registros nas tabelas `posts`, `videos`, `musicas`, `users`. Usa `lib/infra/db.js` via import dinâmico. |
 | `check-sql-injection.js` | **Scanner de segurança (496 linhas).** Varre arquivos `.js` do projeto em busca de interpolação direta de variáveis em queries SQL sem prepared statements. 4 regras de detecção: `pool.query()` com template literal + interpolação, `query()` com template literal sem array de params, detecção indireta via variáveis construídas com template literal, e `pool.query(variavel)` com interpolação. Falsos positivos controlados (constantes, `validateIdentifier`, etc.). `--all` e `--path=` para escopo. |
 | `clean-orphaned-images.js` | **Varre imagens órfãs nos dois diretórios de upload — o ativo (`UPLOADS_DIR` ou `<cwd>/uploads`) e o legado `public/uploads/` — não só fixtures de teste.** Os prefixos `post-image-*` e `hero-image-*` são os mesmos que `pages/api/upload-image.js:98` gera em produção. Consulta 6 colunas de referência: `posts.image_url`, `settings.value`, `products.image_url`, `videos.thumbnail`, `images.path`, `images.filename`. Quatro salvaguardas: (1) **fail-closed** — qualquer erro de banco que não seja coluna/tabela inexistente aborta antes de tocar em arquivo; (2) **modo relatório por padrão**, sem escrita em disco — usar `npm run clean:images -- --delete` para executar; (3) **idade mínima de 24h** por `mtime` (fecha a janela entre upload e o save do post); (4) **lixeira** — move para `data/uploads-trash/` via `renameSync`, nunca `unlink`; restaurar movendo cada arquivo de volta para o **diretório de origem** dele (o resumo final imprime `arquivo ← origem`). **Varredura dupla (08/10/2026):** os diretórios inexistentes são ignorados, o caminho repetido (`UPLOADS_DIR` apontando para o legado) é considerado **uma única vez** (dedup por índice) e um mesmo `filename` existente nos dois diretórios também conta uma vez — a lixeira é plana e o segundo `rename` sobrescreveria o primeiro. Usa pool criado sob demanda com dotenv. |
@@ -284,7 +284,7 @@ máquina e momento.
 | Categoria | Quantidade | Arquivos |
 |-----------|:----------:|----------|
 | Backup | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
-| Migrações | 25 | `migrate.js` + `migrations/` (22 arquivos 000-022) + `seed-migrations-table.js` + `verify-applied.js` |
+| Migrações | 26 | `migrate.js` + `migrations/` (23 arquivos 000-023) + `seed-migrations-table.js` + `verify-applied.js` |
 | Schemas | 4 | `schemas/*.json` |
 | Seeds | 6 | `seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js` |
 | Inicialização | 3 | `init-server.js`, `init-table.js`, `setup-test-db.js` |
@@ -303,6 +303,8 @@ máquina e momento.
 | Biblioteca | 1 | `lib/k6-output-parser.js` |
 | **Total** | **94** | — |
 
+> **Acréscimo de 28/11/2026:** a categoria `Migrações` foi atualizada de 25 para **26** entradas após a inclusão da migration `023-sales-customers-and-modalities.js` (`000-023`). As demais linhas da tabela preservam o recorte histórico conferido em `19/10/2026`.
+>
 > **Contagens conferidas no repositório em 19/10/2026** (`find scripts -type f` = 96, sendo 1 o `.ndjson` de execução que o `.gitignore` exclui; a tabela acima é uma **partição** e soma 94). O número "90" que valia aqui até 18/10/2026 já estava defasado: entre a medição de 08/10 e hoje a pasta tinha 88 arquivos antes do bench, ou seja, **-2** de saldo líquido, e `check-hardcoded-credentials.js` segue sem linha própria nesta tabela. Não auditei de onde saiu o saldo; o que está aqui é o estado medido, e a divergência está declarada em vez de arredondada.
 
 ---
